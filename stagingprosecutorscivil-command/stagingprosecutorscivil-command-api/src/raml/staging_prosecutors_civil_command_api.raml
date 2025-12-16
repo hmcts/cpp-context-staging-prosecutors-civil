@@ -1,0 +1,33 @@
+  #%RAML 0.8
+title: Case Management Command API
+version: 1.0
+baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil
+
+/prosecutions:
+  post:
+      description:  |
+        Submit civil prosecutions
+        ...
+        (mapping):
+            requestType: application/vnd.stagingprosecutorscivil.charge-prosecution+json
+            name: stagingprosecutorscivil.charge-prosecution
+        (mapping):
+            requestType: application/vnd.stagingprosecutorscivil.summons-prosecution+json
+            name: stagingprosecutorscivil.summons-prosecution
+        ...
+      body:
+        application/vnd.stagingprosecutorscivil.charge-prosecution+json:
+          schema: !include json/schema/stagingprosecutorscivil.charge-prosecution.json
+          example: !include json/stagingprosecutorscivil.charge-prosecution.json
+        application/vnd.stagingprosecutorscivil.summons-prosecution+json:
+          schema: !include json/schema/stagingprosecutorscivil.summons-prosecution.json
+          example: !include json/stagingprosecutorscivil.summons-prosecution.json
+      responses:
+            202:
+                description: OK
+                body:
+                  application/json:
+                    schema: !include json/schema/stagingprosecutorscivil.url-response.json
+                    example: !include json/stagingprosecutorscivil.url-response.json
+            500:
+                description: Internal Server Error

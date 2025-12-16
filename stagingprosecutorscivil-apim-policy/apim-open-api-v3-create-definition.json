@@ -1,0 +1,83 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "civilcases",
+    "description": "",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://dummy/civilcases"
+    }
+  ],
+  "paths": {
+    "/chargeprosecutions": {
+      "post": {
+        "summary": "chargeprosecutions",
+        "description": "Submit civil charge prosecutions",
+        "operationId": "chargeprosecutions",
+        "responses": {
+          "200": {
+            "description": "null"
+          }
+        }
+      }
+    },
+    "/summonsprosecutions": {
+      "post": {
+        "summary": "summonsprosecutions",
+        "description": "Submit civil summons prosecutions",
+        "operationId": "summonsprosecutions",
+        "responses": {
+          "200": {
+            "description": "null"
+          }
+        }
+      }
+    },
+    "/submissions/{submissionId}": {
+      "get": {
+        "summary": "submission details",
+        "description": "Gets the Civil Prosecution submission details",
+        "operationId": "submission-details",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": ""
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": null
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "name": "Ocp-Apim-Subscription-Key",
+        "in": "header"
+      },
+      "apiKeyQuery": {
+        "type": "apiKey",
+        "name": "subscription-key",
+        "in": "query"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyHeader": []
+    },
+    {
+      "apiKeyQuery": []
+    }
+  ]
+}

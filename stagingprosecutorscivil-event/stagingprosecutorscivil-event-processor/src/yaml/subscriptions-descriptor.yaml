@@ -1,0 +1,30 @@
+subscriptions_descriptor:
+  spec_version: 1.0.0
+  service: stagingprosecutorscivil
+  service_component: EVENT_PROCESSOR
+  subscriptions:
+    - name: event processor subscription
+      events:
+        - name: stagingprosecutorscivil.event.charge-prosecution-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.charge-prosecution-received.json
+        - name: stagingprosecutorscivil.event.summons-prosecution-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.summons-prosecution-received.json
+      event_source_name: stagingprosecutorscivil
+
+    - name: public processor subscription
+      events:
+        - name: public.prosecutioncasefile.group-prosecution-rejected
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public-group-prosecution-rejected.json
+
+        - name: public.prosecutioncasefile.civil-prosecution-rejected
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public-civil-prosecution-rejected.json
+
+        - name: public.prosecutioncasefile.civil.prosecution-submission-succeeded
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public.prosecutioncasefile.civil-prosecution-submission-succeeded.json
+
+        - name: public.prosecutioncasefile.group-submission-succeeded
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/group-submission-succeeded.json
+
+        - name: public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings.json
+      event_source_name: public.event.source

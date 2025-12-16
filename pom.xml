@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>uk.gov.moj.cpp.common</groupId>
+        <artifactId>service-parent-pom</artifactId>
+        <version>17.103.5</version>
+    </parent>
+
+    <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+    <artifactId>stagingprosecutorscivil</artifactId>
+    <version>17.103.5-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>stagingprosecutorscivil</name>
+
+    <properties>
+        <sonar.jacoco.itReportPath>${project.basedir}/../target/jacoco-it.exec
+        </sonar.jacoco.itReportPath>
+        <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
+        <sonar.scm.provider>git</sonar.scm.provider>
+        <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
+        <postgresql.version>42.1.4</postgresql.version>
+        <prosecutioncasefile.version>17.0.71</prosecutioncasefile.version>
+        <referencedata.version>17.0.120</referencedata.version>
+        <coredomain.version>17.103.10</coredomain.version>
+        <liquibase.core.version>3.6.1</liquibase.core.version>
+        <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
+    </properties>
+
+    <modules>
+        <module>stagingprosecutorscivil-command</module>
+        <module>stagingprosecutorscivil-event</module>
+        <module>stagingprosecutorscivil-domain</module>
+        <module>stagingprosecutorscivil-viewstore</module>
+        <module>stagingprosecutorscivil-integration-test</module>
+        <module>stagingprosecutorscivil-query</module>
+        <module>stagingprosecutorscivil-service</module>
+        <module>stagingprosecutorscivil-event-sources</module>
+        <module>stagingprosecutorscivil-healthchecks</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>uk.gov.moj.cpp.core.domain</groupId>
+                <artifactId>common-core-domain</artifactId>
+                <version>${coredomain.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <archiveClasses>true</archiveClasses>
+                    <attachClasses>true</attachClasses>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.11.0.3922</version>
+            </plugin>
+        </plugins>
+    </build>
+
+    <distributionManagement>
+        <site>
+            <id>site</id>
+            <url>${mvn.site.url}</url>
+        </site>
+    </distributionManagement>
+
+</project>

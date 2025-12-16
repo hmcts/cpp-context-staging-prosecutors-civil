@@ -1,0 +1,127 @@
+{
+  "prosecutingAuthority": "GAAAA01",
+  "hearingDetails": {
+    "courtHearingLocation": "B01BH00",
+    "dateOfHearing": "2019-08-11",
+    "timeOfHearing": "09:01:01"
+  },
+  "prosecutionCases":
+  [
+    {
+      "informant": "Adam",
+      "caseMarker": "Case mark",
+      "urn": "case_urn_value1",
+      "defendants": [
+        {
+          "defendantDetails": {
+            "prosecutorDefendantId": "TFLDEF001",
+            "asn": "SummonsNumber001",
+            "pncIdentifier": "2099/1234567L",
+            "croNumber": "123456/10L",
+            "documentationLanguage": "E",
+            "hearingLanguage": "E",
+            "address": {
+              "address1": "Address Line 1",
+              "address2": "Address Line 2",
+              "address3": "Address Line 3",
+              "address4": "Address Line 4",
+              "address5": "Address Line 5",
+              "postcode": "SE1H 1XX"
+            },
+            "numPreviousConvictions": 3,
+            "prosecutorCosts": "20.99"
+          },
+          "individual": {
+            "languageRequirement": "no special language needs",
+            "specificRequirements": "no special needs",
+            "nameDetails": {
+              "title": "Mr",
+              "forename": "John",
+              "forename2": "Adam",
+              "forename3": "Theodore",
+              "surname": "SMITH"
+            },
+            "contactDetails": {
+              "workTelephoneNumber": "1231231230",
+              "homeTelephoneNumber": "1231231230",
+              "mobileTelephoneNumber": "1231231230",
+              "primaryEmail": "aer@af.com",
+              "secondaryEmail": "aer@af.com"
+            },
+            "parentGuardian": {
+              "individual": {
+                "nameDetails": {
+                  "title": "Mr",
+                  "forename": "parentGuardianJack",
+                  "forename2": "parentGuardianAaron",
+                  "forename3": "Sr",
+                  "surname": "parentGuardianReaper"
+                },
+                "contactDetails": {
+                  "workTelephoneNumber": "9991231230",
+                  "homeTelephoneNumber": "9991231230",
+                  "mobileTelephoneNumber": "9991231230",
+                  "primaryEmail": "999aer@test.com",
+                  "secondaryEmail": "999aer@test.com"
+                },
+                "dateOfBirth": "1979-05-23",
+                "gender": 1,
+                "observedEthnicity": 4,
+                "selfDefinedEthnicity": "W1"
+              },
+              "address": {
+                "address1": "ParentGuardian Address Line 1",
+                "address2": "ParentGuardian Address Line 2",
+                "address3": "ParentGuardian Address Line 3",
+                "address4": "ParentGuardian Address Line 4",
+                "address5": "ParentGuardian Address Line 5",
+                "postcode": "PG0 1XX"
+              }
+            },
+            "aliases": [
+              {
+                "title": "Mr",
+                "forename": "AliasJack",
+                "forename2": "AliasAaron",
+                "forename3": "Sr",
+                "surname": "AliasReaper"
+              }
+            ],
+            "nationality": "GBR",
+            "additionalNationality": "POL",
+            "dateOfBirth": "1970-02-03",
+            "gender": 1,
+            "occupation": "TA",
+            "occupationCode": 666,
+            "ethnicity": "W1",
+            "driverNumber": "KER99861065SE9RM",
+            "nationalInsuranceNumber": "SN123456C"
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "CA03014",
+                "offenceSequenceNo": 1,
+                "offenceCommittedDate": "2019-06-11",
+                "laidDate": "2019-06-11",
+                "offenceCommittedEndDate": "2020-06-11",
+                "offenceDateCode": 4,
+                "offenceLocation": "Croydon",
+                "offenceWording": "Test Prosecution charge wording",
+                "offenceWordingWelsh": "Test Prosecution charge wording in Welsh",
+                "prosecutorCompensation": "99.99",
+                "backDuty": "+340.99",
+                "backDutyDateFrom": "2018-04-09",
+                "backDutyDateTo": "2018-05-09",
+                "vehicleMake": "Ford",
+                "vehicleRegistrationMark": "AA11 ABC"
+              },
+              "statementOfFacts": "1Test Prosecution statements of facts",
+              "statementOfFactsWelsh": "1Welsh -Test Prosecution statements of facts"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

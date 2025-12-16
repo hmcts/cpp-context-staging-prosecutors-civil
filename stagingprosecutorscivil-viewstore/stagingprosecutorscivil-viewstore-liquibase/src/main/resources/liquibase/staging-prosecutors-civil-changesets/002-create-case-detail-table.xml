@@ -1,0 +1,25 @@
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.3.xsd">
+
+    <changeSet id="create-case-detail-table" author="stagingprosecutorscivil">
+        <createTable tableName="case_detail">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_case_detail"/>
+            </column>
+            <column name="case_urn" type = "TEXT"/>
+            <column name="case_errors" type = "TEXT"/>
+            <column name="defendant_errors" type = "TEXT"/>
+            <column name="defendant_warnings" type = "TEXT"/>
+            <column name="case_warnings" type = "TEXT"/>
+            <column name="submission_id" type="UUID">
+                <constraints foreignKeyName="fk_submission_id"
+                             referencedTableName="submission"
+                             referencedColumnNames="submission_id"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

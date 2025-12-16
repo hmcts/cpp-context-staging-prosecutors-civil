@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/initiation-code.json",
+  "type": "string",
+  "description": "Identifies the type of case",
+  "maxLength": 1,
+  "enum": [
+    "S",
+    "C",
+    "Q",
+    "J",
+    "O"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-code.json",
+  "type": "string",
+  "description": "Mandatory if Initiation Code is 'S'",
+  "minLength": 1,
+  "maxLength": 1
+}

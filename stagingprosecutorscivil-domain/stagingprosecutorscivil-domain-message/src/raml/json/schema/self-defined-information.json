@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/self-defined-information.json",
+  "type": "object",
+  "description": "Self defined information",
+  "properties": {
+    "nationality": {
+      "type": "string",
+      "description": "Country of origin as stated by the defendant, as per CJS Standards section 3.103",
+      "maxLength": 3
+    },
+    "additionalNationality": {
+      "type": "string",
+      "description": "Additional country of origin as stated by the defendant, as per CJS Standards section 3.103",
+      "maxLength": 3
+    },
+    "gender": {
+      "type": "integer",
+      "description": "See CJS Standards (3.45)Mandatory if defendant is a person.Otherwise field must be null, e.g., organisation. 0=Not Known1=Male2=Female9=Not specified"
+    },
+    "ethnicity": {
+      "type": "string",
+      "description": "Ethnicity Self Defined Code",
+      "pattern": "^(W1|W2|W9|M1|M2|M3|M9|A1|A2|A3|A9|B1|B2|B9|O1|O9|NS)$"
+    }
+  },
+  "required": [
+    "gender"
+  ],
+  "additionalProperties": true
+}

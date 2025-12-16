@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant-details.json",
+  "type": "object",
+  "description": "Defendant Details of the case",
+  "properties": {
+    "prosecutorDefendantId": {
+      "description": "DefendantId provided by prosecutor.",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-]*$",
+      "maxLength": 36
+    },
+    "asn": {
+      "type": "string",
+      "description": "Arrest / Summons number",
+      "maxLength": 20
+    },
+    "pncIdentifier": {
+      "description": "CJS standard format for Police National Computer Identifier. E.g. 2020/1234567L",
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/pncId"
+    },
+    "croNumber": {
+      "description": "CJS standard format for National Identification Service (formerly Criminal Records Office) Number (fingerprint number). E.g. 123456/20L, SF20/123456M",
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/croNumber"
+    },
+    "documentationLanguage": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/language.json"
+    },
+    "hearingLanguage": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/language.json"
+    },
+    "address": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/address.json"
+    },
+    "numPreviousConvictions": {
+      "type": "integer",
+      "description": "Number of previous conviction cited by prosecutor."
+    },
+    "prosecutorCosts": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/money",
+      "description": "Prosecution costs claimed by prosecutor."
+    }
+  },
+  "required": [
+    "prosecutorDefendantId",
+    "documentationLanguage",
+    "hearingLanguage",
+    "address"
+  ],
+  "additionalProperties": false
+}

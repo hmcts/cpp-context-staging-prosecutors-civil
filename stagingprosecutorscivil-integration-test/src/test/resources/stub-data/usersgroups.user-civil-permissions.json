@@ -1,0 +1,8 @@
+{
+  "permissions": [
+    {
+      "object": "CIVIL_CASE",
+      "action": "GrantAccess"
+    }
+  ]
+}

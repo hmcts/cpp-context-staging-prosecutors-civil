@@ -1,0 +1,20 @@
+#%RAML 0.8
+title: Prosecutors Command handler
+version: 1.0
+baseUri: message://command/handler/message/stagingprosecutors-civil
+
+/stagingprosecutorscivil.handler.command:
+    post:
+      description: |
+        Receives a request
+
+      body:
+         application/vnd.stagingprosecutorscivil.command.charge-prosecution+json:
+             schema: !include json/schema/stagingprosecutorscivil.command.charge-prosecution.json
+             example: !include json/stagingprosecutorscivil.command.charge-prosecution.json
+         application/vnd.stagingprosecutorscivil.command.summons-prosecution+json:
+             schema: !include json/schema/stagingprosecutorscivil.command.summons-prosecution.json
+             example: !include json/stagingprosecutorscivil.command.summons-prosecution.json
+         application/vnd.stagingprosecutorscivil.command.update-civil-case+json:
+             schema: !include json/schema/stagingprosecutorscivil.command.update-civil-case.json
+             example: !include json/stagingprosecutorscivil.command.update-civil-case.json

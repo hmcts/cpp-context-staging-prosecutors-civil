@@ -1,0 +1,15 @@
+package uk.gov.moj.cpp.staging.civil.query.api.accesscontrol;
+
+import uk.gov.moj.cpp.accesscontrol.drools.Outcome;
+import uk.gov.moj.cpp.accesscontrol.drools.Action;
+import uk.gov.moj.cpp.staging.civil.query.api.accesscontrol.RuleConstants;
+global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
+
+rule "Command - Rule for getting submission details"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "stagingprosecutorscivil.submission-details");
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
+  then
+    $outcome.setSuccess(true);
+end

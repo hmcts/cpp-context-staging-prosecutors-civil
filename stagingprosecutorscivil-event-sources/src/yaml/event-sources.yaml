@@ -1,0 +1,11 @@
+event_sources:
+  - name: stagingprosecutorscivil
+    is_default: true
+    location:
+      jms_uri:  jms:topic:stagingprosecutorscivil.event
+      rest_uri: http://localhost:8080/stagingprosecutorscivil-service/event-source-api/rest
+      data_source: java:/app/stagingprosecutorscivil-service/DS.eventstore
+
+  - name: public.event.source
+    location:
+      jms_uri:  jms:topic:public.event

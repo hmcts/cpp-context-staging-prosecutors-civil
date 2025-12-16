@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/individual.json",
+  "type": "object",
+  "description": "Individual details",
+  "properties": {
+    "nameDetails": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/name-details.json"
+    },
+    "contactDetails": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/contact-details.json"
+    },
+    "nationality": {
+      "type": "string",
+      "description": "Country of origin as stated by the defendant, as per CJS Standards section 3.103",
+      "maxLength": 3
+    },
+    "additionalNationality": {
+      "type": "string",
+      "description": "Additional country of origin as stated by the defendant, as per CJS Standards section 3.103",
+      "maxLength": 3
+    },
+    "dateOfBirth": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "The date when a person was born."
+    },
+    "gender": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/gender.json",
+      "description": "See CJS Standards (3.45)Mandatory if defendant is a person.Otherwise field must be null, e.g., organisation. 0=Not Known1=Male2=Female9=Not specified"
+    },
+    "occupation": {
+      "type": "string",
+      "description": "The description of an occupation.",
+      "maxLength": 54
+    },
+    "occupationCode": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99999,
+      "description": "An occupation code"
+    },
+    "observedEthnicity": {
+      "type": "number",
+      "description": "",
+      "minLength": 1,
+      "maxLength": 1
+    },
+    "ethnicity": {
+      "type": "string",
+      "description": "Ethnicity Self Defined Code"
+    },
+    "driverNumber": {
+      "type": "string",
+      "description": "Driver number for DVLA case",
+      "maxLength": 16
+    },
+    "languageRequirement": {
+      "type": "string",
+      "description": "Notes about the defendant’s language needs, e.g. interpreter details",
+      "maxLength": 150
+    },
+    "specificRequirements": {
+      "type": "string",
+      "description": "Notes about any help that the defendant may need when attending court – e.g. wheelchair access.",
+      "maxLength": 150
+    },
+    "nationalInsuranceNumber": {
+      "type": "string",
+      "description": "National Insurance Number (CGS DSC 5.15)",
+      "minLength": 9,
+      "maxLength": 9,
+      "pattern": "^(?!BG)(?!GB)(?!NK)(?!KN)(?!TN)(?!NT)(?!ZZ)[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z][0-9][0-9][0-9][0-9][0-9][0-9][A-D ]$"
+    },
+    "parentGuardian": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian.json"
+    },
+    "aliases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/name-details.json"
+      }
+    },
+    "custodyStatus": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/custody-status.json"
+    },
+    "bailConditions": {
+      "description": "",
+      "type": "string",
+      "maxLength": 2500
+    }
+  },
+  "required": [
+    "nameDetails",
+    "gender"
+  ],
+  "additionalProperties": false
+}

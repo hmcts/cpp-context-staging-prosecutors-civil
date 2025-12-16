@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/prosecution-submission-details.json",
+  "type": "object",
+  "properties": {
+    "prosecutingAuthority": {
+      "type": "string",
+      "description": "Identifies the Prosecuting Organisation responsible for initiating the case. Valid CJS OU Code.",
+      "pattern": "^[a-zA-Z0-9-]*$",
+      "minLength": 7,
+      "maxLength": 7
+    },
+    "initiationCode": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/initiation-code.json"
+    },
+    "summonsCode": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-code.json"
+    },
+    "informant": {
+      "type": "string",
+      "description": "Name of the person to be named as the informant in this case.",
+      "maxLength": 92
+    },
+    "hearingDetails": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json"
+    },
+    "urn": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/caseURN"
+    },
+    "caseMarker": {
+      "type": "string",
+      "maxLength": 10,
+      "description":"To be populated if a CJS agreed Case Marker applies. Multiple values to be separated by a space"
+    },
+    "writtenChargePostingDate": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "Date on which notice was posted to the defendant."
+    }
+  },
+  "required": [
+    "prosecutingAuthority",
+    "hearingDetails",
+    "urn",
+    "initiationCode"
+  ],
+  "additionalProperties" : false
+}

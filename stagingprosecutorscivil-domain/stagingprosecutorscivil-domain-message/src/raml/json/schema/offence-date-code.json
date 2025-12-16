@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/offence-date-code.json",
+  "description": "The code for the offence date to be used within the offence wording, 1 = on or in, 2 = before, 3 = after, 4 = between, 5 = on or about and 6 = on or before",
+  "type": "integer",
+  "enum": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ]
+}

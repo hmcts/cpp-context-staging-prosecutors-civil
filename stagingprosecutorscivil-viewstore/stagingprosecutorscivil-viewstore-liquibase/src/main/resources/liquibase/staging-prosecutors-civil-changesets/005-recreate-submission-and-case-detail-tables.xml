@@ -1,0 +1,49 @@
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.3.xsd">
+
+    <changeSet id="recreate-submission-and-case-detail-tables" author="stagingprosecutorscivil">
+
+        <dropTable cascadeConstraints="true" tableName="submission"/>
+
+        <createTable tableName="submission">
+            <column name="submission_id" type="UUID">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_submission"/>
+            </column>
+            <column name="submission_status" type = "VARCHAR(50)"/>
+            <column name="ou_code" type = "VARCHAR(50)"/>
+            <column name="errors" type = "VARCHAR(2000)"/>
+            <column name="warnings" type = "VARCHAR(2000)"/>
+            <column name="case_errors" type = "VARCHAR(2000)"/>
+            <column name="defendant_errors" type = "VARCHAR(2000)"/>
+            <column name="case_warnings" type = "VARCHAR(2000)"/>
+            <column name="defendant_warnings" type = "VARCHAR(2000)"/>
+            <column name="received_at" type="datetime"/>
+            <column name="completed_at" type="datetime"/>
+        </createTable>
+
+        <dropTable tableName="case_detail"/>
+
+        <createTable tableName="case_detail">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_case_detail"/>
+            </column>
+            <column name="case_urn" type = "VARCHAR(50)"/>
+            <column name="case_errors" type = "VARCHAR(2000)"/>
+            <column name="defendant_errors" type = "VARCHAR(2000)"/>
+            <column name="defendant_warnings" type = "VARCHAR(2000)"/>
+            <column name="case_warnings" type = "VARCHAR(2000)"/>
+            <column name="submission_id" type="UUID">
+                <constraints foreignKeyName="fk_submission_id"
+                             referencedTableName="submission"
+                             referencedColumnNames="submission_id"/>
+            </column>
+        </createTable>
+
+
+    </changeSet>
+
+</databaseChangeLog>

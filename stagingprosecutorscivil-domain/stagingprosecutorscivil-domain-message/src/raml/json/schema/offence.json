@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/offence.json",
+  "type": "object",
+  "description": "",
+  "properties": {
+    "offenceDetails": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/offence-details.json"
+    },
+    "arrestDate": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": ""
+    },
+    "statementOfFacts": {
+      "type": "string",
+      "description": "Statement of facts",
+      "maxLength": 4000
+    },
+    "statementOfFactsWelsh": {
+      "type": "string",
+      "description": "Statement of facts",
+      "maxLength": 4000
+    }
+  },
+  "required": [
+    "offenceDetails"
+  ],
+  "additionalProperties" : false
+}

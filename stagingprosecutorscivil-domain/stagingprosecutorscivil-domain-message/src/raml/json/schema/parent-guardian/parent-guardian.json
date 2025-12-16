@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian.json",
+  "type": "object",
+  "description": "Person details",
+  "properties": {
+    "organisation": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian-organisation.json"
+    },
+    "individual": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian-individual.json"
+    },
+    "address": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/address.json"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "individual",
+        "address"
+      ]
+    },
+    {
+      "required": [
+        "organisation",
+        "address"
+      ]
+    }
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant.json",
+  "type": "object",
+  "description": "Defendant Details of the case",
+  "properties": {
+    "defendantDetails": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant-details.json"
+    },
+    "individual": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/individual.json"
+    },
+    "organisation": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/organisation.json"
+    },
+    "offences": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/offence.json"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "defendantDetails",
+        "individual",
+        "offences"
+      ]
+    },
+    {
+      "required": [
+        "defendantDetails",
+        "organisation",
+        "offences"
+      ]
+    }
+  ],
+  "additionalProperties": false
+}

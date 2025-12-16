@@ -1,0 +1,15 @@
+subscriptions_descriptor:
+  spec_version: 1.0.0
+  service: stagingprosecutorscivil
+  service_component: EVENT_LISTENER
+  subscriptions:
+    - name: event listener subscription
+      events:
+        - name: stagingprosecutorscivil.event.charge-prosecution-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/charge-prosecution-received.json
+        - name: stagingprosecutorscivil.event.summons-prosecution-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/summons-prosecution-received.json
+        - name: stagingprosecutorscivil.event.update-civil-case-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/update-civil-case-received.json
+      event_source_name: stagingprosecutorscivil
+
