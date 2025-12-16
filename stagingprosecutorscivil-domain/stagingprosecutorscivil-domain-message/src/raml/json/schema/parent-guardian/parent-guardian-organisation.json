@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian-organisation.json",
+  "type": "object",
+  "description": "",
+  "properties": {
+    "organisationName": {
+      "type": "string",
+      "description": "Name of an organisation, e.g., Marks and Spencer.",
+      "maxLength": 255
+    },
+    "companyTelephoneNumber": {
+      "pattern": "^[0-9+\\ \\-]{10,}$",
+      "description": ""
+    }
+  },
+  "required": [
+    "organisationName"
+  ],
+  "additionalProperties" : false
+}

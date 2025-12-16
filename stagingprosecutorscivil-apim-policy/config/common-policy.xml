@@ -1,0 +1,54 @@
+<!--
+    IMPORTANT:
+    - Policy elements can appear only within the <inbound>, <outbound>, <backend> section elements.
+    - To apply a policy to the incoming request (before it is forwarded to the backend service), place a corresponding policy element within the <inbound> section element.
+    - To apply a policy to the outgoing response (before it is sent back to the caller), place a corresponding policy element within the <outbound> section element.
+    - To add a policy, place the cursor at the desired insertion point and select a policy from the sidebar.
+    - To remove a policy, delete the corresponding policy statement from the policy document.
+    - Position the <base> element within a section element to inherit all policies from the corresponding section element in the enclosing scope.
+    - Remove the <base> element to prevent inheriting policies from the corresponding section element in the enclosing scope.
+    - Policies are applied in the order of their appearance, from the top down.
+    - Comments within policy elements are not supported and may disappear. Place your comments between policy elements or at a higher level scope.
+-->
+<policies>
+    <inbound>
+        <base />
+        <!-- Production: START use this section, delete STE section
+        <check-header name="Authorization" failed-check-httpcode="401" failed-check-error-message="Not authorized" ignore-case="false" />
+        <set-variable name="CIVIL_KEY_VAULT_SECRET_NAME" value="@(context.Request.Headers["Authorization"].First().Split(' ')[1])" />
+        <send-request mode="new" response-variable-name="secretResponse" timeout="20" ignore-error="false">
+            <set-url>@{return "https:/dummy/secrets/" + context.Variables.GetValueOrDefault<string>("CIVIL_KEY_VAULT_SECRET_NAME") + "/?api-version=7.0"; }</set-url>
+            <set-method>GET</set-method>
+            <authentication-managed-identity resource="https://vault.azure.net" />
+        </send-request>
+        Production: END use this section-->
+
+        <!-- STE: START use this section,  delete Production section -->
+        <check-header name="CJSOUCODE" failed-check-httpcode="401" failed-check-error-message="Not authorized" ignore-case="false" />
+        <set-variable name="CIVIL_CJSOUCODE" value="@(context.Request.Headers["CJSOUCODE"].First())" />
+        <send-request mode="new" response-variable-name="secretResponse" timeout="20" ignore-error="false">
+            <set-url>@{return "https://dummy/secrets/CIVIL-" + context.Variables.GetValueOrDefault<string>("CIVIL_CJSOUCODE") + "/?api-version=7.0"; }</set-url>
+            <set-method>GET</set-method>
+            <authentication-managed-identity resource="https://vault.azure.net" />
+        </send-request>
+        <!-- STE: END use this section -->
+
+        <set-variable name="secret" value="@{
+           var secret = ((IResponse)context.Variables["secretResponse"]).Body.As<JObject>();
+           return secret["value"].ToString();
+        }" />
+        <set-header name="CJSCPPUID" exists-action="override">
+            <value>@(context.Variables.GetValueOrDefault<string>("secret"))</value>
+        </set-header>
+        <set-backend-service base-url="https://dummy" />
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

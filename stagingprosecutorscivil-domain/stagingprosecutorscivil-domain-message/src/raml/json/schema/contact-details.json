@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/contact-details.json",
+  "type": "object",
+  "description": "Contact Details of the individual",
+  "properties": {
+    "workTelephoneNumber": {
+      "pattern": "^[0-9+\\ \\-]{10,}$",
+      "description": "A work telephone number, including any exchange of location code, at which a person or organisation can be contacted in the UK by telephonic means."
+    },
+    "homeTelephoneNumber": {
+      "pattern": "^[0-9+\\ \\-]{10,}$",
+      "description": "A home telephone number, including any exchange of location code, at which a person or organisation can be contacted in the UK by telephonic means."
+    },
+    "mobileTelephoneNumber": {
+      "pattern": "^[0-9+\\ \\-]{10,}$",
+      "description": "A mobile number, including any exchange of location code, at which a person or organisation can be contacted in the UK by telephonic means."
+    },
+    "primaryEmail": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/email",
+      "description": "The identification of the first e-mail address."
+    },
+    "secondaryEmail": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/email",
+      "description": "The identification of the second e-mail address."
+    }
+  },
+  "additionalProperties": false
+}

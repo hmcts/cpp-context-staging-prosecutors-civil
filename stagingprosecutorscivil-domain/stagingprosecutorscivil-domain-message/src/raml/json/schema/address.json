@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/address.json",
+  "type": "object",
+  "description": "",
+  "properties": {
+    "address1": {
+      "type": "string",
+      "description": "Address Line 1 for the defendant",
+      "minLength" : 1,
+      "maxLength": 35
+    },
+    "address2": {
+      "type": "string",
+      "description": "Address Line 2 for the defendant",
+      "maxLength": 35
+    },
+    "address3": {
+      "type": "string",
+      "description": "Address Line 3 for the defendant",
+      "maxLength": 35
+    },
+    "address4": {
+      "type": "string",
+      "description": "Address Line 4 for the defendant",
+      "maxLength": 35
+    },
+    "address5": {
+      "type": "string",
+      "description": "Address Line 5 for the defendant",
+      "maxLength": 35
+    },
+    "postcode": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/ukGovPostCode",
+      "description": "UK Post Code (CGS DSC 5.25)"
+    }
+  },
+  "required": [
+    "address1"
+  ],
+  "additionalProperties" : false
+}

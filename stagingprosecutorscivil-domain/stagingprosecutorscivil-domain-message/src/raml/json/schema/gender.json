@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/gender.json",
+  "type": "integer",
+  "description": "Identifies the gender of the individual, 0 = Not Known, 1 = Male, 2 = Female, 9 = Not Applicable",
+  "maxLength": 1,
+  "enum": [
+    0,
+    1,
+    2,
+    9
+  ]
+}

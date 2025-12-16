@@ -1,0 +1,12 @@
+{
+  "groups": [
+    {
+      "groupId": "2b6f843e-d639-40b3-8611-8015f3a34751",
+      "groupName": "CPPI Consumers"
+    },
+    {
+      "groupId": "2a2d7e9e-0c60-11e6-a148-3e1d05defe78",
+      "groupName": "System Users"
+    }
+  ]
+}

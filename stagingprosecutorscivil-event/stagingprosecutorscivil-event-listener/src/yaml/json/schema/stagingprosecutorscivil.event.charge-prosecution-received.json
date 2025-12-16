@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/charge-prosecution-received.json",
+  "type": "object",
+  "properties": {
+    "submissionId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "submissionStatus": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/submissionStatus"
+    },
+    "prosecutionCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/prosecution-case.json"
+      }
+    },
+    "prosecutingAuthority": {
+      "description": "Identifies the Prosecuting Organisation responsible for initiating the case",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-]*$",
+      "minLength": 7,
+      "maxLength": 7
+    },
+    "hearingDetails": {
+      "description": "Court Hearing details",
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json"
+    }
+  },
+  "required": [
+    "submissionId",
+    "submissionStatus",
+    "prosecutionCases",
+    "prosecutingAuthority",
+    "hearingDetails"
+  ],
+  "additionalProperties": false
+}

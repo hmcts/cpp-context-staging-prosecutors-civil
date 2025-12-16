@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/offence-details.json",
+  "type": "object",
+  "description": "",
+  "properties": {
+    "cjsOffenceCode": {
+      "type": "string",
+      "description": "Identifies the CJS code applicable to criminal offences as per the CJS Standard section 3.11",
+      "maxLength": 8
+    },
+    "offenceSequenceNo": {
+      "type": "integer",
+      "description": "Sequence number of the offence",
+      "minimum": 1,
+      "maxLength": 3
+    },
+    "offenceCommittedDate": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": ""
+    },
+    "offenceDateCode": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/offence-date-code.json"
+
+    },
+    "laidDate": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": ""
+    },
+    "offenceCommittedEndDate": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "End date for period in which offence committed"
+    },
+    "offenceLocation": {
+      "type": "string",
+      "description": "Offence location",
+      "maxLength": 80
+    },
+    "offenceWording": {
+      "type": "string",
+      "description": "Details of Information or Charge to be laid before the court",
+      "maxLength": 2500
+    },
+    "offenceWordingWelsh": {
+      "type": "string",
+      "description": "Details of Information or Charge to be laid before the court in Welsh",
+      "maxLength": 2500
+    },
+    "prosecutorCompensation": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/money",
+      "description": "Compensation claimed by the prosecutor"
+    },
+    "backDuty": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/money",
+      "description": "Back duty"
+    },
+    "backDutyDateFrom": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "Start date of the period of unpaid back duty"
+    },
+    "backDutyDateTo": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "End date of the period of unpaid back duty"
+    },
+    "vehicleMake": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/vehicleMake",
+      "description": "Ford, Toyota etc."
+    },
+    "vehicleRegistrationMark": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/vehicleRegistrationMark",
+      "description": "vehicle registration mark like AB11 ABC"
+    }
+  },
+  "required": [
+    "cjsOffenceCode",
+    "offenceSequenceNo",
+    "offenceWording",
+    "laidDate"
+  ],
+  "additionalProperties": false
+}

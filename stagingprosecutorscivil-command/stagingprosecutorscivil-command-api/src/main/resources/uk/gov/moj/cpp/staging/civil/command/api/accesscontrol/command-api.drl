@@ -1,0 +1,24 @@
+package uk.gov.moj.cpp.staging.civil.command.api.accesscontrol;
+
+import uk.gov.moj.cpp.accesscontrol.drools.Outcome;
+import uk.gov.moj.cpp.accesscontrol.drools.Action;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.accesscontrol.RuleConstants;
+global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
+
+rule "Command - Rule for Charge Prosecution"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "stagingprosecutorscivil.charge-prosecution");
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - Rule for Summons Prosecution"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "stagingprosecutorscivil.summons-prosecution");
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
+  then
+    $outcome.setSuccess(true);
+end

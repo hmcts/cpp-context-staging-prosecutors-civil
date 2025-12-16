@@ -1,0 +1,16 @@
+{
+  "systemIdMappings": [
+    {
+      "isError": false,
+      "mappingId": "7f30ede5-2aa0-42d3-8dc6-a5abc3bbef5b",
+      "sourceId": "GAAAA01:case_urn_value_1",
+      "targetId": "460f7ec0-c002-11e8-a355-529269fb1459"
+    },
+    {
+      "isError": false,
+      "mappingId": "c082381c-dfe1-494f-988d-547d9fce3053",
+      "sourceId": "GAAAA01:case_urn_value_2",
+      "targetId": "099c0ae9-e276-4d29-b669-cb32013228b2"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "submissionId": "7e2f843e-d639-40b3-8611-8015f3a18958",
+  "submissionStatus": "PENDING",
+  "prosecutionCases": {
+    "defendants": [
+      {
+        "prosecutorDefendantId": "123",
+        "asn": "ASN232",
+        "prosecutorCosts": "20.10",
+        "defendantPerson": {
+          "title": "Mr",
+          "forename": "John",
+          "forename2": "Adam",
+          "forename3": "Theodore",
+          "surname": "SMITH",
+          "contactDetails": {
+            "workTelephoneNumber": "02012345678",
+            "homeTelephoneNumber": "02087654321",
+            "mobileTelephoneNumber": "0789123456",
+            "primaryEmail": "aer@af.com",
+            "secondaryEmail": "aer@af.com"
+          },
+          "dateOfBirth": "1970-02-03",
+          "selfDefinedInformation": {
+            "gender": 1,
+            "ethnicity": "W1",
+            "nationality": "W1",
+            "additionalNationality": "W2"
+          },
+          "occupation": "TA",
+          "occupationCode": 666,
+          "driverNumber": "AS",
+          "address": {
+            "address1": "Line 1",
+            "address2": "Line 2",
+            "address3": "Line 3",
+            "address4": "Line 4",
+            "address5": "Line 5",
+            "postcode": "CR0 1XG"
+          },
+          "nationalInsuranceNumber": "AA123456C"
+        },
+        "documentationLanguage": "E",
+        "hearingLanguage": "E",
+        "languageRequirement": "no special language needs",
+        "specificRequirements": "no special needs",
+        "numPreviousConvictions": 3,
+        "offences": [
+          {
+            "cjsOffenceCode": "CA03010",
+            "offenceSequenceNo": 1,
+            "offenceCommittedDate": "2018-06-20",
+            "chargeDate": "2018-06-21",
+            "offenceDateCode": 1,
+            "offenceLocation": "Croydon",
+            "offenceWording": "Prosecution charge wording",
+            "offenceWordingWelsh": "Prosecution charge wording in Welsh",
+            "statementOfFacts": "Prosecution statements of facts",
+            "prosecutorCompensation": "15.30",
+            "backDuty": "+340.30",
+            "backDutyDateFrom": "2018-04-30",
+            "backDutyDateTo": "2018-05-30",
+            "vehicleMake": "Ford",
+            "vehicleRegistrationMark": "AB11 ABC"
+          }
+        ]
+      }
+    ],
+    "informant": "Adam",
+    "caseMarker": "Case marker 1",
+    "urn": "case_urn_value",
+    "summonsCode": "summons_code"
+  },
+  "prosecutingAuthority": "GAAAA01",
+  "hearingDetails": {
+    "courtHearingLocation": "Liverpool Crown Court",
+    "dateOfHearing": "2022-02-04",
+    "timeOfHearing": "09:05:00.001"
+  }
+}

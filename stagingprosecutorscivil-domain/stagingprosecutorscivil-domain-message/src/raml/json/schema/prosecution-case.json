@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/prosecution-case.json",
+  "type": "object",
+  "description": "Prosecution Case details",
+  "properties": {
+    "defendants": {
+      "description":"Individual or Single Civil Prosecution Cases may contain more than one defendants. Bulk Civil Prosecution Cases contain only one defendant",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant.json"
+      }
+    },
+    "informant": {
+      "type": "string",
+      "description": "Name of the person to be named as informant in this prosecution case",
+      "maxLength": 92
+    },
+    "caseMarker": {
+      "description": "To be populated if a CJS agreed Case Marker applies. Multiple values to be separated by a space",
+      "type": "string",
+      "maxLength": 10
+    },
+    "urn": {
+      "type": "string",
+      "description": "Case URN",
+      "maxLength": 36
+    },
+    "paymentReference": {
+      "type": "string",
+      "description": "Case payment reference",
+      "maxLength": 36
+    },
+    "summonsCode": {
+      "type": "string",
+      "description": "Summons code",
+      "maxLength": 1
+    }
+  },
+  "required": [
+    "defendants",
+    "urn",
+    "informant"
+  ],
+  "additionalProperties": false
+}

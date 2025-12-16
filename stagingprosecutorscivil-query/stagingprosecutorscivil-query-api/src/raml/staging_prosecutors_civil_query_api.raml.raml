@@ -1,0 +1,21 @@
+#%RAML 0.8
+title: CaseManagement Query API
+baseUri: http://localhost:8080/stagingprosecutorscivil-query-api/query/api/rest/stagingprosecutors-civil
+protocols: [ HTTP, HTTPS ]
+
+/submissions/{submissionId}:
+  get:
+    description: |
+      Gets the Civil Prosecution submission details
+      ...
+      (mapping):
+        responseType: application/vnd.stagingprosecutorscivil.submission-details+json
+        name: stagingprosecutorscivil.submission-details
+      ...
+    responses:
+        200:
+          description: OK
+          body:
+            application/vnd.stagingprosecutorscivil.submission-details+json:
+              example:  !include json/stagingprosecutorscivil.submission-details.json
+              schema:  !include json/schema/stagingprosecutorscivil.submission-details.json

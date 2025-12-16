@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian-individual.json",
+  "type": "object",
+  "description": "Person details",
+  "properties": {
+    "nameDetails": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian-name-details.json"
+    },
+    "contactDetails": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/contact-details.json"
+    },
+    "dateOfBirth": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "The date when a person was born."
+    },
+    "gender": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/gender.json",
+      "description": "See CJS Standards (3.45)Mandatory if defendant is a person.Otherwise field must be null, e.g., organisation. 0=Not Known1=Male2=Female9=Not specified"
+    },
+    "observedEthnicity": {
+      "type": "number",
+      "description": "",
+      "minLength": 1,
+      "maxLength": 1
+    },
+    "selfDefinedEthnicity": {
+      "type": "string",
+      "description": "Ethnicity Self Defined Code"
+    }
+  },
+  "required": [
+    "nameDetails",
+    "gender"
+  ],
+  "additionalProperties": false
+}

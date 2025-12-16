@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/parent-guardian-name-details.json",
+  "type": "object",
+  "description": "Person details",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title by which a person is addressed",
+      "pattern": "^(Mr|Mrs|Ms|Miss)$"
+    },
+    "forename": {
+      "type": "string",
+      "description": "Given Name (CJS DSC v5 3.50)",
+      "maxLength": 35,
+      "pattern": "^(?!.*  ).+",
+      "comments": "Alphanumeric no consecutive spaces (i.e. a space can not appear adjacent to another space)."
+    },
+    "forename2": {
+      "type": "string",
+      "description": "The second given name of a person, e.g. Ian",
+      "maxLength": 35
+    },
+    "forename3": {
+      "type": "string",
+      "description": "The third given name of a person, e.g. Barry",
+      "maxLength": 35
+    },
+    "surname": {
+      "type": "string",
+      "description": "Surname or Family name, e.g. Brown (CJS DSC v5 3.39 Family Name)",
+      "maxLength": 35,
+      "pattern": "^(?!.*  ).+",
+      "comments": "Alphanumeric no consecutive spaces (i.e. a space can not appear adjacent to another space)."
+    }
+  },
+  "required": [
+    "surname"
+  ],
+  "additionalProperties": false
+}
