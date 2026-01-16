@@ -23,7 +23,7 @@
         <postgresql.version>42.1.4</postgresql.version>
         <prosecutioncasefile.version>17.0.71</prosecutioncasefile.version>
         <referencedata.version>17.0.120</referencedata.version>
-        <coredomain.version>17.103.11-CCT-2357-SNAPSHOT</coredomain.version>
+        <coredomain.version>17.102.15-CCT-2357-SNAPSHOT</coredomain.version>
         <liquibase.core.version>3.6.1</liquibase.core.version>
         <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
     </properties>
