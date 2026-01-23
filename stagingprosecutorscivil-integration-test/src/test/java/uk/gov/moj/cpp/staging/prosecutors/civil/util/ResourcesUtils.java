@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.staging.prosecutors.civil.util;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.apache.commons.io.IOUtils;
@@ -11,7 +11,7 @@ import org.apache.commons.io.IOUtils;
 public class ResourcesUtils {
 
     public static JsonObject asJsonObject(String resourceName) {
-        return Json.createReader(ResourcesUtils.class
+        return JsonObjects.createReader(ResourcesUtils.class
                 .getResourceAsStream("/" + resourceName))
                 .readObject();
     }
@@ -26,6 +26,6 @@ public class ResourcesUtils {
 
     public static JsonObject asJsonObject(String resourceName, String oldValue, String newValue) {
         String jsonString = readResource(resourceName).replace(oldValue, newValue);
-        return Json.createReader(IOUtils.toInputStream(jsonString)).readObject();
+        return JsonObjects.createReader(IOUtils.toInputStream(jsonString)).readObject();
     }
 }

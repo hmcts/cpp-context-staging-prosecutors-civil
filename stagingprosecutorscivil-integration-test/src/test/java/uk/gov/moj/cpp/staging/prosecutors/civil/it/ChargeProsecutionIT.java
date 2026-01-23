@@ -22,7 +22,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
@@ -56,7 +56,7 @@ public class ChargeProsecutionIT {
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
 
-        JsonObject caseSucceededPublicEvent = Json.createObjectBuilder()
+        JsonObject caseSucceededPublicEvent = JsonObjects.createObjectBuilder()
                 .add("groupId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .build();
@@ -84,7 +84,7 @@ public class ChargeProsecutionIT {
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(urlResponse.getSubmissionId().toString()));
 
-        JsonObject caseSucceededPublicEvent = Json.createObjectBuilder()
+        JsonObject caseSucceededPublicEvent = JsonObjects.createObjectBuilder()
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
