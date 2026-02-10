@@ -10,7 +10,7 @@
 
     <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
     <artifactId>stagingprosecutorscivil</artifactId>
-    <version>17.103.7-SNAPSHOT</version>
+    <version>17.103.7</version>
     <packaging>pom</packaging>
     <name>stagingprosecutorscivil</name>
 
