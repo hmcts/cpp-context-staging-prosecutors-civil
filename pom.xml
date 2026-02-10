@@ -22,8 +22,8 @@
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <postgresql.version>42.1.4</postgresql.version>
         <prosecutioncasefile.version>17.0.71</prosecutioncasefile.version>
-        <referencedata.version>17.0.120</referencedata.version>
-        <coredomain.version>17.103.10</coredomain.version>
+        <referencedata.version>17.103.122</referencedata.version>
+        <coredomain.version>17.103.11</coredomain.version>
         <liquibase.core.version>3.6.1</liquibase.core.version>
         <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
     </properties>
