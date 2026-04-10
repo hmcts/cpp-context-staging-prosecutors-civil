@@ -8,6 +8,7 @@ import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.EnforcementProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -58,6 +59,24 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
         return apply(
                 Stream.of(
                         SummonsProsecutionReceived.summonsProsecutionReceived()
+                                .withSubmissionId(submissionId)
+                                .withSubmissionStatus(SubmissionStatus.PENDING)
+                                .withProsecutingAuthority(prosecutingAuthority)
+                                .withHearingDetails(hearingDetails)
+                                .withProsecutionCases(prosecutionCases)
+                                .build()
+                )
+        );
+    }
+
+    public Stream<Object> receiveEnforcementProsecution(final UUID submissionId,
+                                                        final HearingDetails hearingDetails,
+                                                        final String prosecutingAuthority,
+                                                        final List<ProsecutionCase> prosecutionCases) {
+        LOGGER.info("Raising private event stagingprosecutorscivil.event.enforcement-prosecution-received for submission id {}", submissionId);
+        return apply(
+                Stream.of(
+                        EnforcementProsecutionReceived.enforcementProsecutionReceived()
                                 .withSubmissionId(submissionId)
                                 .withSubmissionStatus(SubmissionStatus.PENDING)
                                 .withProsecutingAuthority(prosecutingAuthority)

@@ -9,6 +9,8 @@ subscriptions_descriptor:
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.charge-prosecution-received.json
         - name: stagingprosecutorscivil.event.summons-prosecution-received
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.summons-prosecution-received.json
+        - name: stagingprosecutorscivil.event.enforcement-prosecution-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.enforcement-prosecution-received.json
       event_source_name: stagingprosecutorscivil
 
     - name: public processor subscription

@@ -16,7 +16,9 @@ import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.crea
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAST_UTC_DATE_TIME;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.chargeProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.enforcementProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupChargeProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupEnforcementProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSummonsProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilCaseReceived;
@@ -29,6 +31,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.EnforcementProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
@@ -99,6 +102,14 @@ public class ProsecutionChargedEventProcessorTest {
         assertThat(target, isHandler(EVENT_PROCESSOR)
                 .with(method("processProsecutionSummons")
                         .thatHandles("stagingprosecutorscivil.event.summons-prosecution-received")
+                ));
+    }
+
+    @Test
+    public void shouldHandleEnforcementProsecutionReceivedEvent() {
+        assertThat(target, isHandler(EVENT_PROCESSOR)
+                .with(method("processProsecutionEnforcement")
+                        .thatHandles("stagingprosecutorscivil.event.enforcement-prosecution-received")
                 ));
     }
 
@@ -178,6 +189,31 @@ public class ProsecutionChargedEventProcessorTest {
     }
 
     @Test
+    public void shouldInitiateProsecutionCommandToPCFForEnforcementProsecution() {
+        final EnforcementProsecutionReceived prosecutionReceived = enforcementProsecutionReceived();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<EnforcementProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.enforcement-prosecution-received",
+                prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
+        final UUID caseFileId = UUID.randomUUID();
+        final Map<String, UUID> caseRefToCaseId = new HashMap<>();
+        caseRefToCaseId.put(prosecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
+        when(systemIdMapperService.getCppCaseIdMapFor(any())).thenReturn(caseRefToCaseId);
+
+        target.processProsecutionEnforcement(prosecutionReceivedEnvelope);
+
+        verify(sender).sendAsAdmin(singleEnvelopeCaptor.capture());
+        final InitiateProsecution initiateProsecution = singleEnvelopeCaptor.getValue().payload();
+
+        assertThat(initiateProsecution.getChannel().name(), is("CIVIL"));
+        assertThat(initiateProsecution.getExternalId(), is(prosecutionReceived.getSubmissionId()));
+        assertThat(initiateProsecution.getCaseDetails().getInitiationCode(), is("O"));
+        assertThat(initiateProsecution.getIsCivil(), is(true));
+        assertThat(initiateProsecution.getIsGroupMaster(), is(false));
+        assertThat(initiateProsecution.getIsGroupMember(), is(false));
+        assertThat(initiateProsecution.getCaseDetails().getCaseId(), is(caseFileId));
+    }
+
+    @Test
     public void shouldInitiateGroupProsecutionCommandToPCFForChargeProsecution() {
         final ChargeProsecutionReceived prosecutionReceived = groupChargeProsecutionReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
@@ -219,6 +255,28 @@ public class ProsecutionChargedEventProcessorTest {
         assertThat(jsonObject.getJsonArray("groupProsecutions").getJsonObject(0).getBoolean("isGroupMember"), is(true));
         assertThat(jsonObject.getJsonArray("groupProsecutions").getJsonObject(0).getString("paymentReference"), is(prosecutionReceived.getProsecutionCases().get(0).getPaymentReference()));
         assertThat(jsonObject.getJsonArray("groupProsecutions").getJsonObject(0).getJsonObject("caseDetails").getString("initiationCode"), is("S"));
+    }
+
+    @Test
+    public void shouldInitiateGroupProsecutionCommandToPCFForEnforcementProsecution() {
+        final EnforcementProsecutionReceived prosecutionReceived = groupEnforcementProsecutionReceived();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<EnforcementProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.enforcement-prosecution-received",
+                prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
+
+        target.processProsecutionEnforcement(prosecutionReceivedEnvelope);
+
+        verify(sender).sendAsAdmin(groupEnvelopeCaptor.capture());
+        final InitiateGroupProsecution initiateGroupProsecution = groupEnvelopeCaptor.getValue().payload();
+        final GroupProsecutions groupProsecution = initiateGroupProsecution.getGroupProsecutions().get(0);
+
+        assertThat(initiateGroupProsecution.getChannel().name(), is("CIVIL"));
+        assertThat(initiateGroupProsecution.getExternalId(), is(prosecutionReceived.getSubmissionId()));
+        assertThat(groupProsecution.getIsCivil(), is(true));
+        assertThat(groupProsecution.getIsGroupMaster(), is(true));
+        assertThat(groupProsecution.getIsGroupMember(), is(true));
+        assertThat(groupProsecution.getPaymentReference(), is(prosecutionReceived.getProsecutionCases().get(0).getPaymentReference()));
+        assertThat(groupProsecution.getCaseDetails().getInitiationCode(), is("O"));
     }
 
     @Test
