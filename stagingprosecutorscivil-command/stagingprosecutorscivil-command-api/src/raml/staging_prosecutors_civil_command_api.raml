@@ -14,6 +14,9 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
         (mapping):
             requestType: application/vnd.stagingprosecutorscivil.summons-prosecution+json
             name: stagingprosecutorscivil.summons-prosecution
+        (mapping):
+            requestType: application/vnd.stagingprosecutorscivil.enforcement-prosecution+json
+            name: stagingprosecutorscivil.enforcement-prosecution
         ...
       body:
         application/vnd.stagingprosecutorscivil.charge-prosecution+json:
@@ -22,6 +25,9 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
         application/vnd.stagingprosecutorscivil.summons-prosecution+json:
           schema: !include json/schema/stagingprosecutorscivil.summons-prosecution.json
           example: !include json/stagingprosecutorscivil.summons-prosecution.json
+        application/vnd.stagingprosecutorscivil.enforcement-prosecution+json:
+          schema: !include json/schema/stagingprosecutorscivil.enforcement-prosecution.json
+          example: !include json/stagingprosecutorscivil.enforcement-prosecution.json
       responses:
             202:
                 description: OK

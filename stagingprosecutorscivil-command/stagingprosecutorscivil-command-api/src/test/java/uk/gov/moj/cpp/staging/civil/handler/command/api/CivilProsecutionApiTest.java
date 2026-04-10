@@ -13,6 +13,8 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecutionWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.EnforcementProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.EnforcementProsecutionWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecutionWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -146,6 +148,54 @@ public class CivilProsecutionApiTest {
         SummonsProsecutionWithSubmissionId receivedSummonProsecution = (SummonsProsecutionWithSubmissionId) capturedEnvelope.payload();
         assertThat(receivedSummonProsecution.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(receivedSummonProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        assertNotNull(urlResponse.getSubmissionId());
+    }
+
+    @Test
+    public void shouldHandleEnforcementProsecution() {
+
+        List<Defendant> defendants = new ArrayList<>();
+        defendants.add(
+                Defendant.defendant()
+                        .withDefendantDetails(
+                                DefendantDetails.defendantDetails()
+                                        .withAsn("GAAAA01")
+                                        .build()
+                        )
+                        .build()
+        );
+        List<ProsecutionCase> prosecutionCaseList = new ArrayList();
+        prosecutionCaseList.add(
+                ProsecutionCase.prosecutionCase()
+                        .withUrn("urn1")
+                        .withInformant("Adam")
+                        .withCaseMarker("caseMarker")
+                        .withPaymentReference("PAYREF102")
+                        .withSummonsCode("FIRST")
+                        .withDefendants(defendants)
+                        .build()
+        );
+        EnforcementProsecution enforcementProsecution = EnforcementProsecution
+                .enforcementProsecution()
+                .withProsecutionCases(prosecutionCaseList)
+                .withProsecutingAuthority("GAAAA01")
+                .build();
+
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingprosecutorscivil.enforcement-prosecution")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        Envelope<UrlResponse> resultEnvelop = api.enforcementProsecution(Envelope.envelopeFrom(metadata, enforcementProsecution));
+        UrlResponse urlResponse = resultEnvelop.payload();
+        verify(sender).send(envelopeCaptor.capture());
+        final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
+        EnforcementProsecutionWithSubmissionId receivedEnforcementProsecution = (EnforcementProsecutionWithSubmissionId) capturedEnvelope.payload();
+        assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.enforcement-prosecution"));
+        assertThat(receivedEnforcementProsecution.getProsecutingAuthority(), is("GAAAA01"));
+        assertThat(receivedEnforcementProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 }
