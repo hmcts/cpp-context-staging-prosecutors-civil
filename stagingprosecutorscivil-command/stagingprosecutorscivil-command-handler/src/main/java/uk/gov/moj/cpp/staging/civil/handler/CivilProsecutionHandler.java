@@ -13,6 +13,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.EnforcementProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
@@ -54,6 +55,18 @@ public class CivilProsecutionHandler {
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
         final Stream<Object> events = aggregate.receiveSummonsProsecution(summonsProsecution.getSubmissionId(), summonsProsecution.getHearingDetails(), summonsProsecution.getProsecutingAuthority(), summonsProsecution.getProsecutionCases());
 
+        appendEventsToStream(envelope, eventStream, events);
+    }
+
+    @Handles("stagingprosecutorscivil.command.enforcement-prosecution")
+    public void handleEnforcementProsecution(final Envelope<EnforcementProsecution> envelope) throws EventStreamException {
+        LOGGER.info("stagingprosecutorscivil.command.enforcement-prosecution with SubmissionId {}", envelope.payload().getSubmissionId());
+
+        final EnforcementProsecution enforcementProsecution = envelope.payload();
+        final EventStream eventStream = eventSource.getStreamById(enforcementProsecution.getSubmissionId());
+        final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
+        final Stream<Object> events = aggregate.receiveEnforcementProsecution(enforcementProsecution.getSubmissionId(),
+                enforcementProsecution.getHearingDetails(), enforcementProsecution.getProsecutingAuthority(), enforcementProsecution.getProsecutionCases());
         appendEventsToStream(envelope, eventStream, events);
     }
 

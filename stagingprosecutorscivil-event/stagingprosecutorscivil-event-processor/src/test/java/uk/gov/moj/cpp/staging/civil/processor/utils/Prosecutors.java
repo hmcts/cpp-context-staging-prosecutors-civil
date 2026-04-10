@@ -25,6 +25,7 @@ import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.EnforcementProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails;
@@ -333,6 +334,18 @@ public class Prosecutors {
                 .build();
     }
 
+    public static EnforcementProsecutionReceived groupEnforcementProsecutionReceived() {
+        return EnforcementProsecutionReceived.enforcementProsecutionReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(chargeProsecutionCaseDetail(), chargeProsecutionCaseDetail()))
+                .withHearingDetails(hearingDetails()
+                        .withDateOfHearing(LocalDate.now())
+                        .withTimeOfHearing(TIME_OF_HEARING)
+                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .build())
+                .build();
+    }
+
     public static ChargeProsecutionReceived chargeProsecutionReceived() {
         return ChargeProsecutionReceived.chargeProsecutionReceived()
                 .withSubmissionId(SUBMISSION_ID)
@@ -349,6 +362,18 @@ public class Prosecutors {
         return SummonsProsecutionReceived.summonsProsecutionReceived()
                 .withSubmissionId(SUBMISSION_ID)
                 .withProsecutionCases(Arrays.asList(summonsProsecutionCaseDetail()))
+                .withHearingDetails(hearingDetails()
+                        .withDateOfHearing(LocalDate.now())
+                        .withTimeOfHearing(TIME_OF_HEARING)
+                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .build())
+                .build();
+    }
+
+    public static EnforcementProsecutionReceived enforcementProsecutionReceived() {
+        return EnforcementProsecutionReceived.enforcementProsecutionReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(chargeProsecutionCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)

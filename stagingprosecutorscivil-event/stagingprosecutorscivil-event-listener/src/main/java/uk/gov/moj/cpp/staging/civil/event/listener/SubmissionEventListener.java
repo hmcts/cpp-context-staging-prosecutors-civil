@@ -15,6 +15,7 @@ import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.EnforcementProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -85,6 +86,31 @@ public class SubmissionEventListener {
                 .withSubmissionId(summonsProsecutionReceived.getSubmissionId())
                 .withSubmissionStatus(summonsProsecutionReceived.getSubmissionStatus().name())
                 .withOuCode(summonsProsecutionReceived.getProsecutingAuthority())
+                .withReceivedAt(extractCreatedAt(event.metadata()))
+                .withCaseDetail(caseDetails)
+                .withErrors(null)
+                .withWarnings(null)
+                .build();
+
+        submissionRepository.save(submission);
+    }
+
+    @Handles("stagingprosecutorscivil.event.enforcement-prosecution-received")
+    public void enforcementProsecutionReceived(final Envelope<EnforcementProsecutionReceived> event) {
+        LOGGER.info("stagingprosecutorscivil.event.enforcement-prosecution-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+
+        final EnforcementProsecutionReceived prosecutionReceived = event.payload();
+
+        final Set<CaseDetail> caseDetails = new HashSet<>();
+        prosecutionReceived.getProsecutionCases()
+                .forEach(prosecutionCase ->
+                        caseDetails.add(CaseDetail.builder().withId(randomUUID()).withCaseUrn(prosecutionCase.getUrn()).build())
+                );
+
+        final Submission submission = Submission.builder()
+                .withSubmissionId(prosecutionReceived.getSubmissionId())
+                .withSubmissionStatus(prosecutionReceived.getSubmissionStatus().name())
+                .withOuCode(prosecutionReceived.getProsecutingAuthority())
                 .withReceivedAt(extractCreatedAt(event.metadata()))
                 .withCaseDetail(caseDetails)
                 .withErrors(null)

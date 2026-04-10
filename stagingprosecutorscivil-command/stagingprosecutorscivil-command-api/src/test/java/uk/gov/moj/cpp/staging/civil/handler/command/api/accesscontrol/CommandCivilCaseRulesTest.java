@@ -63,4 +63,17 @@ public class CommandCivilCaseRulesTest extends BaseDroolsAccessControlTest {
         assertSuccessfulOutcome(results);
         verify(userAndGroupProvider, times(1)).hasPermission(action, RuleConstants.getCivilCasePermission());
     }
+
+    @Test
+    public void shouldAllowAuthorisedUserToSubmitEnforcementCaseWithPermissionCivilAccess() throws JsonProcessingException {
+        final Map<String, String> metadata = new HashMap();
+        metadata.putIfAbsent("id", UUID.randomUUID().toString());
+        metadata.putIfAbsent("name", "stagingprosecutorscivil.enforcement-prosecution");
+        action = createActionFor(metadata);
+        given(userAndGroupProvider.hasPermission(action, RuleConstants.getCivilCasePermission())).willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+        verify(userAndGroupProvider, times(1)).hasPermission(action, RuleConstants.getCivilCasePermission());
+    }
 }

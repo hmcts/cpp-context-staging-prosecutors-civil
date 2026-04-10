@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.staging.civil.processor;
 import static java.time.ZonedDateTime.now;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toList;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
@@ -23,9 +24,11 @@ import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForCharge;
+import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForEnforcement;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForSummons;
 import uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.EnforcementProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -77,6 +80,12 @@ public class ProsecutionChargedEventProcessor {
         processSummonsReceivedEvent(event);
     }
 
+    @Handles("stagingprosecutorscivil.event.enforcement-prosecution-received")
+    public void processProsecutionEnforcement(final Envelope<EnforcementProsecutionReceived> event) {
+        LOGGER.info("Received stagingprosecutorscivil.event.enforcement-prosecution-received event with SubmissionId {}", event.payload().getSubmissionId());
+        processEnforcementReceivedEvent(event);
+    }
+
 
     @Handles("public.prosecutioncasefile.group-prosecution-rejected")
     public void handleGroupProsecutionRejected(final Envelope<PublicGroupProsecutionRejected> event) {
@@ -100,6 +109,16 @@ public class ProsecutionChargedEventProcessor {
 
     }
 
+    private void processEnforcementReceivedEvent(final Envelope<EnforcementProsecutionReceived> event) {
+        final ZonedDateTime dateReceived = event.metadata().createdAt().orElse(now());
+        final EnforcementProsecutionReceived enforcementProsecutionReceived = event.payload();
+
+        final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForEnforcement(dateReceived, enforcementProsecutionReceived, randomUUID());
+
+        initiatePCFCommand(groupProsecutions, enforcementProsecutionReceived.getSubmissionId(), event.metadata());
+        updateCivilCaseStatus(event, enforcementProsecutionReceived.getSubmissionId().toString(), PENDING);
+    }
+
     private void processSummonsReceivedEvent(final Envelope<SummonsProsecutionReceived> event) {
         final ZonedDateTime dateReceived = event.metadata().createdAt().orElse(now());
         final SummonsProsecutionReceived summonsProsecutionReceived = event.payload();
@@ -120,7 +139,7 @@ public class ProsecutionChargedEventProcessor {
         return chargeProsecutionReceived.getProsecutionCases()
                 .stream()
                 .map(prosecutionCaseToGroupProsecutionConverter::convert)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     private List<GroupProsecutions> getGroupProsecutionsForSummons(final ZonedDateTime dateReceived,
@@ -133,7 +152,21 @@ public class ProsecutionChargedEventProcessor {
         return summonsProsecutionReceived.getProsecutionCases()
                 .stream()
                 .map(prosecutionCaseToGroupProsecutionConverterForSummons::convert)
-                .collect(Collectors.toList());
+                .collect(toList());
+    }
+
+    private List<GroupProsecutions> getGroupProsecutionsForEnforcement(final ZonedDateTime dateReceived,
+                                                                       final EnforcementProsecutionReceived enforcementProsecutionReceived,
+                                                                       final UUID groupId) {
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService
+                .getCppCaseIdMapFor(getProsecutorCaseReferences(enforcementProsecutionReceived.getProsecutionCases(), enforcementProsecutionReceived.getProsecutingAuthority()));
+        final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverterForEnforcement =
+                new ProsecutionCaseToGroupProsecutionConverterForEnforcement(dateReceived, enforcementProsecutionReceived, groupId, caseRefToCaseId);
+
+        return enforcementProsecutionReceived.getProsecutionCases()
+                .stream()
+                .map(prosecutionCaseToGroupProsecutionConverterForEnforcement::convert)
+                .collect(toList());
     }
 
     private void initiatePCFCommand(final List<GroupProsecutions> groupProsecutions, final UUID submissionId, final Metadata metadataValue) {
@@ -273,6 +306,6 @@ public class ProsecutionChargedEventProcessor {
 
     private List<String> getProsecutorCaseReferences(final List<ProsecutionCase> prosecutionCases, final String prosecutingAuthority) {
         return prosecutionCases.stream()
-                .map(pc -> ProsecutorCaseReferenceUtil.getProsecutorCaseReference(prosecutingAuthority, pc.getUrn())).collect(Collectors.toList());
+                .map(pc -> ProsecutorCaseReferenceUtil.getProsecutorCaseReference(prosecutingAuthority, pc.getUrn())).collect(toList());
     }
 }

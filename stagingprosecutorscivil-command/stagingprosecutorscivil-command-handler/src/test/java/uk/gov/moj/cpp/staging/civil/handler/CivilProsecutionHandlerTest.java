@@ -29,9 +29,11 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.EnforcementProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.EnforcementProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -59,9 +61,10 @@ public class CivilProsecutionHandlerTest {
     private static final String PRIVATE_EVENT_CHARGE_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.charge-prosecution-received";
     private static final String PRIVATE_COMMAND_SUMMONS_PROSECUTION = "stagingprosecutorscivil.command.summons-prosecution";
     private static final String PRIVATE_EVENT_SUMMONS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.summons-prosecution-received";
+    private static final String PRIVATE_COMMAND_ENFORCEMENT_PROSECUTION = "stagingprosecutorscivil.command.enforcement-prosecution";
+    private static final String PRIVATE_EVENT_ENFORCEMENT_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.enforcement-prosecution-received";
     private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingprosecutorscivil.command.update-civil-case";
     private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingprosecutorscivil.event.update-civil-case-received";
-
 
     @InjectMocks
     private CivilProsecutionHandler civilProsecutionHandler;
@@ -78,7 +81,7 @@ public class CivilProsecutionHandlerTest {
     private AggregateService aggregateService;
 
     @Spy
-    private final Enveloper enveloper = createEnveloperWithEvents(ChargeProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class);
+    private final Enveloper enveloper = createEnveloperWithEvents(ChargeProsecutionReceived.class, SummonsProsecutionReceived.class, EnforcementProsecutionReceived.class, UpdateCivilCaseReceived.class);
 
     @Test
     public void shouldHandleChargeProsecutionCommand() {
@@ -122,8 +125,27 @@ public class CivilProsecutionHandlerTest {
 
         civilProsecutionHandler.handleSummonsProsecution(envelope);
 
-        verifySummonsProsecutionReceivedPrivateEvent();;
+        verifySummonsProsecutionReceivedPrivateEvent();
 
+    }
+
+    @Test
+    public void shouldHandleEnforcementProsecutionCommand() {
+        assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
+                .with(method("handleEnforcementProsecution")
+                        .thatHandles(PRIVATE_COMMAND_ENFORCEMENT_PROSECUTION)));
+
+    }
+
+    @Test
+    public void shouldRaiseEnforcementProsecutionReceivedPrivateEvent() throws Exception {
+        final Envelope<EnforcementProsecution> envelope = buildEnforcementProsecutionEnvelope();
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
+
+        civilProsecutionHandler.handleEnforcementProsecution(envelope);
+
+        verifyEnforcementProsecutionReceivedPrivateEvent();
     }
 
     @Test
@@ -153,8 +175,8 @@ public class CivilProsecutionHandlerTest {
                                 withJsonPath("$.prosecutionCases[0].defendants[0]", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].defendants[0].offences[0]", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].defendants[0].offences[0].arrestDate", is(LocalDate.now().toString())))
-                                )
-                        ))
+                        )
+                ))
         );
     }
 
@@ -179,6 +201,27 @@ public class CivilProsecutionHandlerTest {
                 ))
         );
 
+    }
+
+    private void verifyEnforcementProsecutionReceivedPrivateEvent() throws EventStreamException {
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata()
+                                .withName(PRIVATE_EVENT_ENFORCEMENT_PROSECUTION_RECEIVED),
+                        payload().isJson(allOf(
+                                withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
+                                withJsonPath("$.submissionId", notNullValue()),
+                                withJsonPath("$.prosecutionCases[0].caseMarker", is("Markers")),
+                                withJsonPath("$.prosecutionCases[0].paymentReference", is("PAYREF123")),
+                                withJsonPath("$.prosecutionCases[0].defendants[0]", notNullValue()),
+                                withJsonPath("$.prosecutionCases[0].defendants[0].offences[0]", notNullValue()),
+                                withJsonPath("$.prosecutionCases[0].defendants[0].offences[0].arrestDate", is(LocalDate.now().toString())))
+                        )
+                ))
+        );
     }
 
     private void verifyUpdateCaseFileReceivedPrivateEvent() throws EventStreamException {
@@ -257,6 +300,36 @@ public class CivilProsecutionHandlerTest {
                 .withMetadataFrom(requestEnvelope);
 
     }
+
+    private Envelope<EnforcementProsecution> buildEnforcementProsecutionEnvelope() {
+        final EnforcementProsecution enforcementProsecution = EnforcementProsecution.enforcementProsecution()
+                .withHearingDetails(HearingDetails.hearingDetails()
+                        .withDateOfHearing(LocalDate.now())
+                        .build())
+                .withProsecutingAuthority("THREE RIVER")
+                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                        .withCaseMarker("Markers")
+                        .withPaymentReference("PAYREF123")
+                        .withDefendants(Arrays.asList(Defendant.defendant()
+                                .withOffences(Arrays.asList(Offence.offence()
+                                        .withArrestDate(LocalDate.now())
+                                        .build()))
+                                .build()))
+                        .build()))
+                .withSubmissionId(UUID.fromString("ce1c9255-725f-4669-a7e5-78c07252c82d"))
+                .build();
+
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString())
+                        .withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+
+        return Enveloper.envelop(enforcementProsecution)
+                .withName(PRIVATE_COMMAND_ENFORCEMENT_PROSECUTION)
+                .withMetadataFrom(requestEnvelope);
+
+    }
+
     private Envelope<UpdateCivilCase> buildUpdateCaseFileEnvelope() {
         final UpdateCivilCase updateCivilCase = UpdateCivilCase.updateCivilCase()
                 .withSubmissionId(UUID.randomUUID())

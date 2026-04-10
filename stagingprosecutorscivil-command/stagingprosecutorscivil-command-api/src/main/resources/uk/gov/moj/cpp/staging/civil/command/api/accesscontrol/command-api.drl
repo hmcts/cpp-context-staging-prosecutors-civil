@@ -22,3 +22,12 @@ rule "Command - Rule for Summons Prosecution"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Command - Rule for Enforcement Prosecution"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "stagingprosecutorscivil.enforcement-prosecution");
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
+  then
+    $outcome.setSuccess(true);
+end
