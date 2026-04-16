@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.staging.prosecutors.civil.util;
 
+import uk.gov.justice.services.messaging.JsonObjects;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;

@@ -28,7 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -82,7 +82,7 @@ public class StagingProsecutorsCivilUtils {
 
         assertEquals(Response.Status.ACCEPTED.getStatusCode(), response.getStatus());
         String responseFromCommandAPI = response.readEntity(String.class);
-        JsonReader jsonReader = Json.createReader(new ByteArrayInputStream(responseFromCommandAPI.getBytes()));
+        JsonReader jsonReader = JsonObjects.createReader(new ByteArrayInputStream(responseFromCommandAPI.getBytes()));
         JsonObject jsonObject = jsonReader.readObject();
         UrlResponse urlResponse = jsonObjectToObjectConverter.convert(jsonObject, UrlResponse.class);
         return urlResponse;
