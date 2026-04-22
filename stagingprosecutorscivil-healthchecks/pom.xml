@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
         <artifactId>stagingprosecutorscivil</artifactId>
-        <version>17.103.10-PEG-2848-R-SNAPSHOT</version>
+        <version>17.103.11-PEG-2848-R-SNAPSHOT</version>
     </parent>
 
     <artifactId>stagingprosecutorscivil-healthchecks</artifactId>
