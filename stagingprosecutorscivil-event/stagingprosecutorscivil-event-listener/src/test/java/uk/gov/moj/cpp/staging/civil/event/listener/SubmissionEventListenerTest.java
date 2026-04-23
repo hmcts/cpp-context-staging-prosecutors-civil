@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PE
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS_WITH_WARNINGS;
 
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
@@ -38,6 +39,9 @@ public class SubmissionEventListenerTest {
 
     @Mock
     private SubmissionRepository submissionRepository;
+
+    @Mock
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @InjectMocks
     private SubmissionEventListener submissionEventListener;
@@ -122,11 +126,14 @@ public class SubmissionEventListenerTest {
     }
 
     @Test
-    public void shouldUpdateCaseFileForRejectedStatus() {
+    void shouldUpdateCaseFileForRejectedStatus() {
         final UUID submissionId = randomUUID();
         final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(REJECTED)
+                .withCaseErrors(Collections.EMPTY_LIST)
+                .withGroupCaseErrors(Collections.EMPTY_LIST)
+                .withDefendantErrors(Collections.EMPTY_LIST)
                 .build();
 
         Submission inputSubmission = Submission.builder()
@@ -144,11 +151,14 @@ public class SubmissionEventListenerTest {
     }
 
     @Test
-    public void shouldUpdateCaseFileForSuccessWithWarningsStatus() {
+    void shouldUpdateCaseFileForSuccessWithWarningsStatus() {
         final UUID submissionId = randomUUID();
         final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(SUCCESS_WITH_WARNINGS)
+                .withWarnings(Collections.EMPTY_LIST)
+                .withCaseWarnings(Collections.EMPTY_LIST)
+                .withDefendantWarnings(Collections.EMPTY_LIST)
                 .build();
 
         Submission inputSubmission = Submission.builder()
