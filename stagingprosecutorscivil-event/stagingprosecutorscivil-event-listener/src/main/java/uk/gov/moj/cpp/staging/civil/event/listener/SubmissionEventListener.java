@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.staging.civil.event.listener;
 import static java.util.UUID.randomUUID;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -25,7 +26,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 
@@ -120,7 +120,7 @@ public class SubmissionEventListener {
         if (errorsOrWarnings == null) {
             return null;
         }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
         errorsOrWarnings.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
@@ -131,7 +131,7 @@ public class SubmissionEventListener {
         if (errors == null) {
             return null;
         }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
         errors.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);

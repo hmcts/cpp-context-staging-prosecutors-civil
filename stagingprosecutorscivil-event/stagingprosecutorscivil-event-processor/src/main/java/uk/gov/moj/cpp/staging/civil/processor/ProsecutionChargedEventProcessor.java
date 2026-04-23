@@ -3,7 +3,8 @@ package uk.gov.moj.cpp.staging.civil.processor;
 import static java.time.ZonedDateTime.now;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
@@ -43,7 +44,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
@@ -206,7 +207,7 @@ public class ProsecutionChargedEventProcessor {
         if (errorsOrWarnings == null) {
             return null;
         }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
         errorsOrWarnings.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
@@ -217,7 +218,7 @@ public class ProsecutionChargedEventProcessor {
         if (errors == null) {
             return null;
         }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
         errors.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);

@@ -9,6 +9,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -28,7 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -82,7 +83,7 @@ public class StagingProsecutorsCivilUtils {
 
         assertEquals(Response.Status.ACCEPTED.getStatusCode(), response.getStatus());
         String responseFromCommandAPI = response.readEntity(String.class);
-        JsonReader jsonReader = Json.createReader(new ByteArrayInputStream(responseFromCommandAPI.getBytes()));
+        JsonReader jsonReader = createReader(new ByteArrayInputStream(responseFromCommandAPI.getBytes()));
         JsonObject jsonObject = jsonReader.readObject();
         UrlResponse urlResponse = jsonObjectToObjectConverter.convert(jsonObject, UrlResponse.class);
         return urlResponse;
