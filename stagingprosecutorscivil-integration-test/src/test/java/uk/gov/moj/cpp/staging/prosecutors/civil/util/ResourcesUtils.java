@@ -24,9 +24,4 @@ public class ResourcesUtils {
             throw new AssertionError(e);
         }
     }
-
-    public static JsonObject asJsonObject(String resourceName, String oldValue, String newValue) {
-        String jsonString = readResource(resourceName).replace(oldValue, newValue);
-        return createReader(IOUtils.toInputStream(jsonString)).readObject();
-    }
 }

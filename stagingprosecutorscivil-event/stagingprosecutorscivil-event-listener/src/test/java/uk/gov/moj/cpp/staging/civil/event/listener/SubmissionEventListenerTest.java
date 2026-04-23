@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS_WITH_WARNINGS;
 
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
@@ -117,6 +119,50 @@ public class SubmissionEventListenerTest {
         final Submission submission = argumentCaptor.getValue();
         assertThat(submission.getSubmissionId(), is(submissionId));
         assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
+    }
+
+    @Test
+    public void shouldUpdateCaseFileForRejectedStatus() {
+        final UUID submissionId = randomUUID();
+        final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(REJECTED)
+                .build();
+
+        Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(REJECTED.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionId(), is(submissionId));
+        assertThat(submission.getSubmissionStatus(), is(REJECTED.name()));
+    }
+
+    @Test
+    public void shouldUpdateCaseFileForSuccessWithWarningsStatus() {
+        final UUID submissionId = randomUUID();
+        final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(SUCCESS_WITH_WARNINGS)
+                .build();
+
+        Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(SUCCESS_WITH_WARNINGS.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionId(), is(submissionId));
+        assertThat(submission.getSubmissionStatus(), is(SUCCESS_WITH_WARNINGS.name()));
     }
 
     private <T> Envelope<T> newEnvelope(final String name, T payload) {
