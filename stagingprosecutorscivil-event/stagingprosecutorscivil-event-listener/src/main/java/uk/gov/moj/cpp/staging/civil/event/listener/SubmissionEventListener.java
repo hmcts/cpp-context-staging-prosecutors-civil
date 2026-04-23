@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.staging.civil.event.listener;
 import static java.util.UUID.randomUUID;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -25,7 +26,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 
@@ -116,23 +116,23 @@ public class SubmissionEventListener {
         return metadata.createdAt().orElseThrow(() -> new IllegalArgumentException("metadata createdAt is not present"));
     }
 
-    private JsonArray transformErrorsToJsonArray(final Collection<Problem> errorsOrWarnings) {
-        if (errorsOrWarnings == null) {
+    private JsonArray transformErrorsToJsonArray(final Collection<Problem> problems) {
+        if (problems == null) {
             return null;
         }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-        errorsOrWarnings.stream()
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        problems.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
         return arrayBuilder.build();
     }
 
-    private JsonArray transformDefendantProblemsToJsonArray(final Collection<DefendantProblem> errors) {
-        if (errors == null) {
+    private JsonArray transformDefendantProblemsToJsonArray(final Collection<DefendantProblem> problems) {
+        if (problems == null) {
             return null;
         }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-        errors.stream()
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        problems.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
         return arrayBuilder.build();
