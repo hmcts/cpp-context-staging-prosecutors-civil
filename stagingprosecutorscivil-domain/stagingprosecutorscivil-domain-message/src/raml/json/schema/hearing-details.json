@@ -18,12 +18,23 @@
       "description": "The actual start time of the hearing",
       "pattern": "^(2[0-3]|[01]?[0-9]):([0-5]?[0-9]):([0-5]?[0-9])$",
       "maxLength": 8
+      },
+    "hearingType": {
+      "type": "string",
+      "description": "Hearing type. Maps to court session types and is used as auto-listing criteria for hearing date range requests.",
+      "maxLength": 10
+    },
+    "startDateRangeOfHearing": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "The date range (start) of the Court Hearing to be auto-allocated"
+    },
+    "endDateRangeOfHearing": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "The date range (end) of the Court Hearing to be auto-allocated"
     }
   },
   "required": [
-    "courtHearingLocation",
-    "dateOfHearing",
-    "timeOfHearing"
+    "courtHearingLocation"
   ]
 }
 

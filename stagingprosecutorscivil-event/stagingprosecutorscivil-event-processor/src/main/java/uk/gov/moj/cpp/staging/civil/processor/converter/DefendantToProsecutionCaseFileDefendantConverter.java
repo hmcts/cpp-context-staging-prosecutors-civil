@@ -74,10 +74,14 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
 
     private InitialHearing buildInitialHearing() {
 
+        // TODO: startDateRangeOfHearing/endDateRangeOfHearing have no symmetric slot on
+        // downstream InitialHearing — only withEndDate exists. Pending PCF schema update
+        // before enforcement-range data can flow through.
         return initialHearing()
                 .withTimeOfHearing(this.hearingDetails.getTimeOfHearing())
                 .withCourtHearingLocation(this.hearingDetails.getCourtHearingLocation())
-                .withDateOfHearing(this.hearingDetails.getDateOfHearing().toString())
+                .withDateOfHearing(ofNullable(this.hearingDetails.getDateOfHearing()).map(Object::toString).orElse(null))
+                .withHearingTypeCode(this.hearingDetails.getHearingType())
                 .build();
     }
 

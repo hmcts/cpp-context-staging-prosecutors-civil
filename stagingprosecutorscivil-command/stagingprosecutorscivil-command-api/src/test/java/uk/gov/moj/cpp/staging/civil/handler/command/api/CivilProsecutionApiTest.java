@@ -4,7 +4,9 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 
 import uk.gov.justice.services.core.sender.Sender;
@@ -17,8 +19,10 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecutionWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,31 +55,11 @@ public class CivilProsecutionApiTest {
     @Test
     public void shouldHandleChargeProsecution() {
 
-        List<Defendant> defendants = new ArrayList<>();
-        defendants.add(
-                Defendant.defendant()
-                        .withDefendantDetails(
-                                DefendantDetails.defendantDetails()
-                                        .withAsn("GAAAA01")
-                                        .build()
-                        )
-                        .build()
-        );
-        List<ProsecutionCase> prosecutionCaseList = new ArrayList();
-        prosecutionCaseList.add(
-                ProsecutionCase.prosecutionCase()
-                        .withUrn("urn1")
-                        .withInformant("Adam")
-                        .withCaseMarker("caseMarker")
-                        .withPaymentReference("PAYREF102")
-                        .withSummonsCode("FIRST")
-                        .withDefendants(defendants)
-                        .build()
-        );
-        ChargeProsecution chargeProsecution = ChargeProsecution
+        final ChargeProsecution chargeProsecution = ChargeProsecution
                 .chargeProsecution()
-                .withProsecutionCases(prosecutionCaseList)
+                .withProsecutionCases(prosecutionCases("urn1"))
                 .withProsecutingAuthority("GAAAA01")
+                .withHearingDetails(validHearingDetails())
                 .build();
 
 
@@ -85,45 +69,74 @@ public class CivilProsecutionApiTest {
                 .withUserId(randomUUID().toString())
                 .build();
 
-        Envelope<UrlResponse> resultEnvelop = api.chargeProsecution(Envelope.envelopeFrom(metadata, chargeProsecution));
-        UrlResponse urlResponse = resultEnvelop.payload();
+        final Envelope<UrlResponse> resultEnvelop = api.chargeProsecution(Envelope.envelopeFrom(metadata, chargeProsecution));
+        final UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        ChargeProsecutionWithSubmissionId receivedChargeProsecution = (ChargeProsecutionWithSubmissionId) capturedEnvelope.payload();
+        final ChargeProsecutionWithSubmissionId receivedChargeProsecution = (ChargeProsecutionWithSubmissionId) capturedEnvelope.payload();
         assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.charge-prosecution"));
         assertThat(receivedChargeProsecution.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(receivedChargeProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        assertThat(receivedChargeProsecution.getProsecutionCases().get(0).getRelatedReferenceNumber(), is("RELREF-1"));
+        assertThat(receivedChargeProsecution.getHearingDetails().getHearingType(), is("FINAL"));
         assertNotNull(urlResponse.getSubmissionId());
+    }
+
+    @Test
+    public void shouldThrowWhenChargeHearingDetailsIsNull() {
+        final ChargeProsecution chargeProsecution = ChargeProsecution
+                .chargeProsecution()
+                .withProsecutionCases(prosecutionCases("urn1"))
+                .withProsecutingAuthority("GAAAA01")
+                .build();
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingprosecutorscivil.charge-prosecution")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        final Envelope<ChargeProsecution> envelope = Envelope.envelopeFrom(metadata, chargeProsecution);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> api.chargeProsecution(envelope));
+        assertThat(ex.getMessage(), is("hearingDetails.dateOfHearing is required"));
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldThrowWhenChargeDateOfHearingIsNull() {
+        final ChargeProsecution chargeProsecution = ChargeProsecution
+                .chargeProsecution()
+                .withProsecutionCases(prosecutionCases("urn1"))
+                .withProsecutingAuthority("GAAAA01")
+                .withHearingDetails(HearingDetails.hearingDetails()
+                        .withCourtHearingLocation("CRT0001")
+                        .build())
+                .build();
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingprosecutorscivil.charge-prosecution")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        final Envelope<ChargeProsecution> envelope = Envelope.envelopeFrom(metadata, chargeProsecution);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> api.chargeProsecution(envelope));
+        assertThat(ex.getMessage(), is("hearingDetails.dateOfHearing is required"));
+        verifyNoInteractions(sender);
     }
 
     @Test
     public void shouldHandleSummonsProsecution() {
 
-        List<Defendant> defendants = new ArrayList<>();
-        defendants.add(
-            Defendant.defendant()
-                .withDefendantDetails(
-                    DefendantDetails.defendantDetails()
-                        .withAsn("ASN123")
-                        .build()
-                )
-                .build()
-        );
-        List<ProsecutionCase> prosecutionCaseList = new ArrayList();
-        prosecutionCaseList.add(
-            ProsecutionCase.prosecutionCase()
-                .withUrn("urn1")
-                .withInformant("Adam")
-                .withCaseMarker("caseMarker")
-                .withPaymentReference("PAYREF102")
-                .withSummonsCode("FIRST")
-                .withDefendants(defendants)
-                .build()
-        );
-        SummonsProsecution summonsProsecution = SummonsProsecution
+        final SummonsProsecution summonsProsecution = SummonsProsecution
                 .summonsProsecution()
-                .withProsecutionCases(prosecutionCaseList)
+                .withProsecutionCases(prosecutionCases("urn1"))
                 .withProsecutingAuthority("GAAAA01")
+                .withHearingDetails(validHearingDetails())
                 .build();
 
 
@@ -133,19 +146,103 @@ public class CivilProsecutionApiTest {
                 .withUserId(randomUUID().toString())
                 .build();
 
-        final Envelope commandEnvelope = Envelope.envelopeFrom(metadata, summonsProsecution);
+        final Envelope<SummonsProsecution> commandEnvelope = Envelope.envelopeFrom(metadata, summonsProsecution);
 
-        Envelope<UrlResponse> resultEnvelop = api.summonsProsecution(commandEnvelope);
-        UrlResponse urlResponse = resultEnvelop.payload();
+        final Envelope<UrlResponse> resultEnvelop = api.summonsProsecution(commandEnvelope);
+        final UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
 
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
         assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.summons-prosecution"));
         assertNotNull(urlResponse.getSubmissionId());
 
-        SummonsProsecutionWithSubmissionId receivedSummonProsecution = (SummonsProsecutionWithSubmissionId) capturedEnvelope.payload();
+        final SummonsProsecutionWithSubmissionId receivedSummonProsecution = (SummonsProsecutionWithSubmissionId) capturedEnvelope.payload();
         assertThat(receivedSummonProsecution.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(receivedSummonProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        assertThat(receivedSummonProsecution.getProsecutionCases().get(0).getRelatedReferenceNumber(), is("RELREF-1"));
+        assertThat(receivedSummonProsecution.getHearingDetails().getHearingType(), is("FINAL"));
         assertNotNull(urlResponse.getSubmissionId());
+    }
+
+    @Test
+    public void shouldThrowWhenSummonsHearingDetailsIsNull() {
+        final SummonsProsecution summonsProsecution = SummonsProsecution
+                .summonsProsecution()
+                .withProsecutionCases(prosecutionCases("urn1"))
+                .withProsecutingAuthority("GAAAA01")
+                .build();
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingprosecutorscivil.summons-prosecution")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        final Envelope<SummonsProsecution> envelope = Envelope.envelopeFrom(metadata, summonsProsecution);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> api.summonsProsecution(envelope));
+        assertThat(ex.getMessage(), is("hearingDetails.dateOfHearing is required"));
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldThrowWhenSummonsDateOfHearingIsNull() {
+        final SummonsProsecution summonsProsecution = SummonsProsecution
+                .summonsProsecution()
+                .withProsecutionCases(prosecutionCases("urn1"))
+                .withProsecutingAuthority("GAAAA01")
+                .withHearingDetails(HearingDetails.hearingDetails()
+                        .withCourtHearingLocation("CRT0001")
+                        .build())
+                .build();
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingprosecutorscivil.summons-prosecution")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        final Envelope<SummonsProsecution> envelope = Envelope.envelopeFrom(metadata, summonsProsecution);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> api.summonsProsecution(envelope));
+        assertThat(ex.getMessage(), is("hearingDetails.dateOfHearing is required"));
+        verifyNoInteractions(sender);
+    }
+
+    private static List<ProsecutionCase> prosecutionCases(final String urn) {
+        final List<Defendant> defendants = new ArrayList<>();
+        defendants.add(
+                Defendant.defendant()
+                        .withDefendantDetails(
+                                DefendantDetails.defendantDetails()
+                                        .withAsn("GAAAA01")
+                                        .build()
+                        )
+                        .build()
+        );
+        final List<ProsecutionCase> prosecutionCaseList = new ArrayList<>();
+        prosecutionCaseList.add(
+                ProsecutionCase.prosecutionCase()
+                        .withUrn(urn)
+                        .withInformant("Adam")
+                        .withCaseMarker("caseMarker")
+                        .withPaymentReference("PAYREF102")
+                        .withRelatedReferenceNumber("RELREF-1")
+                        .withSummonsCode("FIRST")
+                        .withDefendants(defendants)
+                        .build()
+        );
+        return prosecutionCaseList;
+    }
+
+    private static HearingDetails validHearingDetails() {
+        return HearingDetails.hearingDetails()
+                .withCourtHearingLocation("CRT0001")
+                .withDateOfHearing(LocalDate.of(2026, 6, 1))
+                .withTimeOfHearing("09:30:00")
+                .withHearingType("FINAL")
+                .build();
     }
 }

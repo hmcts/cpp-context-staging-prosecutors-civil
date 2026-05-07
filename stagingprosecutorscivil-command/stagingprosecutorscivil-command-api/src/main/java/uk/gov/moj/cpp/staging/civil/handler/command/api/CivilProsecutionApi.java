@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecutionWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecutionWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 
 import java.util.UUID;
 
@@ -42,6 +43,7 @@ public class CivilProsecutionApi {
     public Envelope<UrlResponse> chargeProsecution(final Envelope<ChargeProsecution> envelope) {
         final UUID submissionId = UUID.randomUUID();
         final ChargeProsecution chargeProsecution = envelope.payload();
+        requireDateOfHearing(chargeProsecution.getHearingDetails());
 
         final ChargeProsecutionWithSubmissionId chargeProsecutionWithSubmissionId
                 = ChargeProsecutionWithSubmissionId.chargeProsecutionWithSubmissionId()
@@ -68,6 +70,8 @@ public class CivilProsecutionApi {
     public Envelope<UrlResponse> summonsProsecution(final Envelope<SummonsProsecution> envelope) {
         final UUID submissionId = UUID.randomUUID();
         final SummonsProsecution summonsProsecution = envelope.payload();
+        requireDateOfHearing(summonsProsecution.getHearingDetails());
+
         final SummonsProsecutionWithSubmissionId summonsProsecutionWithSubmissionId
                 = SummonsProsecutionWithSubmissionId.summonsProsecutionWithSubmissionId()
                 .withProsecutionCases(summonsProsecution.getProsecutionCases())
@@ -89,6 +93,16 @@ public class CivilProsecutionApi {
 
     private String getBaseResponseURLWithVersion() {
         return this.baseResponseURL.replace(RESPONSE_URL_VERSION_PLACEHOLDER, VERSION_NO);
+    }
+
+    // dateOfHearing is mandatory for charge & summons per the v1.1 spec, but optional in
+    // hearing-details.json so that the merged cpci-other-cases schema (CCT-1222) can also
+    // accept enforcement payloads which use start/endDateRangeOfHearing instead. Until that
+    // merge ships and the validator becomes case-type-aware, enforce the existing rule here.
+    private static void requireDateOfHearing(final HearingDetails hearingDetails) {
+        if (hearingDetails == null || hearingDetails.getDateOfHearing() == null) {
+            throw new IllegalArgumentException("hearingDetails.dateOfHearing is required");
+        }
     }
 
 }

@@ -56,9 +56,11 @@ public class Prosecutors {
     public static final UUID SUBMISSION_ID = fromString("be5bb607-0e98-43a3-93da-123741c6f73d");
     public static final String TIME_OF_HEARING = "Time  Hearing";
     public static final String COURT_HEARING_LOCATION = "Court Hearing Location";
+    public static final String HEARING_TYPE = "FINAL";
     public static final String INFORMANT = "informant";
     public static final String CASE_MARKER = "ABC";
     public static final String PAYMENT_REFERENCE = "ref_number";
+    public static final String RELATED_REFERENCE_NUMBER = "RELREF-100";
     public static final String ASN = "asn";
     public static final String CRO_NUMBER = "CroNumber";
     public static final String PNC_IDENTIFIER = "PnCidentifier";
@@ -306,6 +308,7 @@ public class Prosecutors {
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .withHearingType(HEARING_TYPE)
                         .build())
                 .build();
     }
@@ -317,6 +320,7 @@ public class Prosecutors {
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .withHearingType(HEARING_TYPE)
                         .build())
                 .build();
     }
@@ -329,6 +333,7 @@ public class Prosecutors {
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .withHearingType(HEARING_TYPE)
                         .build())
                 .build();
     }
@@ -341,6 +346,7 @@ public class Prosecutors {
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .withHearingType(HEARING_TYPE)
                         .build())
                 .build();
     }
@@ -353,6 +359,7 @@ public class Prosecutors {
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .withHearingType(HEARING_TYPE)
                         .build())
                 .build();
     }
@@ -364,6 +371,7 @@ public class Prosecutors {
                 .withCaseMarker(CASE_MARKER)
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 
@@ -375,6 +383,7 @@ public class Prosecutors {
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
                 .withSummonsCode("summons_code")
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 
@@ -386,6 +395,7 @@ public class Prosecutors {
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .withHearingType(HEARING_TYPE)
                         .build())
                 .build();
     }
@@ -398,6 +408,7 @@ public class Prosecutors {
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .withHearingType(HEARING_TYPE)
                         .build())
                 .build();
     }

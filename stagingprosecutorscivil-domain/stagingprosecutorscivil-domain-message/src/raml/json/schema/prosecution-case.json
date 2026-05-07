@@ -27,6 +27,12 @@
       "description": "Case URN",
       "maxLength": 36
     },
+    "relatedReferenceNumber": {
+      "type": "string",
+      "description": "Civil Authority reference for a case or account to be linked",
+      "pattern": "^[a-zA-Z0-9-]*$",
+      "maxLength": 36
+    },
     "paymentReference": {
       "type": "string",
       "description": "Case payment reference",
