@@ -11,6 +11,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
@@ -34,8 +35,10 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
 
     public Stream<Object> receiveChargeProsecution(final UUID submissionId,
                                                    final HearingDetails hearingDetails,
+                                                   final HearingDateRangeDetails hearingDateRangeDetails,
                                                    final String prosecutingAuthority,
-                                                   final List<ProsecutionCase> prosecutionCases) {
+                                                   final List<ProsecutionCase> prosecutionCases,
+                                                   final String relatedReferenceNumber) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.charge-prosecution-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
@@ -44,7 +47,9 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                 .withSubmissionStatus(SubmissionStatus.PENDING)
                                 .withProsecutingAuthority(prosecutingAuthority)
                                 .withHearingDetails(hearingDetails)
+                                .withHearingDateRangeDetails(hearingDateRangeDetails)
                                 .withProsecutionCases(prosecutionCases)
+                                .withRelatedReferenceNumber(relatedReferenceNumber)
                                 .build()
                 )
         );

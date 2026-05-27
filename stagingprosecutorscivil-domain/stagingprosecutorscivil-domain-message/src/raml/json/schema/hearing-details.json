@@ -21,9 +21,7 @@
     }
   },
   "required": [
-    "courtHearingLocation",
-    "dateOfHearing",
-    "timeOfHearing"
+    "courtHearingLocation"
   ]
 }
 
