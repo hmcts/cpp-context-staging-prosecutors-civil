@@ -11,19 +11,25 @@
     },
     "dateOfHearing": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
-      "description": "The date of the hearing"
+      "description": "The date of the hearing (civil/summons). Not required for enforcement which uses hearingDateFrom/hearingDateTo."
     },
     "timeOfHearing": {
       "type": "string",
-      "description": "The actual start time of the hearing",
+      "description": "The actual start time of the hearing (civil/summons). Not required for enforcement.",
       "pattern": "^(2[0-3]|[01]?[0-9]):([0-5]?[0-9]):([0-5]?[0-9])$",
       "maxLength": 8
+    },
+    "hearingDateFrom": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "Start of the hearing date range for enforcement auto-listing."
+    },
+    "hearingDateTo": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "End of the hearing date range for enforcement auto-listing (optional)."
     }
   },
   "required": [
-    "courtHearingLocation",
-    "dateOfHearing",
-    "timeOfHearing"
+    "courtHearingLocation"
   ]
 }
 

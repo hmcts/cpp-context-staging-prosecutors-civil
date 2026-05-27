@@ -40,7 +40,7 @@ public class CivilProsecutionHandler {
         final ChargeProsecution chargeProsecution = envelope.payload();
         final EventStream eventStream = eventSource.getStreamById(chargeProsecution.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
-        final Stream<Object> events = aggregate.receiveChargeProsecution(chargeProsecution.getSubmissionId(), chargeProsecution.getHearingDetails(), chargeProsecution.getProsecutingAuthority(), chargeProsecution.getProsecutionCases());
+        final Stream<Object> events = aggregate.receiveChargeProsecution(chargeProsecution.getSubmissionId(), chargeProsecution.getHearingDetails(), chargeProsecution.getProsecutingAuthority(), chargeProsecution.getProsecutionCases(), chargeProsecution.getRelatedReferenceNumber());
 
         appendEventsToStream(envelope, eventStream, events);
     }

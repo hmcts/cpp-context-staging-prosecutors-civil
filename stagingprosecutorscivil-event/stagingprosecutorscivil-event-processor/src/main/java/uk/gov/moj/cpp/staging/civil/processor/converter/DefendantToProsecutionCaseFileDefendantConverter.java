@@ -73,11 +73,14 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
     }
 
     private InitialHearing buildInitialHearing() {
+        final String dateOfHearing = this.hearingDetails.getDateOfHearing() != null
+                ? this.hearingDetails.getDateOfHearing().toString()
+                : (this.hearingDetails.getHearingDateFrom() != null ? this.hearingDetails.getHearingDateFrom().toString() : null);
 
         return initialHearing()
                 .withTimeOfHearing(this.hearingDetails.getTimeOfHearing())
                 .withCourtHearingLocation(this.hearingDetails.getCourtHearingLocation())
-                .withDateOfHearing(this.hearingDetails.getDateOfHearing().toString())
+                .withDateOfHearing(dateOfHearing)
                 .build();
     }
 

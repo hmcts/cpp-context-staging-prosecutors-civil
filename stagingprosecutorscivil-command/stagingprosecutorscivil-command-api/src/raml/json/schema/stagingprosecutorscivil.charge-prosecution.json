@@ -20,6 +20,11 @@
     "hearingDetails": {
       "description": "Court Hearing details",
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json"
+    },
+    "relatedReferenceNumber": {
+      "description": "GoB account number (Libra account reference) tied to the defendant. Required for enforcement cases.",
+      "type": "string",
+      "maxLength": 13
     }
   },
   "required": [
