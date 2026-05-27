@@ -104,6 +104,19 @@ public class CivilProsecutionHandlerTest {
     }
 
     @Test
+    public void shouldRaiseChargeProsecutionReceivedPrivateEventWithEnforcementFields() throws Exception {
+
+        final Envelope<ChargeProsecution> envelope = buildEnforcementChargeProsecutionEnvelope();
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
+
+        civilProsecutionHandler.handleChargeProsecution(envelope);
+
+        verifyEnforcementChargeProsecutionReceivedPrivateEvent();
+
+    }
+
+    @Test
     public void shouldHandleSummonsProsecutionCommand() {
 
         assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
@@ -158,6 +171,22 @@ public class CivilProsecutionHandlerTest {
         );
     }
 
+    private void verifyEnforcementChargeProsecutionReceivedPrivateEvent() throws EventStreamException {
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata()
+                                .withName(PRIVATE_EVENT_CHARGE_PROSECUTION_RECEIVED),
+                        payload().isJson(allOf(
+                                withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
+                                withJsonPath("$.submissionId", notNullValue()),
+                                withJsonPath("$.relatedReferenceNumber", is("GOB123456789")))
+                        ))
+        ));
+    }
+
     private void verifySummonsProsecutionReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
@@ -204,6 +233,38 @@ public class CivilProsecutionHandlerTest {
                         .withDateOfHearing(LocalDate.now())
                         .build())
                 .withProsecutingAuthority("THREE RIVER")
+                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                        .withCaseMarker("Markers")
+                        .withPaymentReference("PAYREF123")
+                        .withDefendants(Arrays.asList(Defendant.defendant()
+                                .withOffences(Arrays.asList(Offence.offence()
+                                        .withArrestDate(LocalDate.now())
+                                        .build()))
+                                .build()))
+                        .build()))
+                .withSubmissionId(UUID.fromString("ce1c9255-725f-4669-a7e5-78c07252c82d"))
+                .build();
+
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString())
+                        .withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+
+        return Enveloper.envelop(chargeProsecution)
+                .withName(PRIVATE_COMMAND_CHARGE_PROSECUTION)
+                .withMetadataFrom(requestEnvelope);
+
+    }
+
+    private Envelope<ChargeProsecution> buildEnforcementChargeProsecutionEnvelope() {
+
+        final ChargeProsecution chargeProsecution = ChargeProsecution.chargeProsecution()
+                .withHearingDetails(HearingDetails.hearingDetails()
+                        .withHearingDateFrom(LocalDate.now())
+                        .withHearingDateTo(LocalDate.now().plusDays(30))
+                        .build())
+                .withProsecutingAuthority("THREE RIVER")
+                .withRelatedReferenceNumber("GOB123456789")
                 .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
                         .withCaseMarker("Markers")
                         .withPaymentReference("PAYREF123")

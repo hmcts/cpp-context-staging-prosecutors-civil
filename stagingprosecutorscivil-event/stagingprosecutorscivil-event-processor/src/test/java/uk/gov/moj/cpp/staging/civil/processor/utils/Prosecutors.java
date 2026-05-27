@@ -64,6 +64,9 @@ public class Prosecutors {
     public static final String PNC_IDENTIFIER = "PnCidentifier";
     public static final String ORGANISATION_NAME = "Organisation Name";
     public static final String COMPANY_TELEPHONE_NUMBER = "12323453456";
+    public static final String RELATED_REFERENCE_NUMBER = "GOB123456789";
+    public static final LocalDate HEARING_DATE_FROM = LocalDate.of(2025, 6, 1);
+    public static final LocalDate HEARING_DATE_TO = LocalDate.of(2025, 7, 1);
 
     public static List<Offence> prosecutorsOffenceList(final int numberElements) {
         return rangeClosed(1, numberElements)
@@ -318,6 +321,19 @@ public class Prosecutors {
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
                         .build())
+                .build();
+    }
+
+    public static ChargeProsecutionReceived enforcementChargeProsecutionReceived() {
+        return ChargeProsecutionReceived.chargeProsecutionReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(chargeProsecutionCaseDetail(), chargeProsecutionCaseDetail()))
+                .withHearingDetails(hearingDetails()
+                        .withHearingDateFrom(HEARING_DATE_FROM)
+                        .withHearingDateTo(HEARING_DATE_TO)
+                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .build())
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 

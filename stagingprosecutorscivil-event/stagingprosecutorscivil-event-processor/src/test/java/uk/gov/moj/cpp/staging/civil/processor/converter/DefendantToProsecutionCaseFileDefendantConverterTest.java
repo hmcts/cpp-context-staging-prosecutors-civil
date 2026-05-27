@@ -14,6 +14,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +33,24 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
         final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant prosecutionCaseFileDefendant = converter.convert(prosecutorsDefendant);
 
         assertProsecutionCaseFileDefendantMatchesProsecutionDefendant(prosecutionCaseFileDefendant, prosecutorsDefendant, chargeProsecutionReceived);
+    }
+
+    @Test
+    public void shouldUseHearingDateFromWhenDateOfHearingIsAbsent() {
+
+        final LocalDate hearingDateFrom = LocalDate.of(2025, 6, 1);
+        final HearingDetails hearingDetails = HearingDetails.hearingDetails()
+                .withCourtHearingLocation("COURT1")
+                .withHearingDateFrom(hearingDateFrom)
+                .build();
+
+        final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> converter
+                = new DefendantToProsecutionCaseFileDefendantConverter(hearingDetails);
+
+        final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant result = converter.convert(prosecutorsDefendant());
+
+        assertThat(result.getInitialHearing().getDateOfHearing(), is(hearingDateFrom.toString()));
+        assertThat(result.getInitialHearing().getCourtHearingLocation(), is("COURT1"));
     }
 
 
@@ -76,7 +95,10 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
 
     private static void assertHearingDetails(final InitialHearing pcfHearing, final HearingDetails stagingHearing) {
         assertThat(pcfHearing.getTimeOfHearing(), is(stagingHearing.getTimeOfHearing()));
-        assertThat(pcfHearing.getDateOfHearing(), is(stagingHearing.getDateOfHearing().toString()));
+        final String expectedDate = stagingHearing.getDateOfHearing() != null
+                ? stagingHearing.getDateOfHearing().toString()
+                : stagingHearing.getHearingDateFrom().toString();
+        assertThat(pcfHearing.getDateOfHearing(), is(expectedDate));
         assertThat(pcfHearing.getCourtHearingLocation(), is(stagingHearing.getCourtHearingLocation()));
     }
 }
