@@ -336,7 +336,67 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "individual: dateOfBirth '2011/11/07' uses slashes — ISO-8601 requires dashes (YYYY-MM-DD)",
                         base().set("2011/11/07", INDIVIDUAL + ".dateOfBirth").build(),
-                        List.of("dateOfBirth", "does not match pattern"))
+                        List.of("dateOfBirth", "does not match pattern")),
+
+                // optional individual fields — length / range constraints
+                Arguments.of(
+                        "individual: nationality 'ABCD' has 4 characters — maxLength is 3",
+                        base().set("ABCD", INDIVIDUAL + ".nationality").build(),
+                        List.of("nationality", "maxLength")),
+                Arguments.of(
+                        "individual: additionalNationality 'ABCD' has 4 characters — maxLength is 3",
+                        base().set("ABCD", INDIVIDUAL + ".additionalNationality").build(),
+                        List.of("additionalNationality", "maxLength")),
+                Arguments.of(
+                        "individual: occupation 55 characters exceeds maxLength of 54",
+                        base().set("A".repeat(55), INDIVIDUAL + ".occupation").build(),
+                        List.of("occupation", "maxLength")),
+                Arguments.of(
+                        "individual: occupationCode 100000 exceeds maximum of 99999",
+                        base().set(100000, INDIVIDUAL + ".occupationCode").build(),
+                        List.of("occupationCode", "is not less or equal to")),
+                Arguments.of(
+                        "individual: driverNumber 17 characters exceeds maxLength of 16",
+                        base().set("A".repeat(17), INDIVIDUAL + ".driverNumber").build(),
+                        List.of("driverNumber", "maxLength")),
+                Arguments.of(
+                        "individual: languageRequirement 151 characters exceeds maxLength of 150",
+                        base().set("A".repeat(151), INDIVIDUAL + ".languageRequirement").build(),
+                        List.of("languageRequirement", "maxLength")),
+                Arguments.of(
+                        "individual: specificRequirements 151 characters exceeds maxLength of 150",
+                        base().set("A".repeat(151), INDIVIDUAL + ".specificRequirements").build(),
+                        List.of("specificRequirements", "maxLength")),
+                Arguments.of(
+                        "individual: nationalInsuranceNumber 10 characters exceeds maxLength of 9",
+                        base().set("AB123456CC", INDIVIDUAL + ".nationalInsuranceNumber").build(),
+                        List.of("nationalInsuranceNumber", "maxLength")),
+                Arguments.of(
+                        "individual: nationalInsuranceNumber 6 characters is below minLength of 9",
+                        base().set("AB1234", INDIVIDUAL + ".nationalInsuranceNumber").build(),
+                        List.of("nationalInsuranceNumber", "minLength")),
+                Arguments.of(
+                        "individual: bailConditions 2501 characters exceeds maxLength of 2500",
+                        base().set("A".repeat(2501), INDIVIDUAL + ".bailConditions").build(),
+                        List.of("bailConditions", "maxLength")),
+                Arguments.of(
+                        "individual: aliases empty array — minItems is 1",
+                        base().set(new JSONArray(), INDIVIDUAL + ".aliases").build(),
+                        List.of("aliases", "minimum")),
+
+                // optional name-details fields — length constraints
+                Arguments.of(
+                        "nameDetails: title 36 characters exceeds maxLength of 35",
+                        base().set("A".repeat(36), NAME_DETAILS + ".title").build(),
+                        List.of("title", "maxLength")),
+                Arguments.of(
+                        "nameDetails: forename2 36 characters exceeds maxLength of 35",
+                        base().set("A".repeat(36), NAME_DETAILS + ".forename2").build(),
+                        List.of("forename2", "maxLength")),
+                Arguments.of(
+                        "nameDetails: forename3 36 characters exceeds maxLength of 35",
+                        base().set("A".repeat(36), NAME_DETAILS + ".forename3").build(),
+                        List.of("forename3", "maxLength"))
         );
     }
 
@@ -375,7 +435,11 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "defendantDetails: prosecutorCosts '1000' missing decimal places — money pattern requires '1000.00'",
                         base().set("1000", DEFENDANT_DETAILS + ".prosecutorCosts").build(),
-                        List.of("prosecutorCosts", "does not match pattern"))
+                        List.of("prosecutorCosts", "does not match pattern")),
+                Arguments.of(
+                        "defendantDetails: prosecutorDefendantId 37 characters exceeds maxLength of 36",
+                        base().set("A".repeat(37), DEFENDANT_DETAILS + ".prosecutorDefendantId").build(),
+                        List.of("prosecutorDefendantId", "maxLength"))
         );
     }
 
@@ -392,7 +456,11 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "offence: statementOfFacts 4001 characters exceeds maxLength of 4000",
                         base().set("A".repeat(4001), OFFENCE + ".statementOfFacts").build(),
-                        List.of("statementOfFacts", "maxLength"))
+                        List.of("statementOfFacts", "maxLength")),
+                Arguments.of(
+                        "offence: statementOfFactsWelsh 4001 characters exceeds maxLength of 4000",
+                        base().set("A".repeat(4001), OFFENCE + ".statementOfFactsWelsh").build(),
+                        List.of("statementOfFactsWelsh", "maxLength"))
         );
     }
 
@@ -469,7 +537,11 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "offenceDetails: backDutyDateTo '2011/11/02' uses slashes — ISO-8601 requires dashes",
                         base().set("2011/11/02", OFFENCE_DETAILS + ".backDutyDateTo").build(),
-                        List.of("backDutyDateTo", "does not match pattern"))
+                        List.of("backDutyDateTo", "does not match pattern")),
+                Arguments.of(
+                        "offenceDetails: offenceWordingWelsh 2501 characters exceeds maxLength of 2500",
+                        base().set("A".repeat(2501), OFFENCE_DETAILS + ".offenceWordingWelsh").build(),
+                        List.of("offenceWordingWelsh", "maxLength"))
         );
     }
 }
