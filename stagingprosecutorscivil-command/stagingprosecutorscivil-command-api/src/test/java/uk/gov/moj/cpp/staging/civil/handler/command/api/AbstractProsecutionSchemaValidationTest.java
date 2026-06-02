@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.URN_PATTERN;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_CHARGE_PROSECUTION_REQUEST;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_INDIVIDUAL_DEFENDANT_REQUEST;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_MULTI_DEFENDANT_REQUEST;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_MULTI_OFFENCE_REQUEST;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_MULTI_PROSECUTION_CASE_REQUEST;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_ORGANISATION_DEFENDANT_REQUEST;
 
 import java.util.List;
@@ -52,6 +55,18 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
         return JsonRequestBuilder.from(VALID_ORGANISATION_DEFENDANT_REQUEST);
     }
 
+    private static JsonRequestBuilder baseMultiDefendant() {
+        return JsonRequestBuilder.from(VALID_MULTI_DEFENDANT_REQUEST);
+    }
+
+    private static JsonRequestBuilder baseMultiOffence() {
+        return JsonRequestBuilder.from(VALID_MULTI_OFFENCE_REQUEST);
+    }
+
+    private static JsonRequestBuilder baseMultiProsecutionCase() {
+        return JsonRequestBuilder.from(VALID_MULTI_PROSECUTION_CASE_REQUEST);
+    }
+
 
     @Test
     @DisplayName("Valid individual defendant — conditional mandatory fields forename, surname and gender present and valid")
@@ -63,6 +78,24 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
     @DisplayName("Valid organisation defendant — conditional mandatory field organisationName present and valid")
     void testValidOrganisationDefendantRequest() {
         assertDoesNotThrow(() -> schema.validate(loadJson(VALID_ORGANISATION_DEFENDANT_REQUEST)));
+    }
+
+    @Test
+    @DisplayName("Valid request with multiple defendants — schema places no upper bound on defendants array")
+    void testValidMultipleDefendantsRequest() {
+        assertDoesNotThrow(() -> schema.validate(loadJson(VALID_MULTI_DEFENDANT_REQUEST)));
+    }
+
+    @Test
+    @DisplayName("Valid request with multiple offences per defendant — schema places no upper bound on offences array")
+    void testValidMultipleOffencesRequest() {
+        assertDoesNotThrow(() -> schema.validate(loadJson(VALID_MULTI_OFFENCE_REQUEST)));
+    }
+
+    @Test
+    @DisplayName("Valid request with multiple prosecution cases — schema places no upper bound on prosecutionCases array")
+    void testValidMultipleProsecutionCasesRequest() {
+        assertDoesNotThrow(() -> schema.validate(loadJson(VALID_MULTI_PROSECUTION_CASE_REQUEST)));
     }
 
 
@@ -229,7 +262,17 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "summonsCode too long: 'AB' has 2 characters — maxLength is 1",
                         base().set("AB", PROSECUTION_CASE + ".summonsCode").build(),
-                        List.of("summonsCode", "maxLength"))
+                        List.of("summonsCode", "maxLength")),
+
+                // multi-prosecution-case: validation applies to all cases, not just the first
+                Arguments.of(
+                        "second prosecution case: urn absent — required field validated on every prosecution case",
+                        baseMultiProsecutionCase().remove("prosecutionCases[1].urn").build(),
+                        List.of("urn")),
+                Arguments.of(
+                        "second prosecution case: informant absent — required field validated on every prosecution case",
+                        baseMultiProsecutionCase().remove("prosecutionCases[1].informant").build(),
+                        List.of("informant"))
         );
     }
 
@@ -337,6 +380,16 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         "individual: dateOfBirth '2011/11/07' uses slashes — ISO-8601 requires dashes (YYYY-MM-DD)",
                         base().set("2011/11/07", INDIVIDUAL + ".dateOfBirth").build(),
                         List.of("dateOfBirth", "does not match pattern")),
+
+                // multi-defendant: validation applies to all defendants, not just the first
+                Arguments.of(
+                        "second defendant: gender '5' is not valid — validation enforced on every defendant in the array",
+                        baseMultiDefendant().set(5, "prosecutionCases[0].defendants[1].individual.gender").build(),
+                        List.of("gender", "is not a valid enum value")),
+                Arguments.of(
+                        "second defendant: nameDetails absent — required field validated on every defendant",
+                        baseMultiDefendant().remove("prosecutionCases[0].defendants[1].individual.nameDetails").build(),
+                        List.of("nameDetails")),
 
                 // optional individual fields — length / range constraints
                 Arguments.of(
@@ -541,7 +594,17 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "offenceDetails: offenceWordingWelsh 2501 characters exceeds maxLength of 2500",
                         base().set("A".repeat(2501), OFFENCE_DETAILS + ".offenceWordingWelsh").build(),
-                        List.of("offenceWordingWelsh", "maxLength"))
+                        List.of("offenceWordingWelsh", "maxLength")),
+
+                // multi-offence: validation applies to all offences, not just the first
+                Arguments.of(
+                        "second offence: laidDate absent — required field validated on every offence in the array",
+                        baseMultiOffence().remove("prosecutionCases[0].defendants[0].offences[1].offenceDetails.laidDate").build(),
+                        List.of("laidDate")),
+                Arguments.of(
+                        "second offence: laidDate '2011/11/03' uses slashes — format validated on every offence",
+                        baseMultiOffence().set("2011/11/03", "prosecutionCases[0].defendants[0].offences[1].offenceDetails.laidDate").build(),
+                        List.of("laidDate", "does not match pattern"))
         );
     }
 }

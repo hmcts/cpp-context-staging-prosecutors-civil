@@ -13,7 +13,13 @@ class SchemaTestConstants {
     static final String VALID_SUMMONS_PROSECUTION_REQUEST  = "/valid-summons-prosecution-request.json";
 
     // conditional mandatory: forename, surname, gender — all present and valid for individual defendant
-    static final String VALID_INDIVIDUAL_DEFENDANT_REQUEST = "/valid-individual-defendant-request.json";
+    static final String VALID_INDIVIDUAL_DEFENDANT_REQUEST  = "/valid-individual-defendant-request.json";
+    // multiple defendants in one prosecution case — schema allows unbounded array (minItems: 1, no maxItems)
+    static final String VALID_MULTI_DEFENDANT_REQUEST       = "/valid-multi-defendant-request.json";
+    // multiple offences per defendant — schema allows unbounded array (minItems: 1, no maxItems)
+    static final String VALID_MULTI_OFFENCE_REQUEST         = "/valid-multi-offence-request.json";
+    // multiple prosecution cases — schema allows unbounded array (minItems: 1, no maxItems)
+    static final String VALID_MULTI_PROSECUTION_CASE_REQUEST = "/valid-multi-prosecution-case-request.json";
 
     // conditional mandatory: organisationName — present and valid for organisation defendant
     static final String VALID_ORGANISATION_DEFENDANT_REQUEST = "/valid-organisation-defendant-request.json";
