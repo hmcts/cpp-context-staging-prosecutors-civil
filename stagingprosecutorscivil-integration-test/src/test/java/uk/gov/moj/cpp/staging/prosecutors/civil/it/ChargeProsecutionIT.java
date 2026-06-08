@@ -133,6 +133,7 @@ public class ChargeProsecutionIT {
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
                 .add("caseErrors", Json.createArrayBuilder().build())
+                .add("defendantErrors", Json.createArrayBuilder().build())
                 .build();
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
@@ -150,13 +151,24 @@ public class ChargeProsecutionIT {
         ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
+        JsonObject problemValue = Json.createObjectBuilder()
+                .add("key", "testField")
+                .add("value", "testValue")
+                .build();
+        JsonObject warning = Json.createObjectBuilder()
+                .add("code", "WRN001")
+                .add("values", Json.createArrayBuilder().add(problemValue).build())
+                .build();
+        JsonObject defendantWarning = Json.createObjectBuilder()
+                .add("problems", Json.createArrayBuilder().add(warning).build())
+                .build();
         JsonObject warningsEvent = Json.createObjectBuilder()
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
-                .add("warnings", Json.createArrayBuilder().build())
-                .add("caseWarnings", Json.createArrayBuilder().build())
-                .add("defendantWarnings", Json.createArrayBuilder().build())
+                .add("warnings", Json.createArrayBuilder().add(warning).build())
+                .add("caseWarnings", Json.createArrayBuilder().add(warning).build())
+                .add("defendantWarnings", Json.createArrayBuilder().add(defendantWarning).build())
                 .build();
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS,

@@ -1,23 +1,30 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
 import static java.util.Objects.nonNull;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
 
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.CivilProsecutionSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.ProsecutionSubmissionSucceededWithWarnings;
 
+import java.util.Collection;
+
 import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
-import net.minidev.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +35,9 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
 
     @Inject
     private Sender sender;
+
+    @Inject
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @Handles("public.prosecutioncasefile.civil.prosecution-submission-succeeded")
     public void prosecutionSubmissionSucceeded(final Envelope<CivilProsecutionSubmissionSucceeded> envelope) {
@@ -53,7 +63,7 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
     public void prosecutionSubmissionSucceededWithWarnings(final Envelope<ProsecutionSubmissionSucceededWithWarnings> prosecutionSubmissionSucceededWithWarningsEnvelope) {
 
         final ProsecutionSubmissionSucceededWithWarnings payload = prosecutionSubmissionSucceededWithWarningsEnvelope.payload();
-        final String submissionId = payload.getExternalId()!= null ? payload.getExternalId().toString(): null;
+        final String submissionId = payload.getExternalId() != null ? payload.getExternalId().toString() : null;
 
         LOGGER.info("Received public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings event with payload for submission id {} ", submissionId);
 
@@ -61,14 +71,30 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
             final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                     .add("submissionId", submissionId)
                     .add("submissionStatus", SubmissionStatus.SUCCESS_WITH_WARNINGS.name())
-                    .add("warnings", JSONArray.toJSONString(payload.getWarnings()))
-                    .add("caseWarnings", JSONArray.toJSONString(payload.getCaseWarnings()))
-                    .add("defendantWarnings", JSONArray.toJSONString(payload.getDefendantWarnings()));
+                    .add("warnings", toJsonArray(payload.getWarnings()))
+                    .add("caseWarnings", toJsonArray(payload.getCaseWarnings()))
+                    .add("defendantWarnings", toDefendantJsonArray(payload.getDefendantWarnings()));
             sender.send(envelop(jsonObjectBuilder.build())
                     .withName("stagingprosecutorscivil.command.update-civil-case")
                     .withMetadataFrom(prosecutionSubmissionSucceededWithWarningsEnvelope));
         } else {
             LOGGER.info("Message unrelated to CIVIL channel.  Not processing");
         }
+    }
+
+    private JsonArray toJsonArray(final Collection<Problem> items) {
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        if (items != null) {
+            items.forEach(item -> arrayBuilder.add(objectToJsonObjectConverter.convert(item)));
+        }
+        return arrayBuilder.build();
+    }
+
+    private JsonArray toDefendantJsonArray(final Collection<DefendantProblem> items) {
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        if (items != null) {
+            items.forEach(item -> arrayBuilder.add(objectToJsonObjectConverter.convert(item)));
+        }
+        return arrayBuilder.build();
     }
 }
