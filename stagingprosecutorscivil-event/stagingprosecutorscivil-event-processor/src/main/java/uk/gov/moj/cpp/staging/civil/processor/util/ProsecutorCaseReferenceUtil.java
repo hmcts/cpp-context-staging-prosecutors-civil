@@ -7,7 +7,7 @@ import uk.gov.moj.cpp.staging.civil.processor.exception.InvalidCaseUrnProvided;
 
 public class ProsecutorCaseReferenceUtil {
 
-    private static final String PROSECUTOR_CASE_PATTERN = "%s:%s";
+    public static final String PROSECUTOR_CASE_PATTERN = "%s:%s";
 
     private ProsecutorCaseReferenceUtil() {
     }

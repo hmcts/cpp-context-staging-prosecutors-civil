@@ -27,11 +27,14 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.staging.civil.aggregate.MaterialSubmission;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SubmitMaterialCommand;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -61,6 +64,8 @@ public class CivilProsecutionHandlerTest {
     private static final String PRIVATE_EVENT_SUMMONS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.summons-prosecution-received";
     private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingprosecutorscivil.command.update-civil-case";
     private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingprosecutorscivil.event.update-civil-case-received";
+    private static final String PRIVATE_COMMAND_SUBMIT_MATERIAL = "stagingprosecutorscivil.command.submit-material";
+    private static final String PRIVATE_EVENT_MATERIAL_SUBMITTED = "stagingprosecutorscivil.event.material-submitted";
 
 
     @InjectMocks
@@ -78,7 +83,7 @@ public class CivilProsecutionHandlerTest {
     private AggregateService aggregateService;
 
     @Spy
-    private final Enveloper enveloper = createEnveloperWithEvents(ChargeProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class);
+    private final Enveloper enveloper = createEnveloperWithEvents(ChargeProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class, MaterialSubmitted.class);
 
     @Test
     public void shouldHandleChargeProsecutionCommand() {
@@ -270,6 +275,100 @@ public class CivilProsecutionHandlerTest {
 
         return Enveloper.envelop(updateCivilCase)
                 .withName(PRIVATE_COMMAND_UPDATE_CASE_PROFILE)
+                .withMetadataFrom(requestEnvelope);
+
+    }
+
+    @Test
+    public void shouldHandleSubmitMaterialCommand() {
+
+        assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
+                .with(method("handleSubmitMaterial")
+                        .thatHandles(PRIVATE_COMMAND_SUBMIT_MATERIAL)));
+
+    }
+
+    @Test
+    public void shouldRaiseMaterialSubmittedPrivateEvent() throws Exception {
+
+        final UUID submissionId = randomUUID();
+        final Envelope<SubmitMaterialCommand> envelope = buildSubmitMaterialEnvelope(submissionId, null);
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, MaterialSubmission.class)).thenReturn(new MaterialSubmission());
+
+        civilProsecutionHandler.handleSubmitMaterial(envelope);
+
+        verifyMaterialSubmittedPrivateEvent(null);
+
+    }
+
+    @Test
+    public void shouldRaiseMaterialSubmittedPrivateEventWithDefendantId() throws Exception {
+
+        final UUID submissionId = randomUUID();
+        final Envelope<SubmitMaterialCommand> envelope = buildSubmitMaterialEnvelope(submissionId, "defendant-123");
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, MaterialSubmission.class)).thenReturn(new MaterialSubmission());
+
+        civilProsecutionHandler.handleSubmitMaterial(envelope);
+
+        verifyMaterialSubmittedPrivateEvent("defendant-123");
+
+    }
+
+    private void verifyMaterialSubmittedPrivateEvent(final String expectedDefendantId) throws EventStreamException {
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+
+        if (expectedDefendantId != null) {
+            assertThat(envelopeStream, streamContaining(
+                    jsonEnvelope(
+                            metadata()
+                                    .withName(PRIVATE_EVENT_MATERIAL_SUBMITTED),
+                            payload().isJson(allOf(
+                                    withJsonPath("$.submissionId", notNullValue()),
+                                    withJsonPath("$.caseUrn", is("T20217654")),
+                                    withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
+                                    withJsonPath("$.materialType", is("CCTV_FOOTAGE")),
+                                    withJsonPath("$.submissionStatus", is(SubmissionStatus.PENDING.name())),
+                                    withJsonPath("$.defendantId", is(expectedDefendantId))))
+                    ))
+            );
+        } else {
+            assertThat(envelopeStream, streamContaining(
+                    jsonEnvelope(
+                            metadata()
+                                    .withName(PRIVATE_EVENT_MATERIAL_SUBMITTED),
+                            payload().isJson(allOf(
+                                    withJsonPath("$.submissionId", notNullValue()),
+                                    withJsonPath("$.caseUrn", is("T20217654")),
+                                    withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
+                                    withJsonPath("$.materialType", is("CCTV_FOOTAGE")),
+                                    withJsonPath("$.submissionStatus", is(SubmissionStatus.PENDING.name()))))
+                    ))
+            );
+        }
+
+    }
+
+    private Envelope<SubmitMaterialCommand> buildSubmitMaterialEnvelope(final UUID submissionId, final String defendantId) {
+
+        final SubmitMaterialCommand submitMaterialCommand = SubmitMaterialCommand.submitMaterialCommand()
+                .withSubmissionId(submissionId)
+                .withMaterialId(randomUUID())
+                .withCaseUrn("T20217654")
+                .withProsecutingAuthority("THREE RIVER")
+                .withMaterialType("CCTV_FOOTAGE")
+                .withDefendantId(defendantId)
+                .build();
+
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString())
+                        .withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+
+        return Enveloper.envelop(submitMaterialCommand)
+                .withName(PRIVATE_COMMAND_SUBMIT_MATERIAL)
                 .withMetadataFrom(requestEnvelope);
 
     }
