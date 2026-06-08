@@ -15,6 +15,7 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -117,6 +118,33 @@ public class SubmissionEventListenerTest {
         final Submission submission = argumentCaptor.getValue();
         assertThat(submission.getSubmissionId(), is(submissionId));
         assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
+    }
+
+    @Test
+    public void shouldSubmitMaterial() {
+
+        final UUID submissionId = randomUUID();
+        final String prosecutingAuthority = "GAAAA01";
+        final String caseUrn = "urn_value";
+        final MaterialSubmitted materialSubmitted = MaterialSubmitted.materialSubmitted()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING)
+                .withProsecutingAuthority(prosecutingAuthority)
+                .withCaseUrn(caseUrn)
+                .build();
+
+        final Envelope<MaterialSubmitted> envelope = newEnvelope("stagingprosecutorscivil.event.material-submitted", materialSubmitted);
+
+        submissionEventListener.materialSubmitted(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+
+        final Submission submission = argumentCaptor.getValue();
+
+        assertThat(submission.getSubmissionId(), is(submissionId));
+        assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
+        assertThat(submission.getOuCode(), is(prosecutingAuthority));
+        assertThat(submission.getCaseDetail().stream().findFirst().get().getCaseUrn(), is(caseUrn));
     }
 
     private <T> Envelope<T> newEnvelope(final String name, T payload) {

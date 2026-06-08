@@ -15,6 +15,7 @@ import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -23,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.json.Json;
@@ -136,6 +138,30 @@ public class SubmissionEventListener {
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
         return arrayBuilder.build();
+    }
+
+    @Handles("stagingprosecutorscivil.event.material-submitted")
+    public void materialSubmitted(final Envelope<MaterialSubmitted> envelope) {
+        final MaterialSubmitted materialSubmitted = envelope.payload();
+
+        final Set<CaseDetail> caseDetails = new HashSet<>();
+        caseDetails.add(CaseDetail
+                .builder()
+                .withId(randomUUID())
+                .withCaseUrn(materialSubmitted.getCaseUrn())
+                .build());
+
+        final Submission submission = Submission.builder()
+                .withSubmissionId(materialSubmitted.getSubmissionId())
+                .withSubmissionStatus(materialSubmitted.getSubmissionStatus().name())
+                .withOuCode(materialSubmitted.getProsecutingAuthority())
+                .withReceivedAt(extractCreatedAt(envelope.metadata()))
+                .withCaseDetail(caseDetails)
+                .withErrors(null)
+                .withWarnings(null)
+                .build();
+
+        submissionRepository.save(submission); //To insert SubmissionType??
     }
 }
 
