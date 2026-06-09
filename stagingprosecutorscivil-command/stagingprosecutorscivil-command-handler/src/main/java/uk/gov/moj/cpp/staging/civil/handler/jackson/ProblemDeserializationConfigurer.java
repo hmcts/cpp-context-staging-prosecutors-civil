@@ -27,7 +27,7 @@ import java.util.Map;
 public class ProblemDeserializationConfigurer {
 
     @Inject
-    private ObjectMapper objectMapper;
+    ObjectMapper objectMapper;
 
     @PostConstruct
     public void configure() {
