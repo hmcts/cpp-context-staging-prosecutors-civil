@@ -24,16 +24,14 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(EVENT_PROCESSOR)
 public class MaterialSubmittedProcessor {
 
-    public static final String CASE_LEVEL = "Case level";
-    public static final String DEFENDANT_LEVEL = "Defendant level";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MaterialSubmittedProcessor.class);
 
-    private  static final String CASE_MANAGEMENT_SECTION = "Case Management";
     private  static final String CASE_ID = "caseId";
-    private  static final String APPLICATION_ID = "applicationId";
 
     @Inject
     private SystemIdMapperService systemIdMapperService;
@@ -46,6 +44,8 @@ public class MaterialSubmittedProcessor {
 
     @Handles("stagingprosecutorscivil.event.material-submitted")
     public void onMaterialSubmitted(final Envelope<MaterialSubmitted> materialSubmittedEnvelope) {
+        LOGGER.info("Received material submitted event with submission id {}",
+                materialSubmittedEnvelope.payload().getSubmissionId());
 
         final MaterialSubmitted materialSubmitted = materialSubmittedEnvelope.payload();
 
@@ -54,7 +54,7 @@ public class MaterialSubmittedProcessor {
                 materialSubmitted.getCaseUrn());
         final UUID caseId = systemIdMapperService.getCppCaseIdFor(prosecutorCaseReference);
 
-        final String submissionId = materialSubmitted.getSubmissionId().toString();
+        LOGGER.info("----------Mapped prosecutorCaseReference {} to caseId {}", prosecutorCaseReference, caseId);
 
         final JsonObjectBuilder payloadBuilder = createObjectBuilder()
                 .add(CASE_ID, caseId.toString())
@@ -71,9 +71,7 @@ public class MaterialSubmittedProcessor {
                 .withName("prosecutioncasefile.add-material")
                 .build();
 
-
         final Envelope<JsonObject> envelope = Envelope.envelopeFrom(metadata, payloadBuilder.build());
-
         sender.sendAsAdmin(envelope);
     }
 

@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PE
 
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
@@ -145,6 +146,7 @@ public class SubmissionEventListenerTest {
         assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
         assertThat(submission.getOuCode(), is(prosecutingAuthority));
         assertThat(submission.getCaseDetail().stream().findFirst().get().getCaseUrn(), is(caseUrn));
+        assertThat(submission.getType(), is(SubmissionType.MATERIAL));
     }
 
     private <T> Envelope<T> newEnvelope(final String name, T payload) {

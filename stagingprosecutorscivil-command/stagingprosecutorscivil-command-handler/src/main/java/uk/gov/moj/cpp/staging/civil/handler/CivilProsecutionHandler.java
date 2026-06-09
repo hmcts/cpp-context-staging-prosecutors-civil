@@ -1,10 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.handler;
 
-import static java.util.Optional.ofNullable;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.staging.civil.handler.util.EventStreamAppender.appendEventsToStream;
 
 import uk.gov.justice.services.core.aggregate.AggregateService;
@@ -14,11 +11,8 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.staging.civil.aggregate.MaterialSubmission;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SubmitMaterialCommand;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
@@ -76,28 +70,5 @@ public class CivilProsecutionHandler {
         final Stream<Object> events = aggregate.receiveCivilCaseUpdate(update.getSubmissionId(), update.getSubmissionStatus(), update.getCaseErrors(),
                 update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings());
         appendEventsToStream(envelope, eventStream, events);
-    }
-
-    @Handles("stagingprosecutorscivil.command.submit-material")
-    public void handleSubmitMaterial(final Envelope<SubmitMaterialCommand> command) throws EventStreamException {
-        final SubmitMaterialCommand payload = command.payload();
-
-        applyToAggregate(payload.getSubmissionId(), command, materialSubmission -> materialSubmission.submitMaterial(
-                payload.getSubmissionId(),
-                payload.getMaterialId(),
-                payload.getCaseUrn(),
-                payload.getProsecutingAuthority(),
-                payload.getMaterialType(),
-                ofNullable(payload.getDefendantId())));
-    }
-
-    private void applyToAggregate(final UUID submissionId, final Envelope command, Function<MaterialSubmission, Stream<Object>> aggregateFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(submissionId);
-        final MaterialSubmission materialSubmission = aggregateService.get(eventStream, MaterialSubmission.class);
-
-        final Stream<Object> events = aggregateFunction.apply(materialSubmission);
-
-        final JsonEnvelope jsonEnvelope = envelopeFrom(command.metadata(), JsonValue.NULL);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(jsonEnvelope)));
     }
 }

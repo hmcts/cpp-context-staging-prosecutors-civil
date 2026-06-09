@@ -29,4 +29,7 @@ subscriptions_descriptor:
 
         - name: public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings
           schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings.json
+
+        - name: public.prosecutioncasefile.material-rejected
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/processor.public-material-rejected.json
       event_source_name: public.event.source
