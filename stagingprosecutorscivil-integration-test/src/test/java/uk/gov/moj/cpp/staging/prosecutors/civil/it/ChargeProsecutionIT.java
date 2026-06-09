@@ -145,7 +145,7 @@ public class ChargeProsecutionIT {
     }
 
 
-    @Disabled("Flaky-Enable later")
+    @Disabled("Works locally but fails in pipeline")
     @Test
     public void shouldUpdateStatusToSuccessWithWarningsForSingleCaseProsecution() {
         stubPCFCommand(randomUUID());
