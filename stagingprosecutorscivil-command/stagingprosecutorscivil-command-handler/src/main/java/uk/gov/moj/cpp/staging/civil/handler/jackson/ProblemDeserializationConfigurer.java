@@ -31,13 +31,14 @@ public class ProblemDeserializationConfigurer {
 
     @PostConstruct
     public void configure() {
-        objectMapper.addMixIn(Problem.class,       ProblemMixin.class);
-        objectMapper.addMixIn(ProblemValue.class,  ProblemValueMixin.class);
+        objectMapper.addMixIn(Problem.class,          ProblemMixin.class);
+        objectMapper.addMixIn(ProblemValue.class,     ProblemValueMixin.class);
         objectMapper.addMixIn(DefendantProblem.class, DefendantProblemMixin.class);
     }
 
     abstract static class ProblemMixin {
         @JsonCreator
+        @SuppressWarnings("java:S1186")
         ProblemMixin(
                 @JsonProperty("code")   String code,
                 @JsonProperty("values") List<ProblemValue> values) {}
@@ -45,6 +46,7 @@ public class ProblemDeserializationConfigurer {
 
     abstract static class ProblemValueMixin {
         @JsonCreator
+        @SuppressWarnings("java:S1186")
         ProblemValueMixin(
                 @JsonProperty("id")                   String id,
                 @JsonProperty("key")                  String key,
@@ -54,8 +56,9 @@ public class ProblemDeserializationConfigurer {
 
     abstract static class DefendantProblemMixin {
         @JsonCreator
+        @SuppressWarnings("java:S1186")
         DefendantProblemMixin(
-                @JsonProperty("problems")                    List<Problem> problems,
+                @JsonProperty("problems")                     List<Problem> problems,
                 @JsonProperty("prosecutorDefendantReference") String prosecutorDefendantReference) {}
     }
 }

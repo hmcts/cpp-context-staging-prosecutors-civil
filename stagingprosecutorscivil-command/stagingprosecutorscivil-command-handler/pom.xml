@@ -14,6 +14,11 @@
     <properties>
         <cpp.service-component>COMMAND_HANDLER</cpp.service-component>
         <skip.schema.pojo.generation>false</skip.schema.pojo.generation>
+        <!-- Exclude mixin inner classes: abstract constructors are never executed
+             (Jackson reads annotations via reflection only) so line coverage is impossible -->
+        <sonar.coverage.exclusions>
+            **/jackson/ProblemDeserializationConfigurer.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
