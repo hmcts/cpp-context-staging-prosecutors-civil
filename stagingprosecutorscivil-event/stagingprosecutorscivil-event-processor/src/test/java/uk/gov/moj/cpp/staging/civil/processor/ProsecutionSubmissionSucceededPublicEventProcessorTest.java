@@ -57,8 +57,13 @@ public class ProsecutionSubmissionSucceededPublicEventProcessorTest {
     public void shouldHandleProsecutionSubmissionSucceeded() {
         final CivilProsecutionSubmissionSucceeded prosecutionSubmissionSucceeded = updateCivilProsecutionSubmissionSucceeded();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<CivilProsecutionSubmissionSucceeded> updateProsecutionSubmissionSucceededEnvelope = testEnvelope(prosecutionSubmissionSucceeded, "public.prosecutioncasefile.civil-prosecution-submission-succeeded", eventCreatedTime);
-        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceeded(updateProsecutionSubmissionSucceededEnvelope);
+        final Envelope<CivilProsecutionSubmissionSucceeded> envelope = testEnvelope(
+                prosecutionSubmissionSucceeded,
+                "public.prosecutioncasefile.civil-prosecution-submission-succeeded",
+                eventCreatedTime);
+
+        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceeded(envelope);
+
         ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
         verify(sender).send(captor.capture());
         JsonObject payload = (JsonObject) captor.getValue().payload();
