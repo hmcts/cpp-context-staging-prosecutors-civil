@@ -38,7 +38,6 @@ public class ProblemDeserializationConfigurer {
 
     abstract static class ProblemMixin {
         @JsonCreator
-        @SuppressWarnings("java:S1186") // intentionally empty — Jackson reads annotations only, body is never executed
         ProblemMixin(
                 @JsonProperty("code")   String code,
                 @JsonProperty("values") List<ProblemValue> values) {}
@@ -46,7 +45,6 @@ public class ProblemDeserializationConfigurer {
 
     abstract static class ProblemValueMixin {
         @JsonCreator
-        @SuppressWarnings("java:S1186") // intentionally empty — Jackson reads annotations only, body is never executed
         ProblemValueMixin(
                 @JsonProperty("id")                   String id,
                 @JsonProperty("key")                  String key,
@@ -56,7 +54,6 @@ public class ProblemDeserializationConfigurer {
 
     abstract static class DefendantProblemMixin {
         @JsonCreator
-        @SuppressWarnings("java:S1186") // intentionally empty — Jackson reads annotations only, body is never executed
         DefendantProblemMixin(
                 @JsonProperty("problems")                    List<Problem> problems,
                 @JsonProperty("prosecutorDefendantReference") String prosecutorDefendantReference) {}

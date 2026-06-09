@@ -113,6 +113,42 @@ class ProblemDeserializationConfigurerTest {
     }
 
     @Test
+    void shouldDeserialiseJsonPropertyValues() throws Exception {
+        final String json = "{\"code\":\"WRN001\"," +
+                "\"values\":[{\"key\":\"k1\",\"value\":\"v1\"},{\"key\":\"k2\",\"value\":\"v2\"}]}";
+
+        final Problem problem = objectMapper.readValue(json, Problem.class);
+
+        assertThat(problem.getValues(), hasSize(2));
+        assertThat(problem.getValues().get(0).getKey(), is("k1"));
+        assertThat(problem.getValues().get(1).getKey(), is("k2"));
+    }
+
+    @Test
+    void shouldDeserialiseJsonPropertyAdditionalProperties() throws Exception {
+        final String json = "{\"key\":\"k\",\"value\":\"v\"," +
+                "\"additionalProperties\":{\"extraKey\":\"extraValue\"}}";
+
+        final ProblemValue problemValue = objectMapper.readValue(json, ProblemValue.class);
+
+        assertThat(problemValue.getKey(), is("k"));
+        assertThat(problemValue.getValue(), is("v"));
+    }
+
+    @Test
+    void shouldDeserialiseJsonPropertyProsecutorDefendantReference() throws Exception {
+        final String json = "{\"problems\":[{\"code\":\"WRN001\",\"values\":[]}]," +
+                "\"prosecutorDefendantReference\":\"DEF-REF-001\"}";
+
+        final DefendantProblem defendantProblem = objectMapper.readValue(json, DefendantProblem.class);
+
+        assertThat(defendantProblem.getProsecutorDefendantReference(), is("DEF-REF-001"));
+        assertThat(defendantProblem.getProblems(), hasSize(1));
+    }
+
+    // --- Negative: proves mixin is required ---
+
+    @Test
     void shouldFailToDeserialiseProblemWithoutMixinRegistered() {
         final ObjectMapper unmixedMapper = new ObjectMapper();
         final String json = "{\"code\":\"WRN001\",\"values\":[]}";
