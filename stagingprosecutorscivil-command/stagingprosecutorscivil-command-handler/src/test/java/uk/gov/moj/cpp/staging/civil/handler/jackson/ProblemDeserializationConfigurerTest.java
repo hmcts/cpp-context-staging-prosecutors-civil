@@ -66,8 +66,6 @@ class ProblemDeserializationConfigurerTest {
         assertThat(problems.get(1).getCode(), is("WRN002"));
     }
 
-    // --- ProblemValue ---
-
     @Test
     void shouldDeserialiseProblemValueWithKeyAndValue() throws Exception {
         final String json = "{\"key\":\"field1\",\"value\":\"val1\"}";
@@ -90,8 +88,6 @@ class ProblemDeserializationConfigurerTest {
         assertThat(problemValue.getKey(), is("field1"));
         assertThat(problemValue.getValue(), is("val1"));
     }
-
-    // --- DefendantProblem ---
 
     @Test
     void shouldDeserialiseDefendantProblemWithProblemsAndReference() throws Exception {
