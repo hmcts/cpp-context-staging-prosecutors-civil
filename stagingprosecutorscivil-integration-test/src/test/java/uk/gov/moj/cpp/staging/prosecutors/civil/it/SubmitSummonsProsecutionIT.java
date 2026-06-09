@@ -90,7 +90,7 @@ public class SubmitSummonsProsecutionIT {
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
-    @Disabled("Flaky-Enable later")
+    @Disabled("Works locally but fails in pipeline")
     @Test
     public void shouldUpdateStatusToSuccessWithWarningsForSummonsProsecution() {
         UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution("payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_PROSECUTION_CONTENT_TYPE);
