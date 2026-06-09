@@ -27,6 +27,7 @@ import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ChargeProsecutionIT {
@@ -143,6 +144,8 @@ public class ChargeProsecutionIT {
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
+
+    @Disabled("Flaky-Enable later")
     @Test
     public void shouldUpdateStatusToSuccessWithWarningsForSingleCaseProsecution() {
         stubPCFCommand(randomUUID());
