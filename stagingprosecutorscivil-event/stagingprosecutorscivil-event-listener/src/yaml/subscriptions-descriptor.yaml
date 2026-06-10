@@ -13,5 +13,7 @@ subscriptions_descriptor:
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/update-civil-case-received.json
         - name: stagingprosecutorscivil.event.material-submitted
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/event/material-submitted.json
+        - name: stagingprosecutorscivil.event.material-submission-rejected
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/event/material-submission-rejected.json
       event_source_name: stagingprosecutorscivil
 

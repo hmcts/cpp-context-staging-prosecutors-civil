@@ -64,8 +64,6 @@ public class CivilProsecutionHandlerTest {
     private static final String PRIVATE_EVENT_SUMMONS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.summons-prosecution-received";
     private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingprosecutorscivil.command.update-civil-case";
     private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingprosecutorscivil.event.update-civil-case-received";
-    private static final String PRIVATE_COMMAND_SUBMIT_MATERIAL = "stagingprosecutorscivil.command.submit-material";
-    private static final String PRIVATE_EVENT_MATERIAL_SUBMITTED = "stagingprosecutorscivil.event.material-submitted";
 
 
     @InjectMocks
@@ -278,99 +276,4 @@ public class CivilProsecutionHandlerTest {
                 .withMetadataFrom(requestEnvelope);
 
     }
-
-    @Test
-    public void shouldHandleSubmitMaterialCommand() {
-
-        assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
-                .with(method("handleSubmitMaterial")
-                        .thatHandles(PRIVATE_COMMAND_SUBMIT_MATERIAL)));
-
-    }
-
-    @Test
-    public void shouldRaiseMaterialSubmittedPrivateEvent() throws Exception {
-
-        final UUID submissionId = randomUUID();
-        final Envelope<SubmitMaterialCommand> envelope = buildSubmitMaterialEnvelope(submissionId, null);
-        when(eventSource.getStreamById(any())).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, MaterialSubmission.class)).thenReturn(new MaterialSubmission());
-
-        civilProsecutionHandler.handleSubmitMaterial(envelope);
-
-        verifyMaterialSubmittedPrivateEvent(null);
-
-    }
-
-    @Test
-    public void shouldRaiseMaterialSubmittedPrivateEventWithDefendantId() throws Exception {
-
-        final UUID submissionId = randomUUID();
-        final Envelope<SubmitMaterialCommand> envelope = buildSubmitMaterialEnvelope(submissionId, "defendant-123");
-        when(eventSource.getStreamById(any())).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, MaterialSubmission.class)).thenReturn(new MaterialSubmission());
-
-        civilProsecutionHandler.handleSubmitMaterial(envelope);
-
-        verifyMaterialSubmittedPrivateEvent("defendant-123");
-
-    }
-
-    private void verifyMaterialSubmittedPrivateEvent(final String expectedDefendantId) throws EventStreamException {
-
-        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
-
-        if (expectedDefendantId != null) {
-            assertThat(envelopeStream, streamContaining(
-                    jsonEnvelope(
-                            metadata()
-                                    .withName(PRIVATE_EVENT_MATERIAL_SUBMITTED),
-                            payload().isJson(allOf(
-                                    withJsonPath("$.submissionId", notNullValue()),
-                                    withJsonPath("$.caseUrn", is("T20217654")),
-                                    withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
-                                    withJsonPath("$.materialType", is("CCTV_FOOTAGE")),
-                                    withJsonPath("$.submissionStatus", is(SubmissionStatus.PENDING.name())),
-                                    withJsonPath("$.defendantId", is(expectedDefendantId))))
-                    ))
-            );
-        } else {
-            assertThat(envelopeStream, streamContaining(
-                    jsonEnvelope(
-                            metadata()
-                                    .withName(PRIVATE_EVENT_MATERIAL_SUBMITTED),
-                            payload().isJson(allOf(
-                                    withJsonPath("$.submissionId", notNullValue()),
-                                    withJsonPath("$.caseUrn", is("T20217654")),
-                                    withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
-                                    withJsonPath("$.materialType", is("CCTV_FOOTAGE")),
-                                    withJsonPath("$.submissionStatus", is(SubmissionStatus.PENDING.name()))))
-                    ))
-            );
-        }
-
-    }
-
-    private Envelope<SubmitMaterialCommand> buildSubmitMaterialEnvelope(final UUID submissionId, final String defendantId) {
-
-        final SubmitMaterialCommand submitMaterialCommand = SubmitMaterialCommand.submitMaterialCommand()
-                .withSubmissionId(submissionId)
-                .withMaterialId(randomUUID())
-                .withCaseUrn("T20217654")
-                .withProsecutingAuthority("THREE RIVER")
-                .withMaterialType("CCTV_FOOTAGE")
-                .withDefendantId(defendantId)
-                .build();
-
-        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
-                metadataWithRandomUUID(randomUUID().toString())
-                        .withUserId(USER_ID.toString()),
-                createObjectBuilder().build());
-
-        return Enveloper.envelop(submitMaterialCommand)
-                .withName(PRIVATE_COMMAND_SUBMIT_MATERIAL)
-                .withMetadataFrom(requestEnvelope);
-
-    }
-
 }

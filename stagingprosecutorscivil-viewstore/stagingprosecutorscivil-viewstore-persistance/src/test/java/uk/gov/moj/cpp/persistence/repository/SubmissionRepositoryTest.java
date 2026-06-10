@@ -9,6 +9,7 @@ import static org.hamcrest.core.Is.is;
 import uk.gov.justice.services.test.utils.persistence.BaseTransactionalJunit4Test;
 import uk.gov.moj.cpp.persistence.entity.CaseDetail;
 import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -29,12 +30,37 @@ public class SubmissionRepositoryTest extends BaseTransactionalJunit4Test {
     public void shouldSaveAndReadChargeProsecution() {
         final UUID key = randomUUID();
         final UUID caseId = randomUUID();
-        final Submission submission = Submission.builder().withSubmissionId(key).withCaseDetail(Collections.singleton(CaseDetail.builder().withId(caseId).build())).withReceivedAt(now()).build();
+        final Submission submission = Submission.builder()
+                .withSubmissionId(key)
+                .withCaseDetail(Collections.singleton(CaseDetail.builder().withId(caseId).build()))
+                .withReceivedAt(now())
+                .withType(SubmissionType.PROSECUTION)
+                .build();
         repository.save(submission);
 
         final Submission result = repository.findBy(key);
         assertThat(result, is(notNullValue()));
         assertThat(result.getSubmissionId(), is(key));
         assertThat(result.getCaseDetail().stream().findFirst().get().getId(), is(caseId));
+        assertThat(result.getType(), is(SubmissionType.PROSECUTION));
+    }
+
+    @Test
+    public void shouldSaveAndReadMaterialSubmission() {
+        final UUID key = randomUUID();
+        final UUID caseId = randomUUID();
+        final Submission submission = Submission.builder()
+                .withSubmissionId(key)
+                .withCaseDetail(Collections.singleton(CaseDetail.builder().withId(caseId).build()))
+                .withReceivedAt(now())
+                .withType(SubmissionType.MATERIAL)
+                .build();
+        repository.save(submission);
+
+        final Submission result = repository.findBy(key);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getSubmissionId(), is(key));
+        assertThat(result.getCaseDetail().stream().findFirst().get().getId(), is(caseId));
+        assertThat(result.getType(), is(SubmissionType.MATERIAL));
     }
 }

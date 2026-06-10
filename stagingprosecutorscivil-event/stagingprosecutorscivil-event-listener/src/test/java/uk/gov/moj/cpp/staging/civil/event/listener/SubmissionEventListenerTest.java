@@ -3,6 +3,8 @@ package uk.gov.moj.cpp.staging.civil.event.listener;
 import static java.time.ZoneOffset.UTC;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -10,19 +12,26 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
 
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.UUID;
+
+import javax.json.Json;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +46,9 @@ public class SubmissionEventListenerTest {
 
     @Mock
     private SubmissionRepository submissionRepository;
+
+    @Mock
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @InjectMocks
     private SubmissionEventListener submissionEventListener;
@@ -145,6 +157,65 @@ public class SubmissionEventListenerTest {
         assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
         assertThat(submission.getOuCode(), is(prosecutingAuthority));
         assertThat(submission.getCaseDetail().stream().findFirst().get().getCaseUrn(), is(caseUrn));
+        assertThat(submission.getType(), is(SubmissionType.MATERIAL));
+    }
+
+    @Test
+    public void shouldMaterialSubmissionRejectedWithErrorsAndWarnings() {
+        final UUID submissionId = randomUUID();
+        final Problem error = Problem.problem().withCode("ERR001").build();
+        final Problem warning = Problem.problem().withCode("WARN001").build();
+
+        final MaterialSubmissionRejected materialSubmissionRejected = MaterialSubmissionRejected.materialSubmissionRejected()
+                .withSubmissionId(submissionId)
+                .withErrors(Collections.singletonList(error))
+                .withWarnings(Collections.singletonList(warning))
+                .build();
+
+        final Submission existingSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING.name())
+                .build();
+
+        final Envelope<MaterialSubmissionRejected> envelope = newEnvelope("stagingprosecutorscivil.event.material-submission-rejected", materialSubmissionRejected);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(existingSubmission);
+        when(objectToJsonObjectConverter.convert(error)).thenReturn(Json.createObjectBuilder().add("code", "ERR001").build());
+        when(objectToJsonObjectConverter.convert(warning)).thenReturn(Json.createObjectBuilder().add("code", "WARN001").build());
+
+        submissionEventListener.materialSubmissionRejected(envelope);
+
+        assertThat(existingSubmission.getSubmissionStatus(), is(REJECTED.toString()));
+        assertThat(existingSubmission.getCompletedAt(), is(notNullValue()));
+        assertThat(existingSubmission.getErrors(), is(notNullValue()));
+        assertThat(existingSubmission.getWarnings(), is(notNullValue()));
+    }
+
+    @Test
+    public void shouldMaterialSubmissionRejectedWithNullErrorsAndWarnings() {
+        final UUID submissionId = randomUUID();
+
+        final MaterialSubmissionRejected materialSubmissionRejected = MaterialSubmissionRejected.materialSubmissionRejected()
+                .withSubmissionId(submissionId)
+                .withErrors(null)
+                .withWarnings(null)
+                .build();
+
+        final Submission existingSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING.name())
+                .build();
+
+        final Envelope<MaterialSubmissionRejected> envelope = newEnvelope("stagingprosecutorscivil.event.material-submission-rejected", materialSubmissionRejected);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(existingSubmission);
+
+        submissionEventListener.materialSubmissionRejected(envelope);
+
+        assertThat(existingSubmission.getSubmissionStatus(), is(REJECTED.toString()));
+        assertThat(existingSubmission.getCompletedAt(), is(notNullValue()));
+        assertThat(existingSubmission.getErrors(), is(nullValue()));
+        assertThat(existingSubmission.getWarnings(), is(nullValue()));
     }
 
     private <T> Envelope<T> newEnvelope(final String name, T payload) {

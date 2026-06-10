@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.event.listener;
 
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
 
@@ -11,10 +12,12 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.persistence.entity.CaseDetail;
 import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
@@ -23,6 +26,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -65,6 +69,7 @@ public class SubmissionEventListener {
                 .withCaseDetail(caseDetails)
                 .withErrors(null)
                 .withWarnings(null)
+                .withType(SubmissionType.PROSECUTION)
                 .build();
 
         submissionRepository.save(submission);
@@ -114,32 +119,6 @@ public class SubmissionEventListener {
         submissionRepository.save(submission);
     }
 
-    private ZonedDateTime extractCreatedAt(final Metadata metadata) {
-        return metadata.createdAt().orElseThrow(() -> new IllegalArgumentException("metadata createdAt is not present"));
-    }
-
-    private JsonArray transformErrorsToJsonArray(final Collection<Problem> errorsOrWarnings) {
-        if (errorsOrWarnings == null) {
-            return null;
-        }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-        errorsOrWarnings.stream()
-                .map(objectToJsonObjectConverter::convert)
-                .forEach(arrayBuilder::add);
-        return arrayBuilder.build();
-    }
-
-    private JsonArray transformDefendantProblemsToJsonArray(final Collection<DefendantProblem> errors) {
-        if (errors == null) {
-            return null;
-        }
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-        errors.stream()
-                .map(objectToJsonObjectConverter::convert)
-                .forEach(arrayBuilder::add);
-        return arrayBuilder.build();
-    }
-
     @Handles("stagingprosecutorscivil.event.material-submitted")
     public void materialSubmitted(final Envelope<MaterialSubmitted> envelope) {
         final MaterialSubmitted materialSubmitted = envelope.payload();
@@ -159,9 +138,67 @@ public class SubmissionEventListener {
                 .withCaseDetail(caseDetails)
                 .withErrors(null)
                 .withWarnings(null)
+                .withType(SubmissionType.MATERIAL)
                 .build();
 
-        submissionRepository.save(submission); //To insert SubmissionType??
+        submissionRepository.save(submission);
+    }
+
+    @Handles("stagingprosecutorscivil.event.material-submission-rejected")
+    public void materialSubmissionRejected(final Envelope<MaterialSubmissionRejected> envelope) {
+        final MaterialSubmissionRejected submissionRejected = envelope.payload();
+        submissionRejected(submissionRejected.getSubmissionId(), submissionRejected.getErrors(), submissionRejected.getWarnings(), extractCreatedAt(envelope.metadata()));
+    }
+
+    private void submissionRejected(final UUID submissionId, final List<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> errors, final List<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> warnings, final ZonedDateTime timestamp) {
+        final JsonArray submissionErrors = transformErrorsOrWarningsToJsonArray(errors);
+        final JsonArray submissionWarnings = transformErrorsOrWarningsToJsonArray(warnings);
+        final Submission submission = submissionRepository.findBy(submissionId);
+
+        submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
+        submission.setCompletedAt(timestamp);
+        submission.setErrors(submissionErrors);
+        submission.setWarnings(submissionWarnings);
+    }
+
+    private ZonedDateTime extractCreatedAt(final Metadata metadata) {
+        return metadata.createdAt().orElseThrow(() -> new IllegalArgumentException("metadata createdAt is not present"));
+    }
+
+    private JsonArray transformErrorsToJsonArray(final Collection<Problem> errorsOrWarnings) {
+        if (errorsOrWarnings == null) {
+            return null;
+        }
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        errorsOrWarnings.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
+        return arrayBuilder.build();
+    }
+
+    private JsonArray transformDefendantProblemsToJsonArray(final Collection<DefendantProblem> errors) {
+        if (errors == null) {
+            return null;
+        }
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        errors.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
+        return arrayBuilder.build();
+    }
+
+    private JsonArray transformErrorsOrWarningsToJsonArray(final Collection<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> errorsOrWarnings) {
+        if (errorsOrWarnings == null) {
+            return null;
+        }
+
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+
+        errorsOrWarnings.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
+
+        return arrayBuilder.build();
     }
 }
 
