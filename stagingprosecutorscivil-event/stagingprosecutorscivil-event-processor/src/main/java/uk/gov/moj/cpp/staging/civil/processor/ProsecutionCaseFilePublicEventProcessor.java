@@ -43,7 +43,7 @@ public class ProsecutionCaseFilePublicEventProcessor {
         }
 
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
-                .add("submissionId", submissionId.toString());
+                .add(SUBMISSION_ID, submissionId.get() .toString());
 
         sender.send(envelop(jsonObjectBuilder.build())
                 .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
