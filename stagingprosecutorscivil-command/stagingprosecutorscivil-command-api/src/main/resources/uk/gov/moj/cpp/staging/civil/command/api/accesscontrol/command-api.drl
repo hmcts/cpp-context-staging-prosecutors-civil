@@ -22,3 +22,12 @@ rule "Command - Rule for Summons Prosecution"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Command - Rule for Submit Material"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "stagingprosecutorscivil.submit-material");
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
+  then
+    $outcome.setSuccess(true);
+end
