@@ -121,6 +121,7 @@ public class SubmissionEventListener {
 
     @Handles("stagingprosecutorscivil.event.material-submitted")
     public void materialSubmitted(final Envelope<MaterialSubmitted> envelope) {
+        LOGGER.info("stagingprosecutorscivil.event.material-submitted event received in Listener for SubmissionId {}", envelope.payload().getSubmissionId());
         final MaterialSubmitted materialSubmitted = envelope.payload();
 
         final Set<CaseDetail> caseDetails = new HashSet<>();

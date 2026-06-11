@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 
 @ServiceComponent(COMMAND_HANDLER)
 public class MaterialHandler {
-
     private static final Logger LOGGER = getLogger(MaterialHandler.class);
 
     @Inject
@@ -40,6 +39,7 @@ public class MaterialHandler {
 
     @Handles("stagingprosecutorscivil.command.submit-material")
     public void handleSubmitMaterial(final Envelope<SubmitMaterialCommand> command) throws EventStreamException {
+        LOGGER.info("..........Received command to submit material with payload {}", command.payload());
         final SubmitMaterialCommand payload = command.payload();
 
         applyToAggregate(payload.getSubmissionId(), command, materialSubmission -> materialSubmission.submitMaterial(
