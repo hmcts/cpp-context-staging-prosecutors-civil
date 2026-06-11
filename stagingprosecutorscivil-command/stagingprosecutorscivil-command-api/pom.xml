@@ -60,6 +60,14 @@
             <artifactId>rest-adapter-file-service</artifactId>
         </dependency>
         <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>file-service-persistence</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.system.id-mapper</groupId>
+            <artifactId>id-mapper-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>5.5.7</version>
