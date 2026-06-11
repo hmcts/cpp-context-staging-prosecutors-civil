@@ -197,7 +197,7 @@ public class CivilProsecutionApiTest {
 
         final SubmitMaterialWithSubmissionId payload = (SubmitMaterialWithSubmissionId) capturedEnvelope.payload();
         assertThat(payload.getCaseUrn(), is("urn1"));
-        assertThat(payload.getMaterial(), is(materialId));
+        assertThat(payload.getMaterialId(), is(materialId));
         assertThat(payload.getMaterialType(), is("Plea"));
         assertThat(payload.getProsecutingAuthority(), is("AUTH001"));
         assertThat(payload.getDefendantId(), is(defendantId));

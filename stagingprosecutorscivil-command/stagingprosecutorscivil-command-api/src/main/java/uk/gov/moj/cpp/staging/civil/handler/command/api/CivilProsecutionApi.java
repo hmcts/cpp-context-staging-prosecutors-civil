@@ -102,8 +102,11 @@ public class CivilProsecutionApi {
 
     @Handles("stagingprosecutorscivil.submit-material")
     public Envelope<UrlResponse> submitMaterial(final JsonEnvelope envelope) {
+        LOGGER.info(".......Received submission at stagingprosecutorscivil.submit-material with metadata {}",envelope.metadata());
         final String defendantIdField = "defendantId";
         final JsonObject requestPayload = envelope.payloadAsJsonObject();
+
+        LOGGER.info(".........Validating request payload for stagingprosecutorscivil.submit-material with requestPayload {}",requestPayload);
 
         try {
             jsonSchemaValidator.validate(requestPayload.toString(), envelope.metadata().name());
@@ -114,7 +117,7 @@ public class CivilProsecutionApi {
         final UUID submissionId = uuidProducer.generateUUID();
         final SubmitMaterialWithSubmissionId.Builder submitMaterialWithSubmissionIdBuilder = SubmitMaterialWithSubmissionId.submitMaterialWithSubmissionId()
                 .withSubmissionId(submissionId)
-                .withMaterial(UUID.fromString(requestPayload.getString("material")))
+                .withMaterialId(UUID.fromString(requestPayload.getString("material")))
                 .withCaseUrn(requestPayload.getString("caseUrn"))
                 .withMaterialType(requestPayload.getString("materialType"))
                 .withProsecutingAuthority(requestPayload.getString("prosecutingAuthority"));

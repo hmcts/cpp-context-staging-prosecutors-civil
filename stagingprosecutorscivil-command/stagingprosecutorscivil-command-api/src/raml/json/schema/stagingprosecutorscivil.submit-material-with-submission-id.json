@@ -3,7 +3,7 @@
   "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/command/api/submit-material-with-submission-id.json",
   "type": "object",
   "properties": {
-    "material": {
+    "materialId": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
     },
     "caseUrn": {

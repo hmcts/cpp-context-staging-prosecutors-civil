@@ -44,8 +44,7 @@ public class MaterialSubmittedProcessor {
 
     @Handles("stagingprosecutorscivil.event.material-submitted")
     public void onMaterialSubmitted(final Envelope<MaterialSubmitted> materialSubmittedEnvelope) {
-        LOGGER.info("Received material submitted event with submission id {}",
-                materialSubmittedEnvelope.payload().getSubmissionId());
+        LOGGER.info("Received material submitted event with payload {}", materialSubmittedEnvelope.payload());
 
         final MaterialSubmitted materialSubmitted = materialSubmittedEnvelope.payload();
 
