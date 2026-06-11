@@ -22,6 +22,8 @@ import uk.gov.moj.cps.prosecutioncasefile.domain.event.MaterialRejected;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
@@ -52,12 +54,14 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
     public void shouldSendRejectMaterialCommandWhenSubmissionIdPresent() {
         final UUID submissionId = randomUUID();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final JsonArray errors = Json.createArrayBuilder().add("some error").build();
 
         final Envelope<MaterialRejected> envelope = testEnvelopeWithSubmissionId(
                 MaterialRejected.materialRejected().build(),
                 "public.prosecutioncasefile.material-rejected",
                 submissionId,
-                eventCreatedTime);
+                eventCreatedTime,
+                errors);
 
         target.caseMaterialRejected(envelope);
 
@@ -67,6 +71,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         assertThat(captor.getValue().metadata().name(), is("stagingprosecutorscivil.command.reject-material"));
         final JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(notNullValue()));
+        assertThat(payload.getJsonArray("errors"), is(errors));
     }
 
     @Test
@@ -83,7 +88,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         verifyNoInteractions(sender);
     }
 
-    private <T> Envelope<T> testEnvelopeWithSubmissionId(final T payload, final String eventName, final UUID submissionId, final ZonedDateTime createdAt) {
+    private <T> Envelope<T> testEnvelopeWithSubmissionId(final T payload, final String eventName, final UUID submissionId, final ZonedDateTime createdAt, final JsonArray errors) {
         final MetadataBuilder metadataBuilder = metadataBuilder()
                 .withId(randomUUID())
                 .withName(eventName)
@@ -95,6 +100,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         return Envelope.envelopeFrom(metadataFrom(createObjectBuilder(
                 metadataBuilder.build().asJsonObject())
                 .add("submissionId", submissionId.toString())
+                .add("errors", errors)
                 .build())
                 .withUserId(randomUUID().toString()).build(), payload);
     }
