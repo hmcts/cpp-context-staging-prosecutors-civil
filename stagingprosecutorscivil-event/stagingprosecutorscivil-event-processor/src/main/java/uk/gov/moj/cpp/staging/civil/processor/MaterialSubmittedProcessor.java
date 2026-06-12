@@ -1,12 +1,9 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
-import static java.lang.String.format;
-import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static javax.json.Json.createObjectBuilder;
-import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.PROSECUTOR_CASE_PATTERN;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -14,7 +11,6 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
-import uk.gov.moj.cpp.staging.civil.processor.exception.InvalidCaseUrnProvided;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 
 import java.util.UUID;
@@ -48,21 +44,18 @@ public class MaterialSubmittedProcessor {
 
         final MaterialSubmitted materialSubmitted = materialSubmittedEnvelope.payload();
 
-        final String prosecutorCaseReference = getProsecutorCaseReference(
-                materialSubmitted.getProsecutingAuthority(),
-                materialSubmitted.getCaseUrn());
-        final UUID caseId = systemIdMapperService.getCppCaseIdFor(prosecutorCaseReference);
+        final UUID caseId = systemIdMapperService.getCppCaseIdFor(materialSubmitted.getCaseUrn());
 
-        LOGGER.info("----------Mapped prosecutorCaseReference {} to caseId {}", prosecutorCaseReference, caseId);
+        LOGGER.info("----------Mapped prosecutorCaseReference {} to caseId {}", materialSubmitted.getCaseUrn(), caseId);
 
         final JsonObjectBuilder payloadBuilder = createObjectBuilder()
-                .add(CASE_ID, caseId.toString())
                 .add("material", createObjectBuilder()
                         .add("documentType", materialSubmitted.getMaterialType())
                         .add("fileStoreId", materialSubmitted.getMaterialId().toString())
                         .build()
                 );
 
+        ofNullable(caseId).ifPresent(c -> payloadBuilder.add(CASE_ID, caseId.toString()));
         ofNullable(materialSubmitted.getProsecutingAuthority()).ifPresent(prosecutingAuthority -> payloadBuilder.add("prosecutingAuthority", prosecutingAuthority));
         ofNullable(materialSubmitted.getDefendantId()).ifPresent(id -> payloadBuilder.add("prosecutorDefendantId", id));
 
@@ -73,17 +66,4 @@ public class MaterialSubmittedProcessor {
         final Envelope<JsonObject> envelope = Envelope.envelopeFrom(metadata, payloadBuilder.build());
         sender.sendAsAdmin(envelope);
     }
-
-    public static String getProsecutorCaseReference(final String prosecutingAuthority, final String caseUrn) {
-        if (isNull(prosecutingAuthority)) {
-            return caseUrn;
-        }
-
-        if (isNull(caseUrn)) {
-            throw new InvalidCaseUrnProvided("please provide a valid caseUrn");
-        }
-
-        return format(PROSECUTOR_CASE_PATTERN, prosecutingAuthority, caseUrn);
-    }
-
 }
