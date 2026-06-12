@@ -73,7 +73,7 @@ public class MaterialSubmittedProcessorTest {
                 .withDefendantId(defendantId)
                 .build();
 
-        when(systemIdMapperService.getCppCaseIdFor(prosecutingAuthority + ":" + caseUrn)).thenReturn(caseId);
+        when(systemIdMapperService.getCppCaseIdFor(caseUrn)).thenReturn(caseId);
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 
@@ -107,7 +107,7 @@ public class MaterialSubmittedProcessorTest {
                 .withMaterialType(materialType)
                 .build();
 
-        when(systemIdMapperService.getCppCaseIdFor(prosecutingAuthority + ":" + caseUrn)).thenReturn(caseId);
+        when(systemIdMapperService.getCppCaseIdFor(caseUrn)).thenReturn(caseId);
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 
@@ -145,20 +145,6 @@ public class MaterialSubmittedProcessorTest {
 
         assertThat(payload.getString("caseId"), is(caseId.toString()));
         assertThat(payload.containsKey("prosecutingAuthority"), is(false));
-    }
-
-    @Test
-    public void shouldThrowExceptionWhenProsecutingAuthorityProvidedAndCaseUrnIsNull() {
-        final MaterialSubmitted materialSubmitted = MaterialSubmitted.materialSubmitted()
-                .withSubmissionId(randomUUID())
-                .withSubmissionStatus(PENDING)
-                .withProsecutingAuthority("GAAAA01")
-                .withMaterialId(randomUUID())
-                .withMaterialType("CJSM")
-                .build();
-
-        assertThrows(InvalidCaseUrnProvided.class,
-                () -> target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next())));
     }
 
     private <T> Envelope<T> testEnvelope(final T payload, final String eventName, final ZonedDateTime createdAt) {
