@@ -27,9 +27,6 @@
     "defendantId": {
       "type": "string",
       "maxLength": 36
-    },
-    "isCpsCase": {
-      "type": "boolean"
     }
   },
   "required": [
@@ -37,8 +34,7 @@
     "materialId",
     "submissionStatus",
     "caseUrn",
-    "materialType",
-    "isCpsCase"
+    "materialType"
   ],
   "additionalProperties": false
 }
