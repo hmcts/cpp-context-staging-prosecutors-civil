@@ -15,6 +15,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.MaterialSubmission;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ReceiveMaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.RejectMaterial;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SubmitMaterialCommand;
 
@@ -39,8 +40,8 @@ public class MaterialHandler {
 
     @Handles("stagingprosecutorscivil.command.submit-material")
     public void handleSubmitMaterial(final Envelope<SubmitMaterialCommand> command) throws EventStreamException {
-        LOGGER.info("..........Received command to submit material with payload {}", command.payload());
         final SubmitMaterialCommand payload = command.payload();
+        LOGGER.info("..........Received command to submit material with payload {}",payload);
 
         applyToAggregate(payload.getSubmissionId(), command, materialSubmission -> materialSubmission.submitMaterial(
                 payload.getSubmissionId(),
@@ -68,5 +69,15 @@ public class MaterialHandler {
 
         final JsonEnvelope jsonEnvelope = envelopeFrom(command.metadata(), JsonValue.NULL);
         eventStream.append(events.map(toEnvelopeWithMetadataFrom(jsonEnvelope)));
+    }
+
+    @Handles("stagingprosecutorscivil.command.receive-material-submission-successful")
+    public void handleReceiveMaterial(final Envelope<ReceiveMaterialSubmissionSuccessful> receiveMaterialSubmissionSuccessfulEnvelope) throws EventStreamException {
+        final ReceiveMaterialSubmissionSuccessful receiveSubmissionSuccessful = receiveMaterialSubmissionSuccessfulEnvelope.payload();
+        LOGGER.info("..........Received command to receive material submission successful with payload {}", receiveSubmissionSuccessful);
+
+        final UUID submissionId = receiveSubmissionSuccessful.getSubmissionId();
+        applyToAggregate(submissionId, receiveMaterialSubmissionSuccessfulEnvelope, materialSubmission -> materialSubmission.receiveMaterialSubmissionSuccessful(submissionId));
+
     }
 }

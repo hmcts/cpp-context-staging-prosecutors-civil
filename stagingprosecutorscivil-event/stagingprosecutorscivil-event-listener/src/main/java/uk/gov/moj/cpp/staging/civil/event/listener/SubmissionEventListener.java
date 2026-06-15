@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -18,6 +19,7 @@ import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
@@ -149,6 +151,15 @@ public class SubmissionEventListener {
     public void materialSubmissionRejected(final Envelope<MaterialSubmissionRejected> envelope) {
         final MaterialSubmissionRejected submissionRejected = envelope.payload();
         submissionRejected(submissionRejected.getSubmissionId(), submissionRejected.getErrors(), submissionRejected.getWarnings(), extractCreatedAt(envelope.metadata()));
+    }
+
+    @Handles("stagingprosecutorscivil.event.material-submission-successful")
+    public void materialSubmissionSuccessfulReceived(final Envelope<MaterialSubmissionSuccessful> envelope) {
+        final MaterialSubmissionSuccessful materialSubmissionSuccessful = envelope.payload();
+        final Submission submission = submissionRepository.findBy(materialSubmissionSuccessful.getSubmissionId());
+
+        submission.setCompletedAt(extractCreatedAt(envelope.metadata()));
+        submission.setSubmissionStatus(SUCCESS.toString());
     }
 
     private void submissionRejected(final UUID submissionId, final List<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> errors, final List<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> warnings, final ZonedDateTime timestamp) {

@@ -5,6 +5,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected.materialSubmissionRejected;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful.materialSubmissionSuccessful;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
@@ -53,6 +54,12 @@ public class MaterialSubmission implements Aggregate {
                 .withSubmissionId(submissionId)
                 .withErrors(errors)
                 .withWarnings(warnings)
+                .build()));
+    }
+
+    public Stream<Object> receiveMaterialSubmissionSuccessful(final UUID submissionId) {
+        return apply(of(materialSubmissionSuccessful()
+                .withSubmissionId(submissionId)
                 .build()));
     }
 }
