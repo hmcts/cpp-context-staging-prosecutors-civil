@@ -27,11 +27,14 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.staging.civil.aggregate.MaterialSubmission;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SubmitMaterialCommand;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -78,7 +81,7 @@ public class CivilProsecutionHandlerTest {
     private AggregateService aggregateService;
 
     @Spy
-    private final Enveloper enveloper = createEnveloperWithEvents(ChargeProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class);
+    private final Enveloper enveloper = createEnveloperWithEvents(ChargeProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class, MaterialSubmitted.class);
 
     @Test
     public void shouldHandleChargeProsecutionCommand() {
@@ -273,5 +276,4 @@ public class CivilProsecutionHandlerTest {
                 .withMetadataFrom(requestEnvelope);
 
     }
-
 }

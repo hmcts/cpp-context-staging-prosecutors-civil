@@ -13,6 +13,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
 import uk.gov.moj.cpp.persistence.entity.CaseDetail;
 import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 
 import java.time.ZonedDateTime;
@@ -72,7 +73,8 @@ public class CivilProsecutionQueryViewTest {
                 defendantWarnings,
                 receivedAt,
                 completedAt,
-                caseDetails);
+                caseDetails,
+                SubmissionType.PROSECUTION);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
 

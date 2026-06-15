@@ -31,3 +31,30 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
                     example: !include json/stagingprosecutorscivil.url-response.json
             500:
                 description: Internal Server Error
+
+/v1/prosecutions/{caseUrn}/materials:
+  post:
+    description: |
+      Upload a case document
+      ...
+      (mapping):
+        requestType: multipart/form-data
+        name: stagingprosecutorscivil.submit-material
+      ...
+    body:
+      multipart/form-data:
+        formParameters:
+          material:
+            description: The uploaded material in binary format
+            type: file
+    responses:
+      202:
+        description: Accepted
+        body:
+          application/json:
+            schema: !include json/schema/stagingprosecutorscivil.url-response.json
+            example: !include json/stagingprosecutorscivil.url-response.json
+      400:
+        description: Bad Request
+      500:
+        description: Internal Server Error

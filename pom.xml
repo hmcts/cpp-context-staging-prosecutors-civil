@@ -5,12 +5,12 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>17.103.5</version>
+        <version>17.104.1</version>
     </parent>
 
     <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
     <artifactId>stagingprosecutorscivil</artifactId>
-    <version>17.103.10-CIVIL-T2-SNAPSHOT</version>
+    <version>17.103.23-CIVIL-T2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>stagingprosecutorscivil</name>
 
