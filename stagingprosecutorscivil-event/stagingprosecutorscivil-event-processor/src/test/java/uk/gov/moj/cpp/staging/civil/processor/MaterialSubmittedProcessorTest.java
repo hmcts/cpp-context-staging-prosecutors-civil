@@ -73,7 +73,7 @@ public class MaterialSubmittedProcessorTest {
                 .withDefendantId(defendantId)
                 .build();
 
-        when(systemIdMapperService.getCppCaseIdFor(caseUrn)).thenReturn(caseId);
+        when(systemIdMapperService.getCppCaseIdFor(caseUrn, prosecutingAuthority)).thenReturn(caseId);
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 
@@ -107,7 +107,7 @@ public class MaterialSubmittedProcessorTest {
                 .withMaterialType(materialType)
                 .build();
 
-        when(systemIdMapperService.getCppCaseIdFor(caseUrn)).thenReturn(caseId);
+        when(systemIdMapperService.getCppCaseIdFor(caseUrn, prosecutingAuthority)).thenReturn(caseId);
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 
@@ -135,7 +135,7 @@ public class MaterialSubmittedProcessorTest {
                 .withMaterialType(materialType)
                 .build();
 
-        when(systemIdMapperService.getCppCaseIdFor(caseUrn)).thenReturn(caseId);
+        when(systemIdMapperService.getCppCaseIdFor(caseUrn, null)).thenReturn(caseId);
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 

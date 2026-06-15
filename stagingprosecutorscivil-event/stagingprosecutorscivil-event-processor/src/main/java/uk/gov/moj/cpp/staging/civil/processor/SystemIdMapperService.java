@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.staging.civil.processor;
 
 import static java.util.Objects.isNull;
 import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReference;
 
 import uk.gov.justice.services.core.accesscontrol.AccessControlViolationException;
 import uk.gov.justice.services.core.dispatcher.SystemUserProvider;
@@ -42,16 +43,25 @@ public class SystemIdMapperService {
     @Inject
     private SystemIdMapperClient systemIdMapperClient;
 
-    public UUID getCppCaseIdFor(final String prosecutorCaseReference) {
+    public UUID getCppCaseIdFor(final String prosecutorCaseReference, final String prosecutingAuthority) {
         LOGGER.info("SystemIdMapperService : calling system-id-mapper with prosecutorCaseReference {} ", prosecutorCaseReference);
         final Optional<SystemIdMapping> mapping = getSystemIdMappingFor(prosecutorCaseReference);
         if (mapping.isPresent()) {
+            LOGGER.info("SystemIdMapperService1 : found mapping for prosecutorCaseReference {} with TARGET {} ", prosecutorCaseReference, mapping.get().getTargetId());
             return mapping.get().getTargetId();
         }
 
         final Optional<SystemIdMapping> mappingForPtiUrn = getSystemIdMappingForSpiCase(prosecutorCaseReference);
         if (mappingForPtiUrn.isPresent()) {
+            LOGGER.info("SystemIdMapperService2 : found mapping for prosecutorCaseReference {} with TARGET {} ", prosecutorCaseReference, mappingForPtiUrn.get().getTargetId());
             return mappingForPtiUrn.get().getTargetId();
+        } else {
+            final Optional<SystemIdMapping> mapping1 = getSystemIdMappingFor(getProsecutorCaseReference(
+                    prosecutingAuthority, prosecutorCaseReference));
+            LOGGER.info("SystemIdMapperService3 : found mapping for prosecutorCaseReference {} with TARGET {} ", prosecutorCaseReference, mapping1.isPresent() ? mapping1.get().getTargetId() : "not found");
+            if (mapping1.isPresent()) {
+                return mapping1.get().getTargetId();
+            }
         }
 
         final UUID newCaseId = randomUUID();
@@ -99,6 +109,7 @@ public class SystemIdMapperService {
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         additionResponses.getSystemIdMappings().forEach(systemIdMappings -> {
             if(isNull(systemIdMappings.getError())) {
+                LOGGER.info("SystemIdMapperService : SOURCE {}  - TARGET {} ", systemIdMappings.getSourceId(), systemIdMappings.getTargetId());
                 caseRefToCaseId.put(systemIdMappings.getSourceId(), systemIdMappings.getTargetId());
             } else {
                 LOGGER.error("SystemIdMapperService : Error generating case id: {}", systemIdMappings.getError());
