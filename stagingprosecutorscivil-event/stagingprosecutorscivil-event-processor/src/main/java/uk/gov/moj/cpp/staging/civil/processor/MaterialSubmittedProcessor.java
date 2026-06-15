@@ -44,7 +44,7 @@ public class MaterialSubmittedProcessor {
 
         final MaterialSubmitted materialSubmitted = materialSubmittedEnvelope.payload();
 
-        final UUID caseId = systemIdMapperService.getCppCaseIdFor(materialSubmitted.getCaseUrn());
+        final UUID caseId = systemIdMapperService.getCppCaseIdFor(materialSubmitted.getCaseUrn(), materialSubmitted.getProsecutingAuthority());
 
         LOGGER.info("----------Mapped prosecutorCaseReference {} to caseId {}", materialSubmitted.getCaseUrn(), caseId);
 
