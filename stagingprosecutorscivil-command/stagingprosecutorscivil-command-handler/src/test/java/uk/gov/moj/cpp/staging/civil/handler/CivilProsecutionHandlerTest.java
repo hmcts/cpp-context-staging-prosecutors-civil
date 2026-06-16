@@ -266,6 +266,7 @@ public class CivilProsecutionHandlerTest {
                         .withStartDateRangeOfHearing(LocalDate.now())
                         .withEndDateRangeOfHearing(LocalDate.now().plusDays(30))
                         .withCourtHearingLocation("B01LY01")
+                        .withTimeOfHearing("10:00:00")
                         .build())
                 .withProsecutingAuthority("THREE RIVER")
                 .withRelatedReferenceNumber("GOB123456789")

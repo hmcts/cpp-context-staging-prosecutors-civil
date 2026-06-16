@@ -16,11 +16,18 @@
       "description": "The OUCODE of the courthouse (reference data)",
       "minLength": 1,
       "maxLength": 7
+    },
+    "timeOfHearing": {
+      "type": "string",
+      "description": "The actual start time of the hearing",
+      "pattern": "^(2[0-3]|[01]?[0-9]):([0-5]?[0-9]):([0-5]?[0-9])$",
+      "maxLength": 8
     }
   },
   "required": [
     "startDateRangeOfHearing",
     "endDateRangeOfHearing",
-    "courtHearingLocation"
+    "courtHearingLocation",
+    "timeOfHearing"
   ]
 }
