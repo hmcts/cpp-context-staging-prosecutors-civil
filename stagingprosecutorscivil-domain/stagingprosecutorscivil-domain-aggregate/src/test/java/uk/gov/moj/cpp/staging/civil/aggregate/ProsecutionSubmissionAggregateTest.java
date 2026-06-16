@@ -37,6 +37,7 @@ public class ProsecutionSubmissionAggregateTest {
         final UUID submissionId = UUID.randomUUID();
         final HearingDetails hearingDetails = HearingDetails.hearingDetails()
                 .withDateOfHearing(LocalDate.now())
+                .withTimeOfHearing("10:00:00")
                 .withCourtHearingLocation("COURT1")
                 .build();
         final List<ProsecutionCase> cases = Collections.singletonList(ProsecutionCase.prosecutionCase()
@@ -86,6 +87,7 @@ public class ProsecutionSubmissionAggregateTest {
         final UUID submissionId = UUID.randomUUID();
         final HearingDetails hearingDetails = HearingDetails.hearingDetails()
                 .withDateOfHearing(LocalDate.now())
+                .withTimeOfHearing("10:00:00")
                 .withCourtHearingLocation("COURT2")
                 .build();
         final List<ProsecutionCase> cases = Collections.singletonList(ProsecutionCase.prosecutionCase()
