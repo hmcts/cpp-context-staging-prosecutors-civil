@@ -13,6 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem;
@@ -140,6 +141,28 @@ public class MaterialSubmissionTest {
         final MaterialSubmissionRejected event = (MaterialSubmissionRejected) events.get(0);
         assertThat(event.getErrors(), is(errors));
         assertThat(event.getWarnings(), is(warnings));
+    }
+
+    @Test
+    public void shouldRaiseSingleMaterialSubmissionSuccessfulEvent() {
+        final List<Object> events = materialSubmission
+                .receiveMaterialSubmissionSuccessful(randomUUID())
+                .collect(toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), instanceOf(MaterialSubmissionSuccessful.class));
+    }
+
+    @Test
+    public void shouldRaiseMaterialSubmissionSuccessfulEventWithCorrectSubmissionId() {
+        final UUID submissionId = randomUUID();
+
+        final List<Object> events = materialSubmission
+                .receiveMaterialSubmissionSuccessful(submissionId)
+                .collect(toList());
+
+        final MaterialSubmissionSuccessful event = (MaterialSubmissionSuccessful) events.get(0);
+        assertThat(event.getSubmissionId(), is(submissionId));
     }
 
     private void submitMaterial(final UUID submissionId) {

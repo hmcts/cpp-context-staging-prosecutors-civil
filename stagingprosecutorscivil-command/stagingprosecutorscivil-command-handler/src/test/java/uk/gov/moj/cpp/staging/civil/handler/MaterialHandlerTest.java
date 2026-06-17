@@ -31,24 +31,13 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.MaterialSubmission;
-import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ReceiveMaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.RejectMaterial;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SubmitMaterialCommand;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
-import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -62,15 +51,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class MaterialHandlerTest {
 
-    private static final String PRIVATE_COMMAND_CHARGE_PROSECUTION = "stagingprosecutorscivil.command.charge-prosecution";
-    private static final String PRIVATE_EVENT_CHARGE_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.charge-prosecution-received";
-    private static final String PRIVATE_COMMAND_SUMMONS_PROSECUTION = "stagingprosecutorscivil.command.summons-prosecution";
-    private static final String PRIVATE_EVENT_SUMMONS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.summons-prosecution-received";
-    private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingprosecutorscivil.command.update-civil-case";
-    private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingprosecutorscivil.event.update-civil-case-received";
     private static final String PRIVATE_COMMAND_SUBMIT_MATERIAL = "stagingprosecutorscivil.command.submit-material";
     private static final String PRIVATE_EVENT_MATERIAL_SUBMITTED = "stagingprosecutorscivil.event.material-submitted";
     private static final String PRIVATE_COMMAND_REJECT_MATERIAL = "stagingprosecutorscivil.command.reject-material";
+    private static final String PRIVATE_COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL = "stagingprosecutorscivil.command.receive-material-submission-successful";
+    private static final String PRIVATE_EVENT_MATERIAL_SUBMISSION_SUCCESSFUL = "stagingprosecutorscivil.event.material-submission-successful";
 
     @InjectMocks
     private MaterialHandler materialHandler;
@@ -87,7 +72,7 @@ public class MaterialHandlerTest {
     private AggregateService aggregateService;
 
     @Spy
-    private final Enveloper enveloper = createEnveloperWithEvents(MaterialSubmitted.class);
+    private final Enveloper enveloper = createEnveloperWithEvents(MaterialSubmitted.class, MaterialSubmissionSuccessful.class);
 
     @Test
     public void shouldHandleSubmitMaterialCommand() {
@@ -201,6 +186,50 @@ public class MaterialHandlerTest {
 
         return Enveloper.envelop(rejectMaterial)
                 .withName(PRIVATE_COMMAND_REJECT_MATERIAL)
+                .withMetadataFrom(requestEnvelope);
+
+    }
+
+    @Test
+    public void shouldHandleReceiveMaterialSubmissionSuccessfulCommand() {
+
+        assertThat(materialHandler, isHandler(COMMAND_HANDLER)
+                .with(method("handleReceiveMaterial")
+                        .thatHandles(PRIVATE_COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL)));
+
+    }
+
+    @Test
+    public void shouldRaiseMaterialSubmissionSuccessfulPrivateEvent() throws Exception {
+
+        final UUID submissionId = randomUUID();
+        final Envelope<ReceiveMaterialSubmissionSuccessful> envelope = buildReceiveMaterialSubmissionSuccessfulEnvelope(submissionId);
+        when(eventSource.getStreamById(submissionId)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, MaterialSubmission.class)).thenReturn(new MaterialSubmission());
+
+        materialHandler.handleReceiveMaterial(envelope);
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata().withName(PRIVATE_EVENT_MATERIAL_SUBMISSION_SUCCESSFUL),
+                        payload().isJson(withJsonPath("$.submissionId", notNullValue())))));
+
+    }
+
+    private Envelope<ReceiveMaterialSubmissionSuccessful> buildReceiveMaterialSubmissionSuccessfulEnvelope(final UUID submissionId) {
+
+        final ReceiveMaterialSubmissionSuccessful command = ReceiveMaterialSubmissionSuccessful.receiveMaterialSubmissionSuccessful()
+                .withSubmissionId(submissionId)
+                .build();
+
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString())
+                        .withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+
+        return Enveloper.envelop(command)
+                .withName(PRIVATE_COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL)
                 .withMetadataFrom(requestEnvelope);
 
     }

@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.staging.civil.aggregate;
 
 import static java.util.stream.Stream.of;
+import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected.materialSubmissionRejected;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful.materialSubmissionSuccessful;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
@@ -16,7 +18,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+
 public class MaterialSubmission implements Aggregate {
+    private static final Logger LOGGER = getLogger(MaterialSubmission.class);
 
     private static final long serialVersionUID = 1L;
 
@@ -53,6 +58,13 @@ public class MaterialSubmission implements Aggregate {
                 .withSubmissionId(submissionId)
                 .withErrors(errors)
                 .withWarnings(warnings)
+                .build()));
+    }
+
+    public Stream<Object> receiveMaterialSubmissionSuccessful(final UUID submissionId) {
+        LOGGER.info("Material submission successful for submissionId: {}", submissionId);
+        return apply(of(materialSubmissionSuccessful()
+                .withSubmissionId(submissionId)
                 .build()));
     }
 }
