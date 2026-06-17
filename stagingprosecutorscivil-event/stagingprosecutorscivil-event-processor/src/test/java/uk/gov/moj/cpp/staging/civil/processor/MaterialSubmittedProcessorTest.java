@@ -3,7 +3,8 @@ package uk.gov.moj.cpp.staging.civil.processor;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -17,8 +18,9 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PE
 
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
-import uk.gov.moj.cpp.staging.civil.processor.exception.InvalidCaseUrnProvided;
+import uk.gov.moj.cpp.staging.civil.processor.util.EnvelopeHelper;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 
 import java.time.ZonedDateTime;
@@ -26,6 +28,7 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -42,8 +45,16 @@ public class MaterialSubmittedProcessorTest {
     @Mock
     private SystemIdMapperService systemIdMapperService;
 
+    @Mock
+    private EnvelopeHelper envelopeHelper;
+
     @InjectMocks
     private MaterialSubmittedProcessor target;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(envelopeHelper.withMetadataInPayload(any(JsonEnvelope.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
 
     @Test
     public void shouldHandleMaterialSubmittedEvent() {
@@ -77,9 +88,9 @@ public class MaterialSubmittedProcessorTest {
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 
-        final ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        final ArgumentCaptor<JsonEnvelope> captor = ArgumentCaptor.forClass(JsonEnvelope.class);
         verify(sender).sendAsAdmin(captor.capture());
-        final JsonObject payload = (JsonObject) captor.getValue().payload();
+        final JsonObject payload = captor.getValue().payloadAsJsonObject();
 
         assertThat(captor.getValue().metadata().name(), is("prosecutioncasefile.add-material"));
         assertThat(payload.getString("caseId"), is(caseId.toString()));
@@ -111,9 +122,9 @@ public class MaterialSubmittedProcessorTest {
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 
-        final ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        final ArgumentCaptor<JsonEnvelope> captor = ArgumentCaptor.forClass(JsonEnvelope.class);
         verify(sender).sendAsAdmin(captor.capture());
-        final JsonObject payload = (JsonObject) captor.getValue().payload();
+        final JsonObject payload = captor.getValue().payloadAsJsonObject();
 
         assertThat(payload.getString("caseId"), is(caseId.toString()));
         assertThat(payload.containsKey("prosecutorDefendantId"), is(false));
@@ -139,9 +150,9 @@ public class MaterialSubmittedProcessorTest {
 
         target.onMaterialSubmitted(testEnvelope(materialSubmitted, "stagingprosecutorscivil.event.material-submitted", PAST_UTC_DATE_TIME.next()));
 
-        final ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        final ArgumentCaptor<JsonEnvelope> captor = ArgumentCaptor.forClass(JsonEnvelope.class);
         verify(sender).sendAsAdmin(captor.capture());
-        final JsonObject payload = (JsonObject) captor.getValue().payload();
+        final JsonObject payload = captor.getValue().payloadAsJsonObject();
 
         assertThat(payload.getString("caseId"), is(caseId.toString()));
         assertThat(payload.containsKey("prosecutingAuthority"), is(false));

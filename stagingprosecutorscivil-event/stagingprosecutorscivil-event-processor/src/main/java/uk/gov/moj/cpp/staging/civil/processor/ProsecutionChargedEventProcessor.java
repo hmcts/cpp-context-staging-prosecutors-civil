@@ -113,7 +113,7 @@ public class ProsecutionChargedEventProcessor {
     private List<GroupProsecutions> getGroupProsecutionsForCharge(final ZonedDateTime dateReceived,
                                                                   final ChargeProsecutionReceived chargeProsecutionReceived,
                                                                   final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(chargeProsecutionReceived.getProsecutionCases(), chargeProsecutionReceived.getProsecutingAuthority()));
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getCaseReferences(chargeProsecutionReceived.getProsecutionCases()));
         final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverter
                 = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, chargeProsecutionReceived, groupId, caseRefToCaseId);
 
@@ -269,6 +269,11 @@ public class ProsecutionChargedEventProcessor {
             LOGGER.info("Calling stagingprosecutorscivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
         }
         updateSubmitionStatus(event, jsonObjectBuilder);
+    }
+
+    private List<String> getCaseReferences(final List<ProsecutionCase> prosecutionCases) {
+        return prosecutionCases.stream()
+                .map(pc -> pc.getUrn()).collect(Collectors.toList());
     }
 
     private List<String> getProsecutorCaseReferences(final List<ProsecutionCase> prosecutionCases, final String prosecutingAuthority) {

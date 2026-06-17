@@ -68,6 +68,7 @@ public class SystemIdMapperService {
         final UUID newCaseId = randomUUID();
         final AdditionResponse additionResponse = attemptAddMappingForURN(newCaseId, prosecutorCaseReference);
         if (additionResponse.isSuccess()) {
+            LOGGER.info("...........SystemIdMapperService4 : NEW CASE ID - prosecutorCaseReference {} with TARGET {} ", prosecutorCaseReference, newCaseId);
             return newCaseId;
         }
 
