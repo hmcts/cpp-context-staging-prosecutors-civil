@@ -145,6 +145,28 @@ public class ChargeProsecutionIT {
     }
 
 
+    @Test
+    public void shouldSubmitChargeProsecutionForYouthDefendantWithIndividualParentGuardian() {
+        stubPCFCommand(randomUUID());
+        final String payload = "payload/charge/stagingprosecutors.submit-charge-prosecution-youth-individual-guardian.json";
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(payload, CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution(payload);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+
+        JsonObject caseSucceededPublicEvent = Json.createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .build();
+        JsonEnvelope publicEventEnvelope = envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED, randomUUID().toString()), caseSucceededPublicEvent);
+        messageProducerClientPublic.sendMessage(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED, publicEventEnvelope);
+
+        final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
+        assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
     @Disabled("Works locally but fails in pipeline")
     @Test
     public void shouldUpdateStatusToSuccessWithWarningsForSingleCaseProsecution() {

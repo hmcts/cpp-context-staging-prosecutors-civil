@@ -1,0 +1,64 @@
+{
+  "prosecutingAuthority": "GAAAA01",
+  "hearingDetails": {
+    "courtHearingLocation": "B01BH00",
+    "dateOfHearing": "2019-08-11",
+    "timeOfHearing": "09:01:01"
+  },
+  "prosecutionCases": [
+    {
+      "informant": "Adam",
+      "urn": "case_urn_value_youth_individual",
+      "defendants": [
+        {
+          "defendantDetails": {
+            "prosecutorDefendantId": "YOUTHDEF001",
+            "documentationLanguage": "E",
+            "hearingLanguage": "E",
+            "address": {
+              "address1": "12 Youth Street",
+              "postcode": "YT1 1YT"
+            }
+          },
+          "individual": {
+            "nameDetails": {
+              "forename": "Jake",
+              "surname": "Young"
+            },
+            "gender": 1,
+            "dateOfBirth": "2005-03-14",
+            "parentGuardian": {
+              "individual": {
+                "nameDetails": {
+                  "title": "Mrs",
+                  "forename": "Mary",
+                  "surname": "Young"
+                },
+                "contactDetails": {
+                  "homeTelephoneNumber": "02071234567",
+                  "primaryEmail": "mary.young@example.com"
+                },
+                "dateOfBirth": "1979-05-23",
+                "gender": 2
+              },
+              "address": {
+                "address1": "12 Youth Street",
+                "postcode": "YT1 1YT"
+              }
+            }
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "CA03014",
+                "offenceSequenceNo": 1,
+                "offenceWording": "Test youth prosecution charge wording",
+                "laidDate": "2019-06-11"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
