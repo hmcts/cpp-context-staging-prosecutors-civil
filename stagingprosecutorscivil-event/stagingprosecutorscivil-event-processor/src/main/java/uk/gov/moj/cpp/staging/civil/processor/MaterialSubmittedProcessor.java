@@ -4,13 +4,17 @@ import static java.util.Optional.ofNullable;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.staging.civil.processor.util.EnvelopeHelper;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 
 import java.util.UUID;
@@ -34,6 +38,9 @@ public class MaterialSubmittedProcessor {
 
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Inject
+    private EnvelopeHelper envelopeHelper;
 
     @Inject
     private Sender sender;
@@ -62,8 +69,13 @@ public class MaterialSubmittedProcessor {
         final Metadata metadata = metadataFrom(materialSubmittedEnvelope.metadata())
                 .withName("prosecutioncasefile.add-material")
                 .build();
+        final String submissionId = materialSubmitted.getSubmissionId().toString();
 
-        final Envelope<JsonObject> envelope = Envelope.envelopeFrom(metadata, payloadBuilder.build());
-        sender.sendAsAdmin(envelope);
+        final JsonEnvelope jsonEnvelope = envelopeHelper.withMetadataInPayload(envelopeFrom(withSubmissionId(metadata, submissionId), payloadBuilder.build()));
+        sender.sendAsAdmin(jsonEnvelope);
+    }
+
+    private Metadata withSubmissionId(final Metadata metadata, final String submissionId) {
+        return metadataFrom(JsonObjects.createObjectBuilder(metadata.asJsonObject()).add("submissionId", submissionId).build()).build();
     }
 }
