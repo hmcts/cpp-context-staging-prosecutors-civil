@@ -335,7 +335,6 @@ public class Prosecutors {
                         .withStartDateRangeOfHearing(START_DATE_RANGE_OF_HEARING)
                         .withEndDateRangeOfHearing(END_DATE_RANGE_OF_HEARING)
                         .withCourtHearingLocation(ENFORCEMENT_COURT_HEARING_LOCATION)
-                        .withTimeOfHearing(TIME_OF_HEARING)
                         .build())
                 .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();

@@ -78,6 +78,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForCharge implements Conv
                 .withProsecutor(Prosecutor.prosecutor()
                         .withInformant(ofNullable(prosecutionCase.getInformant()).orElse(null))
                         .withProsecutingAuthority(chargeProsecutionReceived.getProsecutingAuthority()).build())
+                .withRelatedUrn(chargeProsecutionReceived.getRelatedReferenceNumber())
                 .build();
     }
 

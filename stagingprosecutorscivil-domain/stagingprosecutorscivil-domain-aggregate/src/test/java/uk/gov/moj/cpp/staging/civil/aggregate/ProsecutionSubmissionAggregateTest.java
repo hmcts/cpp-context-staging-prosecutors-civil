@@ -64,7 +64,6 @@ public class ProsecutionSubmissionAggregateTest {
                 .withStartDateRangeOfHearing(LocalDate.of(2026, 3, 12))
                 .withEndDateRangeOfHearing(LocalDate.of(2026, 3, 14))
                 .withCourtHearingLocation("B01LY01")
-                .withTimeOfHearing("10:00:00")
                 .build();
         final List<ProsecutionCase> cases = Collections.singletonList(ProsecutionCase.prosecutionCase()
                 .withUrn("URN-ENF-001")

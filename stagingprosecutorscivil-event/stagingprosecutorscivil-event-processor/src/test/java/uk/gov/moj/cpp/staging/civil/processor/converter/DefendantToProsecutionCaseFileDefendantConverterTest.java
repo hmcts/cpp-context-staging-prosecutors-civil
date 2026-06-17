@@ -45,7 +45,6 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
                 .withStartDateRangeOfHearing(startDate)
                 .withEndDateRangeOfHearing(endDate)
                 .withCourtHearingLocation("B01LY01")
-                .withTimeOfHearing("10:00:00")
                 .build();
 
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> converter
@@ -56,7 +55,6 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
         assertThat(result.getInitialHearing().getDateOfHearing(), is(startDate.toString()));
         assertThat(result.getInitialHearing().getEndDate(), is(endDate.toString()));
         assertThat(result.getInitialHearing().getCourtHearingLocation(), is("B01LY01"));
-        assertThat(result.getInitialHearing().getTimeOfHearing(), is("10:00:00"));
     }
 
 

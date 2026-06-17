@@ -79,7 +79,7 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
     private InitialHearing buildInitialHearing() {
         if (nonNull(this.hearingDateRangeDetails)) {
             return initialHearing()
-                    .withTimeOfHearing(this.hearingDateRangeDetails.getTimeOfHearing())
+                    .withTimeOfHearing("10:00:00")
                     .withCourtHearingLocation(this.hearingDateRangeDetails.getCourtHearingLocation())
                     .withDateOfHearing(this.hearingDateRangeDetails.getStartDateRangeOfHearing().toString())
                     .withEndDate(this.hearingDateRangeDetails.getEndDateRangeOfHearing().toString())
