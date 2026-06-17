@@ -33,15 +33,15 @@ public class ProgressionPublicEventProcessor {
 
     @Handles("public.progression.court-document-added")
     public void caseDocumentUploaded(final JsonEnvelope courtDocumentAdded) {
-        LOGGER.info("Received public.progression.court-document-added event with metadata: {} and payload: {}",
-                courtDocumentAdded.metadata(), courtDocumentAdded.payloadAsJsonObject());
+        LOGGER.info(".......Received public.progression.court-document-added event with metadata: {} and payload: {}",
+                courtDocumentAdded.metadata(), courtDocumentAdded.toObfuscatedDebugString());
         final JsonObject metadataJson = courtDocumentAdded.metadata().asJsonObject();
 
         final Optional<UUID> submissionId = ofNullable(
                 courtDocumentAdded.metadata().asJsonObject().getString(SUBMISSION_ID, null))
                 .map(UUID::fromString);
 
-        LOGGER.info("Extracted submissionId: {}", submissionId);
+        LOGGER.info(".........Extracted submissionId: {}", submissionId);
 
         if (submissionId.isPresent()) {
             final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
