@@ -7,7 +7,7 @@
     "prosecutorDefendantId": {
       "description": "DefendantId provided by prosecutor.",
       "type": "string",
-      "pattern": "^[a-zA-Z0-9-]*$",
+      "pattern": "^[a-zA-Z0-9-]+$",
       "maxLength": 36
     },
     "asn": {

@@ -1,8 +1,6 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.URN_PATTERN;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_CHARGE_PROSECUTION_REQUEST;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_INDIVIDUAL_DEFENDANT_REQUEST;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_MULTI_DEFENDANT_REQUEST;
@@ -128,15 +126,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
         assertViolations(schema, description, request, expectedFragments);
     }
 
-    @DisplayName("Prosecution Request Field — URN Format Validation")
-    @ParameterizedTest(name = "URN ''{0}'' — valid={1}")
-    @MethodSource("urnFormatScenarios")
-    void testUrnFormat(String urn, boolean expectedValid) {
-        assertEquals(expectedValid, urn.matches(URN_PATTERN),
-                "URN '" + urn + "' expected to be " + (expectedValid ? "valid" : "invalid"));
-    }
-
-
     @DisplayName("Prosecution Case Level — Negative Scenarios")
     @ParameterizedTest(name = "{0}")
     @MethodSource("prosecutionCaseLevelScenarios")
@@ -233,24 +222,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
         );
     }
 
-    static Stream<Arguments> urnFormatScenarios() {
-        return Stream.of(
-                Arguments.of("SCIV12345",   true),
-                Arguments.of("SCIV-12345",  true),
-                Arguments.of("abc-DEF-789", true),
-                Arguments.of("A",           true),
-                Arguments.of("123",         true),
-                Arguments.of("SCIV 12345",  false),   // space
-                Arguments.of("SCIV_12345",  false),   // underscore
-                Arguments.of("SCIV!12345",  false),   // exclamation mark
-                Arguments.of("SCIV@12345",  false),   // at sign
-                Arguments.of("SCIV.12345",  false),   // full stop
-                Arguments.of("SCIV/12345",  false),   // forward slash
-                Arguments.of("SCIV#12345",  false),   // hash
-                Arguments.of("SCIV 123!45", false)    // space and exclamation mark
-        );
-    }
-
     static Stream<Arguments> prosecutionCaseLevelScenarios() {
         return Stream.of(
                 Arguments.of(
@@ -273,6 +244,18 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         "defendants is empty array — minItems is 1",
                         base().set(new JSONArray(), PROSECUTION_CASE + ".defendants").build(),
                         List.of("defendants", "minimum")),
+                Arguments.of(
+                        "urn empty string — minLength is 1 and pattern requires at least one alphanumeric or hyphen character",
+                        base().set("", PROSECUTION_CASE + ".urn").build(),
+                        List.of("urn", "minLength")),
+                Arguments.of(
+                        "urn 'SCIV 12345' contains a space — pattern allows only [A-Za-z0-9-]",
+                        base().set("SCIV 12345", PROSECUTION_CASE + ".urn").build(),
+                        List.of("urn", "does not match pattern")),
+                Arguments.of(
+                        "urn 'SCIV!12345' contains '!' — pattern allows only [A-Za-z0-9-]",
+                        base().set("SCIV!12345", PROSECUTION_CASE + ".urn").build(),
+                        List.of("urn", "does not match pattern")),
                 Arguments.of(
                         "urn too long: 37 characters exceeds maxLength of 36",
                         base().set("SCIV12345678901234567890123456789012X", PROSECUTION_CASE + ".urn").build(),
@@ -559,7 +542,11 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "defendantDetails: prosecutorDefendantId 37 characters exceeds maxLength of 36",
                         base().set("A".repeat(37), DEFENDANT_DETAILS + ".prosecutorDefendantId").build(),
-                        List.of("prosecutorDefendantId", "maxLength"))
+                        List.of("prosecutorDefendantId", "maxLength")),
+                Arguments.of(
+                        "defendantDetails: prosecutorDefendantId empty string — pattern requires at least one alphanumeric or hyphen character",
+                        base().set("", DEFENDANT_DETAILS + ".prosecutorDefendantId").build(),
+                        List.of("prosecutorDefendantId", "does not match pattern"))
         );
     }
 
@@ -599,6 +586,10 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         base().remove(OFFENCE_DETAILS + ".offenceWording").build(),
                         List.of("offenceWording")),
                 Arguments.of(
+                        "offenceDetails: cjsOffenceCode empty string — minLength is 1",
+                        base().set("", OFFENCE_DETAILS + ".cjsOffenceCode").build(),
+                        List.of("cjsOffenceCode", "minLength")),
+                Arguments.of(
                         "offenceDetails: cjsOffenceCode 'MS155030X' has 9 characters — maxLength is 8",
                         base().set("MS155030X", OFFENCE_DETAILS + ".cjsOffenceCode").build(),
                         List.of("cjsOffenceCode", "maxLength")),
@@ -606,6 +597,10 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         "offenceDetails: offenceSequenceNo 0 is below minimum of 1",
                         base().set(0, OFFENCE_DETAILS + ".offenceSequenceNo").build(),
                         List.of("offenceSequenceNo", "is not greater or equal to")),
+                Arguments.of(
+                        "offenceDetails: offenceWording empty string — minLength is 1",
+                        base().set("", OFFENCE_DETAILS + ".offenceWording").build(),
+                        List.of("offenceWording", "minLength")),
                 Arguments.of(
                         "offenceDetails: offenceWording 2501 characters exceeds maxLength of 2500",
                         base().set("A".repeat(2501), OFFENCE_DETAILS + ".offenceWording").build(),

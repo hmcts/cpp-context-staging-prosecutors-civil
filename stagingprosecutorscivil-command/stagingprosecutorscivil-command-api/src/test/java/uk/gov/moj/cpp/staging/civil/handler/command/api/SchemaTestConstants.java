@@ -27,7 +27,4 @@ class SchemaTestConstants {
     static final String VALID_YOUTH_INDIVIDUAL_PARENT_GUARDIAN_REQUEST = "/valid-youth-individual-parent-guardian-request.json";
 
     static final String VALID_YOUTH_ORGANISATION_PARENT_GUARDIAN_REQUEST = "/valid-youth-organisation-parent-guardian-request.json";
-
-    // URN allowed characters: A-Z, a-z, 0-9, hyphen (-)
-    static final String URN_PATTERN = "^[A-Za-z0-9-]+$";
 }
