@@ -9,6 +9,8 @@ import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstan
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_MULTI_OFFENCE_REQUEST;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_MULTI_PROSECUTION_CASE_REQUEST;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_ORGANISATION_DEFENDANT_REQUEST;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_YOUTH_INDIVIDUAL_PARENT_GUARDIAN_REQUEST;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.SchemaTestConstants.VALID_YOUTH_ORGANISATION_PARENT_GUARDIAN_REQUEST;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -37,6 +39,10 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
     private static final String DEFENDANT_DETAILS    = DEFENDANT     + ".defendantDetails";
     private static final String OFFENCE  = DEFENDANT     + ".offences[0]";
     private static final String OFFENCE_DETAILS = OFFENCE + ".offenceDetails";
+
+    private static final String PARENT_GUARDIAN = INDIVIDUAL + ".parentGuardian";
+    private static final String PG_INDIVIDUAL   = PARENT_GUARDIAN + ".individual";
+    private static final String PG_NAME_DETAILS = PG_INDIVIDUAL  + ".nameDetails";
 
     protected Schema schema;
 
@@ -67,6 +73,10 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
         return JsonRequestBuilder.from(VALID_MULTI_PROSECUTION_CASE_REQUEST);
     }
 
+    private static JsonRequestBuilder baseYouthIndividualParentGuardian() {
+        return JsonRequestBuilder.from(VALID_YOUTH_INDIVIDUAL_PARENT_GUARDIAN_REQUEST);
+    }
+
 
     @Test
     @DisplayName("Valid individual defendant — conditional mandatory fields forename, surname and gender present and valid")
@@ -78,6 +88,18 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
     @DisplayName("Valid organisation defendant — conditional mandatory field organisationName present and valid")
     void testValidOrganisationDefendantRequest() {
         assertDoesNotThrow(() -> schema.validate(loadJson(VALID_ORGANISATION_DEFENDANT_REQUEST)));
+    }
+
+    @Test
+    @DisplayName("Valid youth defendant — individual parent/guardian with address present and valid")
+    void testValidYouthIndividualParentGuardianRequest() {
+        assertDoesNotThrow(() -> schema.validate(loadJson(VALID_YOUTH_INDIVIDUAL_PARENT_GUARDIAN_REQUEST)));
+    }
+
+    @Test
+    @DisplayName("Valid youth defendant — organisation parent/guardian (e.g. local authority) with address present and valid")
+    void testValidYouthOrganisationParentGuardianRequest() {
+        assertDoesNotThrow(() -> schema.validate(loadJson(VALID_YOUTH_ORGANISATION_PARENT_GUARDIAN_REQUEST)));
     }
 
     @Test
@@ -151,6 +173,14 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
     @ParameterizedTest(name = "{0}")
     @MethodSource("organisationDefendantScenarios")
     void testOrganisationDefendantViolations(String description, JSONObject request, List<String> expectedFragments) {
+        assertViolations(schema, description, request, expectedFragments);
+    }
+
+
+    @DisplayName("Parent/Guardian — Negative Scenarios")
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parentGuardianScenarios")
+    void testParentGuardianViolations(String description, JSONObject request, List<String> expectedFragments) {
         assertViolations(schema, description, request, expectedFragments);
     }
 
@@ -464,6 +494,43 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         baseOrg().set("International Law Enforcement Agency for Civil Prosecution Services United Kingdom Division Regional Office for South East England Metropolitan Area Compliance and Legal Services Department Regulatory Affairs Unit Alpha Beta Gamma Delta Epsilon Zeta Eta Theta",
                                 DEFENDANT + ".organisation.organisationName").build(),
                         List.of("organisationName", "maxLength"))
+        );
+    }
+
+    static Stream<Arguments> parentGuardianScenarios() {
+        return Stream.of(
+
+                Arguments.of(
+                        "parentGuardian oneOf: neither individual nor organisation present — both oneOf options fail",
+                        baseYouthIndividualParentGuardian().remove(PG_INDIVIDUAL).build(),
+                        List.of("individual")),
+                Arguments.of(
+                        "parentGuardian oneOf: both individual and organisation present — only one allowed",
+                        baseYouthIndividualParentGuardian().set(new JSONObject("{\"organisationName\":\"Care UK Ltd\"}"), PARENT_GUARDIAN + ".organisation").build(),
+                        List.of("parentGuardian")),
+                Arguments.of(
+                        "parentGuardian: address absent — required by both oneOf options",
+                        baseYouthIndividualParentGuardian().remove(PARENT_GUARDIAN + ".address").build(),
+                        List.of("address")),
+
+                Arguments.of(
+                        "parentGuardian individual: nameDetails absent — required field",
+                        baseYouthIndividualParentGuardian().remove(PG_NAME_DETAILS).build(),
+                        List.of("nameDetails")),
+                Arguments.of(
+                        "parentGuardian individual: gender absent — required field",
+                        baseYouthIndividualParentGuardian().remove(PG_INDIVIDUAL + ".gender").build(),
+                        List.of("gender")),
+
+                Arguments.of(
+                        "parentGuardian nameDetails: surname absent — only required field in parent-guardian-name-details",
+                        baseYouthIndividualParentGuardian().remove(PG_NAME_DETAILS + ".surname").build(),
+                        List.of("surname")),
+
+                Arguments.of(
+                        "parentGuardian nameDetails: title 'Dr' does not match pattern — only Mr, Mrs, Ms, Miss allowed",
+                        baseYouthIndividualParentGuardian().set("Dr", PG_NAME_DETAILS + ".title").build(),
+                        List.of("title", "does not match pattern"))
         );
     }
 
