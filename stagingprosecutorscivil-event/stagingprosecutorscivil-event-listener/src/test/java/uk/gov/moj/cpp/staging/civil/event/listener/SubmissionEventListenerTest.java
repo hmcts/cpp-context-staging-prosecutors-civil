@@ -13,6 +13,7 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.Envelope;
@@ -21,6 +22,7 @@ import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -216,6 +218,30 @@ public class SubmissionEventListenerTest {
         assertThat(existingSubmission.getCompletedAt(), is(notNullValue()));
         assertThat(existingSubmission.getErrors(), is(nullValue()));
         assertThat(existingSubmission.getWarnings(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldMaterialSubmissionSuccessfulReceived() {
+        final UUID submissionId = randomUUID();
+
+        final MaterialSubmissionSuccessful materialSubmissionSuccessful = MaterialSubmissionSuccessful.materialSubmissionSuccessful()
+                .withSubmissionId(submissionId)
+                .build();
+
+        final Submission existingSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING.name())
+                .build();
+
+        final Envelope<MaterialSubmissionSuccessful> envelope = newEnvelope("stagingprosecutorscivil.event.material-submission-successful", materialSubmissionSuccessful);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(existingSubmission);
+
+        submissionEventListener.materialSubmissionSuccessfulReceived(envelope);
+
+        assertThat(existingSubmission.getSubmissionStatus(), is(SUCCESS.toString()));
+        assertThat(existingSubmission.getCompletedAt(), is(notNullValue()));
+        verify(submissionRepository).save(existingSubmission);
     }
 
     private <T> Envelope<T> newEnvelope(final String name, T payload) {

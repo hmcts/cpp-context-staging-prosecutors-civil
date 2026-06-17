@@ -33,11 +33,15 @@ public class ProgressionPublicEventProcessor {
 
     @Handles("public.progression.court-document-added")
     public void caseDocumentUploaded(final JsonEnvelope courtDocumentAdded) {
+        LOGGER.info("Received public.progression.court-document-added event with metadata: {} and payload: {}",
+                courtDocumentAdded.metadata(), courtDocumentAdded.payloadAsJsonObject());
         final JsonObject metadataJson = courtDocumentAdded.metadata().asJsonObject();
 
         final Optional<UUID> submissionId = ofNullable(
                 courtDocumentAdded.metadata().asJsonObject().getString(SUBMISSION_ID, null))
                 .map(UUID::fromString);
+
+        LOGGER.info("Extracted submissionId: {}", submissionId);
 
         if (submissionId.isPresent()) {
             final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
@@ -47,6 +51,7 @@ public class ProgressionPublicEventProcessor {
             sender.send(envelopeFrom(
                     metadata,
                     jsonObjectBuilder.build()));
+            LOGGER.info("Sent stagingprosecutorscivil.command.receive-material-submission-successful command with submissionId: {}", submissionId.get());
         } else {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Received CourtDocumentAdded event with no submissionId[Metadata: {}], [Payload: {}]",
