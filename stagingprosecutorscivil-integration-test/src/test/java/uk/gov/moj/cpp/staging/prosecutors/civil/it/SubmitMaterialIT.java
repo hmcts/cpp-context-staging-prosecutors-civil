@@ -12,6 +12,7 @@ import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProduc
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.pollForSubmission;
@@ -24,13 +25,17 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClien
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
+import uk.gov.moj.cpp.staging.prosecutors.civil.model.common.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
 import org.apache.commons.io.IOUtils;
@@ -47,7 +52,7 @@ public class SubmitMaterialIT {
     private UUID CASE_ID = null;
     public static final String CONTEXT_NAME = "stagingprosecutorscivil";
     private static final String PUBLIC_EVENT_PROGRESSION_COURT_DOCUMENT_ADDED = "public.progression.court-document-added";
-
+    private static final String PUBLIC_EVENT_PROSECUTIONCASEFILE_MATERIAL_REJECTED = "public.prosecutioncasefile.material-rejected";
     private final WiremockUtils wiremockUtils = new WiremockUtils();
     private String materialUploadUrl = null;
 
@@ -81,6 +86,25 @@ public class SubmitMaterialIT {
         publishPublicProgressionCourtDocumentAdded(submissionId);
 
         pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
+    }
+
+    @Test
+    public void shouldHandleRejectedMaterialSubmission() throws Exception {
+        final String caseUrn = STRING.next();
+
+        final HttpResponse response = sendFileUploadRequest(caseUrn,
+                getFileFrom("submitProsecutionDocument/Testing.pdf"),
+                MATERIAL_TYPE, PROSECUTING_AUTHORITY);
+
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+
+        final UUID submissionId = extractSubmissionId(Optional.of(extractResponse(response)));
+
+        pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final Problem problem = new Problem("INVALID_DOCUMENT_TYPE", List.of(new Problem.ProblemValue("documentType", "PLEA")));
+
+        publishPublicMaterialSubmissionRejected(CASE_ID, submissionId, problem);
     }
 
     private File getFileFrom(final String filePath) {
@@ -136,5 +160,33 @@ public class SubmitMaterialIT {
                         .asJsonObject())
                 .add("submissionId", submissionId.toString()).build())
                 .build();
+    }
+
+    public static void publishPublicMaterialSubmissionRejected(final UUID caseId, final UUID submissionId, final Problem... problems) {
+
+        final JsonArrayBuilder errorBuilder = createArrayBuilder();
+
+        Stream.of(problems).forEach(problem -> {
+            final JsonArrayBuilder errorValuesBuilder = createArrayBuilder();
+
+            problem.values.forEach(value -> errorValuesBuilder.add(createObjectBuilder()
+                    .add("key", value.key)
+                    .add("value", value.value)));
+
+            errorBuilder.add(createObjectBuilder()
+                    .add("code", problem.code)
+                    .add("values", errorValuesBuilder.build()));
+        });
+
+        final JsonObject eventPayload = createObjectBuilder()
+                .add("caseId", caseId.toString())
+                .add("errors", errorBuilder)
+                .build();
+
+        sendPublicEvent(eventPayload, publicMaterialRejectedMetadata(submissionId), PUBLIC_EVENT_PROSECUTIONCASEFILE_MATERIAL_REJECTED);
+    }
+
+    private static Metadata publicMaterialRejectedMetadata(final UUID submissionId) {
+        return publicProsecutionMetadata(submissionId, "public.prosecutioncasefile.material-rejected");
     }
 }
