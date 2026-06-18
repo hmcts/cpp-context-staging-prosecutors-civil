@@ -150,6 +150,8 @@ public class SubmissionEventListener {
     @Handles("stagingprosecutorscivil.event.material-submission-rejected")
     public void materialSubmissionRejected(final Envelope<MaterialSubmissionRejected> envelope) {
         final MaterialSubmissionRejected submissionRejected = envelope.payload();
+        LOGGER.info("stagingprosecutorscivil.event.material-submission-rejected event received in Listener for SubmissionId {}", submissionRejected.getSubmissionId());
+
         submissionRejected(submissionRejected.getSubmissionId(), submissionRejected.getErrors(), submissionRejected.getWarnings(), extractCreatedAt(envelope.metadata()));
     }
 
@@ -169,11 +171,14 @@ public class SubmissionEventListener {
         final JsonArray submissionWarnings = transformErrorsOrWarningsToJsonArray(warnings);
         final Submission submission = submissionRepository.findBy(submissionId);
 
+        LOGGER.info("stagingprosecutorscivil.event.material-submission-rejected event received in Listener for SubmissionId {} with errors: {} and warnings: {}", submissionId, submissionErrors, submissionWarnings);
+
         submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
         submission.setCompletedAt(timestamp);
         submission.setErrors(submissionErrors);
         submission.setWarnings(submissionWarnings);
         submissionRepository.save(submission);
+        LOGGER.info("stagingprosecutorscivil.event.material-submission-rejected event processed in Listener for SubmissionId {} with errors: {} and warnings: {}", submissionId, submissionErrors, submissionWarnings);
     }
 
     private ZonedDateTime extractCreatedAt(final Metadata metadata) {

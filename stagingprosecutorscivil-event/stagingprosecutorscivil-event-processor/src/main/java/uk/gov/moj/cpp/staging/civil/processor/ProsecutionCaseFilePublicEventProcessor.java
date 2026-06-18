@@ -33,9 +33,11 @@ public class ProsecutionCaseFilePublicEventProcessor {
 
     @Handles("public.prosecutioncasefile.material-rejected")
     public void caseMaterialRejected(final Envelope<MaterialRejected> materialRejectedEnvelope) {
-
         final Optional<UUID> submissionId = ofNullable(materialRejectedEnvelope.metadata().asJsonObject().getString(SUBMISSION_ID, null))
                 .map(UUID::fromString);
+
+        LOGGER.info("..........Received public.prosecutioncasefile.material-rejected event with payload for submission id {} ",
+                submissionId);
 
         if (!submissionId.isPresent()) {
             LOGGER.info(SUBMISSION_ID_NOT_FOUND);
@@ -49,5 +51,6 @@ public class ProsecutionCaseFilePublicEventProcessor {
         sender.send(envelop(jsonObjectBuilder.build())
                 .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
                 .withMetadataFrom(materialRejectedEnvelope));
+        LOGGER.info("...........Sent stagingprosecutorscivil.command.reject-material command for submission id {} ", submissionId);
     }
 }

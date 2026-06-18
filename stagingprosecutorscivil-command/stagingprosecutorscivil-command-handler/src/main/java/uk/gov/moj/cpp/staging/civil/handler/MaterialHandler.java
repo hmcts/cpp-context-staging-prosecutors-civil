@@ -55,6 +55,7 @@ public class MaterialHandler {
     @Handles("stagingprosecutorscivil.command.reject-material")
     public void handleReceiveMaterialSubmissionRejected(final Envelope<RejectMaterial> command) throws EventStreamException {
         final RejectMaterial payload = command.payload();
+        LOGGER.info("..........Received command to reject material submission with payload {}",payload.getSubmissionId());
         applyToAggregate(
                 payload.getSubmissionId(),
                 command,
