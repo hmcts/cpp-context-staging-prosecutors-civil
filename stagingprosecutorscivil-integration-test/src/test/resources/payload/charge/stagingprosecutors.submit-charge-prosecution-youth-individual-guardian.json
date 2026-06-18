@@ -8,7 +8,7 @@
   "prosecutionCases": [
     {
       "informant": "Adam",
-      "urn": "case_urn_value_youth_individual",
+      "urn": "case-urn-value-youth-individual",
       "defendants": [
         {
           "defendantDetails": {
