@@ -171,7 +171,7 @@ public class SubmissionEventListener {
         final JsonArray submissionWarnings = transformErrorsOrWarningsToJsonArray(warnings);
         final Submission submission = submissionRepository.findBy(submissionId);
 
-        LOGGER.info("stagingprosecutorscivil.event.material-submission-rejected event received in Listener for SubmissionId {} with errors: {} and warnings: {}", submissionId, submissionErrors, submissionWarnings);
+        LOGGER.info("---------------SubmissionId {}", submission.getSubmissionId());
 
         submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
         submission.setCompletedAt(timestamp);
