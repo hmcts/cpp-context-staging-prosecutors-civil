@@ -65,7 +65,7 @@ public class ProsecutionCaseFileApi {
                         final JsonObject jsonObject = groupProsecutions.getJsonObject(0).getJsonObject("caseDetails");
                         final JsonString prosecutorCaseReference = jsonObject.getJsonString("prosecutorCaseReference");
                         if (prosecutorCaseReference != null) {
-                            return prosecutorCaseReference.getString().startsWith("case_urn_value");
+                            return prosecutorCaseReference.getString().startsWith("case-urn-value");
                         } else {
                             return false;
                         }
@@ -98,7 +98,7 @@ public class ProsecutionCaseFileApi {
                         final JsonObject jsonObject = payloadJsonObject.getJsonObject("caseDetails");
                         final JsonString prosecutorCaseReference = jsonObject.getJsonString("prosecutorCaseReference");
                         if (prosecutorCaseReference != null) {
-                            return prosecutorCaseReference.getString().startsWith("case_urn_value");
+                            return prosecutorCaseReference.getString().startsWith("case-urn-value");
                         } else {
                             return false;
                         }
