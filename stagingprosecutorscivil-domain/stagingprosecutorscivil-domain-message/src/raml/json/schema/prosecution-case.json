@@ -25,7 +25,9 @@
     "urn": {
       "type": "string",
       "description": "Case URN",
-      "maxLength": 36
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[A-Za-z0-9-]+$"
     },
     "paymentReference": {
       "type": "string",
