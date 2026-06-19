@@ -48,6 +48,8 @@ public class CivilProsecutionApi {
                 .withProsecutionCases(chargeProsecution.getProsecutionCases())
                 .withProsecutingAuthority(chargeProsecution.getProsecutingAuthority())
                 .withHearingDetails(chargeProsecution.getHearingDetails())
+                .withHearingDateRangeDetails(chargeProsecution.getHearingDateRangeDetails())
+                .withRelatedReferenceNumber(chargeProsecution.getRelatedReferenceNumber())
                 .withSubmissionId(submissionId)
                 .build();
 

@@ -18,14 +18,34 @@
       "maxLength": 7
     },
     "hearingDetails": {
-      "description": "Court Hearing details",
+      "description": "Court Hearing details for civil/summons cases",
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json"
+    },
+    "hearingDateRangeDetails": {
+      "description": "Court Hearing date range details for enforcement cases",
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-date-range-details.json"
+    },
+    "relatedReferenceNumber": {
+      "description": "GoB account number (Libra account reference) tied to the defendant. Required for enforcement cases.",
+      "type": "string",
+      "maxLength": 13
     }
   },
   "required": [
     "prosecutionCases",
-    "prosecutingAuthority",
-    "hearingDetails"
+    "prosecutingAuthority"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "hearingDetails"
+      ]
+    },
+    {
+      "required": [
+        "hearingDateRangeDetails"
+      ]
+    }
   ],
   "additionalProperties": false
 }

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.staging.civil.processor.converter;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static uk.gov.justice.cps.prosecutioncasefile.InitialHearing.initialHearing;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Address.address;
@@ -13,6 +14,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Language;
@@ -28,13 +30,15 @@ import java.util.UUID;
 public class DefendantToProsecutionCaseFileDefendantConverter implements Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> {
 
     final HearingDetails hearingDetails;
+    final HearingDateRangeDetails hearingDateRangeDetails;
     private final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Individual> individualToProsecutionCaseFileIndividualConverter
             = new IndividualToProsecutionCaseFileIndividualConverter();
     private final Converter<List<Offence>, List<uk.gov.moj.cpp.prosecution.casefile.json.schemas.Offence>> offenceToProsecutionCaseFileOffenceConverter
             = new OffenceToProsecutionCaseFileOffenceConverter();
 
-    public DefendantToProsecutionCaseFileDefendantConverter(final HearingDetails hearingDetails) {
+    public DefendantToProsecutionCaseFileDefendantConverter(final HearingDetails hearingDetails, final HearingDateRangeDetails hearingDateRangeDetails) {
         this.hearingDetails = hearingDetails;
+        this.hearingDateRangeDetails = hearingDateRangeDetails;
     }
 
     @Override
@@ -59,7 +63,7 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
                 .withTelephoneNumberBusiness(ofNullable(defendant.getOrganisation()).map(Organisation::getCompanyTelephoneNumber).orElse(null));
 
         ofNullable(defendant.getIndividual()).ifPresent(individual -> {
-            if(ofNullable(individual.getAliases()).isPresent()) {
+            if (ofNullable(individual.getAliases()).isPresent()) {
                 pcfDefendantBuilder.withIndividualAliases(buildIndividualAliases(individual.getAliases()));
             }
             pcfDefendantBuilder
@@ -73,24 +77,32 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
     }
 
     private InitialHearing buildInitialHearing() {
-
-        return initialHearing()
-                .withTimeOfHearing(this.hearingDetails.getTimeOfHearing())
-                .withCourtHearingLocation(this.hearingDetails.getCourtHearingLocation())
-                .withDateOfHearing(this.hearingDetails.getDateOfHearing().toString())
-                .build();
+        if (nonNull(this.hearingDateRangeDetails)) {
+            return initialHearing()
+                    .withTimeOfHearing("10:00:00")
+                    .withCourtHearingLocation(this.hearingDateRangeDetails.getCourtHearingLocation())
+                    .withDateOfHearing(this.hearingDateRangeDetails.getStartDateRangeOfHearing().toString())
+                    .withEndDate(this.hearingDateRangeDetails.getEndDateRangeOfHearing().toString())
+                    .build();
+        } else {
+            return initialHearing()
+                    .withTimeOfHearing(this.hearingDetails.getTimeOfHearing())
+                    .withCourtHearingLocation(this.hearingDetails.getCourtHearingLocation())
+                    .withDateOfHearing(this.hearingDetails.getDateOfHearing().toString())
+                    .build();
+        }
     }
 
     private List<IndividualAlias> buildIndividualAliases(final List<NameDetails> aliases) {
         final List<IndividualAlias> individualAliases = new ArrayList<>();
         aliases.forEach(alias ->
-                    individualAliases.add(individualAlias()
-                            .withTitle(ofNullable(alias.getTitle()).orElse(null))
-                            .withFirstName(alias.getForename())
-                            .withGivenName2(ofNullable(alias.getForename2()).orElse(null))
-                            .withGivenName3(ofNullable(alias.getForename3()).orElse(null))
-                            .withLastName(alias.getSurname())
-                            .build())
+                individualAliases.add(individualAlias()
+                        .withTitle(ofNullable(alias.getTitle()).orElse(null))
+                        .withFirstName(alias.getForename())
+                        .withGivenName2(ofNullable(alias.getForename2()).orElse(null))
+                        .withGivenName3(ofNullable(alias.getForename3()).orElse(null))
+                        .withLastName(alias.getSurname())
+                        .build())
 
         );
         return individualAliases;
@@ -114,11 +126,11 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
     }
 
     private String formatPostcode(final String postcode) {
-        if(postcode == null) {
+        if (postcode == null) {
             return null;
         }
 
-        final StringBuilder postCodeBuilder = new StringBuilder(postcode.replaceAll("\\s",""));
+        final StringBuilder postCodeBuilder = new StringBuilder(postcode.replaceAll("\\s", ""));
         postCodeBuilder.insert(postCodeBuilder.length() - 3, " ");
         return postCodeBuilder.toString();
     }

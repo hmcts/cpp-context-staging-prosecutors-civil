@@ -7,8 +7,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker.caseMarker;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.enforcementChargeProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupChargeProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsProsecutionCaseDetail;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.RELATED_REFERENCE_NUMBER;
 
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
@@ -75,5 +77,22 @@ public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
 
         assertThat(pcfCaseDetails.getOtherPartyOfficerInCase(), is(nullValue()));
         assertThat(pcfCaseDetails.getCpsOrganisation(), is(nullValue()));
+        assertThat(pcfCaseDetails.getRelatedUrn(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldMapRelatedReferenceNumberToRelatedUrnForEnforcementCase() {
+        final UUID caseFileId = UUID.randomUUID();
+        final UUID groupId = UUID.randomUUID();
+        final ZonedDateTime dateReceived = clock.now();
+        final Map<String, UUID> caseRefToCaseId = new HashMap<>();
+        final ChargeProsecutionReceived chargeProsecutionReceived = enforcementChargeProsecutionReceived();
+        caseRefToCaseId.put(chargeProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
+        final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, chargeProsecutionReceived, groupId, caseRefToCaseId);
+        final ProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
+
+        final GroupProsecutions result = converter.convert(prosecutionCase);
+
+        assertThat(result.getCaseDetails().getRelatedUrn(), is(RELATED_REFERENCE_NUMBER));
     }
 }
