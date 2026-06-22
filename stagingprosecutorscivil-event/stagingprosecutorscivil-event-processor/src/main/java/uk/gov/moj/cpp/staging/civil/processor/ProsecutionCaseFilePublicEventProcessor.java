@@ -46,7 +46,7 @@ public class ProsecutionCaseFilePublicEventProcessor {
                 submissionId);
 
         if (isNull(submissionId)) {
-            LOGGER.info(SUBMISSION_ID_NOT_FOUND);
+            LOGGER.error(SUBMISSION_ID_NOT_FOUND);
             return;
         }
 
