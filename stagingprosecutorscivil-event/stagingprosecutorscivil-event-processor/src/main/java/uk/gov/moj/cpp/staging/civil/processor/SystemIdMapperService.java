@@ -109,7 +109,7 @@ public class SystemIdMapperService {
         AdditionResponses additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapList), contextSystemUserId);
 
         if(nonNull(prosecutingAuthority)) {
-            final List<String> prosecutorCaseReferencesUpdated = prosecutorCaseReferences.stream().map(prosecutorCaseReference -> getProsecutorCaseReference(prosecutingAuthority, prosecutorCaseReference)).collect(Collectors.toList());
+            final List<String> prosecutorCaseReferencesUpdated = prosecutorCaseReferences.stream().map(prosecutorCaseReference -> getProsecutorCaseReference(prosecutingAuthority, prosecutorCaseReference)).toList();
             LOGGER.info("..........SystemIdMapperService : calling bulk system-ids-mapper for {} prosecutorCaseReference's with prosecutingAuthority {}", prosecutorCaseReferencesUpdated.size(), prosecutingAuthority);
             final List<SystemIdMap> systemIdMapListUpdated = prosecutorCaseReferencesUpdated.stream().map(prosecutorCaseReference -> new SystemIdMap(prosecutorCaseReference, SOURCE_TYPE, randomUUID(), TARGET_TYPE)).collect(Collectors.toList());
             additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapListUpdated), contextSystemUserId);
