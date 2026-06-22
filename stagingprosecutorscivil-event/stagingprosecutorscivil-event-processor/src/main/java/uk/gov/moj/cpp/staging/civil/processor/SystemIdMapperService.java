@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReference;
 
@@ -101,11 +102,18 @@ public class SystemIdMapperService {
         return systemIdMapperClient.add(systemIdMap, contextSystemUserId);
     }
 
-    public Map<String, UUID> getCppCaseIdMapFor(List<String> prosecutorCaseReferences) {
+    public Map<String, UUID> getCppCaseIdMapFor(List<String> prosecutorCaseReferences, final String prosecutingAuthority) {
         LOGGER.info("............SystemIdMapperService : calling bulk system-ids-mapper for {} prosecutorCaseReference's", prosecutorCaseReferences.size());
         final UUID contextSystemUserId = systemUserProvider.getContextSystemUserId().orElseThrow(() -> new AccessControlViolationException("System user not found"));
         final List<SystemIdMap> systemIdMapList = prosecutorCaseReferences.stream().map(prosecutorCaseReference -> new SystemIdMap(prosecutorCaseReference, SOURCE_TYPE, randomUUID(), TARGET_TYPE)).collect(Collectors.toList());
-        final AdditionResponses additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapList), contextSystemUserId);
+        AdditionResponses additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapList), contextSystemUserId);
+
+        if(nonNull(prosecutingAuthority)) {
+            final List<String> prosecutorCaseReferencesUpdated = prosecutorCaseReferences.stream().map(prosecutorCaseReference -> getProsecutorCaseReference(prosecutingAuthority, prosecutorCaseReference)).toList();
+            LOGGER.info("..........SystemIdMapperService : calling bulk system-ids-mapper for {} prosecutorCaseReference's with prosecutingAuthority {}", prosecutorCaseReferencesUpdated.size(), prosecutingAuthority);
+            final List<SystemIdMap> systemIdMapListUpdated = prosecutorCaseReferencesUpdated.stream().map(prosecutorCaseReference -> new SystemIdMap(prosecutorCaseReference, SOURCE_TYPE, randomUUID(), TARGET_TYPE)).collect(Collectors.toList());
+            additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapListUpdated), contextSystemUserId);
+        }
 
         LOGGER.info("..........SystemIdMapperService : checking AdditionResponses for bulk system-id-mapper");
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();

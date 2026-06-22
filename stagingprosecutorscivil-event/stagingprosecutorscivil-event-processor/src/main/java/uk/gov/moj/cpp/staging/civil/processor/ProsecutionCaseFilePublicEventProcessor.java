@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -33,21 +35,27 @@ public class ProsecutionCaseFilePublicEventProcessor {
 
     @Handles("public.prosecutioncasefile.material-rejected")
     public void caseMaterialRejected(final Envelope<MaterialRejected> materialRejectedEnvelope) {
-        final Optional<UUID> submissionId = ofNullable(materialRejectedEnvelope.metadata().asJsonObject().getString(SUBMISSION_ID, null))
+        final Optional<UUID> submissionIdOptional = ofNullable(materialRejectedEnvelope.metadata().asJsonObject().getString(SUBMISSION_ID, null))
                 .map(UUID::fromString);
+        LOGGER.info("..........submissionId {} ", submissionIdOptional);
+
+        final MaterialRejected materialRejected = materialRejectedEnvelope.payload();
+        final UUID submissionId = materialRejected.getSubmissionId();
 
         LOGGER.info("..........Received public.prosecutioncasefile.material-rejected event with payload for submission id {} ",
                 submissionId);
 
-        if (!submissionId.isPresent()) {
-            LOGGER.info(SUBMISSION_ID_NOT_FOUND);
+        if (isNull(submissionId)) {
+            LOGGER.error(SUBMISSION_ID_NOT_FOUND);
             return;
         }
 
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
-                .add(SUBMISSION_ID, submissionId.get().toString())
-                .add("errors", materialRejectedEnvelope.metadata().asJsonObject().getJsonArray("errors"));
+                .add(SUBMISSION_ID, submissionId.toString());
 
+        if (nonNull(materialRejected.getErrors())) {
+            jsonObjectBuilder.add("errors", materialRejectedEnvelope.metadata().asJsonObject().getJsonArray("errors"));
+        }
         sender.send(envelop(jsonObjectBuilder.build())
                 .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
                 .withMetadataFrom(materialRejectedEnvelope));

@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.staging.civil.processor;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -19,7 +18,10 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.MaterialRejected;
 
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
+
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -57,7 +59,10 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         final JsonArray errors = Json.createArrayBuilder().add("some error").build();
 
         final Envelope<MaterialRejected> envelope = testEnvelopeWithSubmissionId(
-                MaterialRejected.materialRejected().build(),
+                MaterialRejected.materialRejected()
+                        .withSubmissionId(submissionId)
+                        .withErrors(List.of(Problem.problem().build()))
+                        .build(),
                 "public.prosecutioncasefile.material-rejected",
                 submissionId,
                 eventCreatedTime,
@@ -70,7 +75,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
 
         assertThat(captor.getValue().metadata().name(), is("stagingprosecutorscivil.command.reject-material"));
         final JsonObject payload = (JsonObject) captor.getValue().payload();
-        assertThat(payload.getString("submissionId"), is(notNullValue()));
+        assertThat(payload.getString("submissionId"), is(submissionId.toString()));
         assertThat(payload.getJsonArray("errors"), is(errors));
     }
 
