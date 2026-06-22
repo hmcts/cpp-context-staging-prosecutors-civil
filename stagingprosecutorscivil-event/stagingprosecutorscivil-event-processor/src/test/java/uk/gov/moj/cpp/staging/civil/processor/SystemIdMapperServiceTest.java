@@ -225,21 +225,26 @@ public class SystemIdMapperServiceTest {
     @Test
     void shouldReturnCaseIdMapUsingPrefixedReferencesWhenProsecutingAuthorityIsProvided() {
         final UUID userId = randomUUID();
-        final UUID caseId = randomUUID();
         final String prefixedRef = PROSECUTING_AUTHORITY + ":ref1";
-        final SystemIdMappings mapping = new SystemIdMappings(null, false, randomUUID(), prefixedRef, caseId);
-        final AdditionResponses firstResponses = new AdditionResponses(List.of());
-        final AdditionResponses secondResponses = new AdditionResponses(List.of(mapping));
+        final ArgumentCaptor<SystemidMapList> captor = ArgumentCaptor.forClass(SystemidMapList.class);
 
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
-        when(systemIdMapperClient.addMany(any(SystemidMapList.class), eq(userId)))
-                .thenReturn(firstResponses)
-                .thenReturn(secondResponses);
+        when(systemIdMapperClient.addMany(captor.capture(), eq(userId)))
+                .thenReturn(new AdditionResponses(List.of()))
+                .thenAnswer(invocation -> {
+                    final UUID targetId = ((SystemidMapList) invocation.getArgument(0)).getSystemIds().get(0).getTargetId();
+                    return new AdditionResponses(List.of(new SystemIdMappings(null, false, randomUUID(), prefixedRef, targetId)));
+                });
 
         final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1"), PROSECUTING_AUTHORITY);
 
+        final List<SystemidMapList> allCaptured = captor.getAllValues();
+        assertThat(allCaptured.size(), is(2));
+        final UUID firstCallTargetId = allCaptured.get(0).getSystemIds().get(0).getTargetId();
+        final UUID secondCallTargetId = allCaptured.get(1).getSystemIds().get(0).getTargetId();
+        assertThat(firstCallTargetId, is(secondCallTargetId));
         assertThat(result.size(), is(1));
-        assertThat(result.get(prefixedRef), is(caseId));
+        assertThat(result.get(prefixedRef), is(secondCallTargetId));
     }
 
     @Test
