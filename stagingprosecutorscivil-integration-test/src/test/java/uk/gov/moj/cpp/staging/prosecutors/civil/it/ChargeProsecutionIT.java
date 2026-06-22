@@ -146,6 +146,17 @@ public class ChargeProsecutionIT {
 
 
     @Test
+    public void shouldSubmitChargeProsecutionWithRelatedReferenceNumber() {
+        stubPCFCommand(randomUUID());
+        final String payload = "payload/charge/stagingprosecutors.submit-charge-prosecution-with-related-reference.json";
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(payload, CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution(payload);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
     public void shouldSubmitChargeProsecutionForYouthDefendantWithIndividualParentGuardian() {
         stubPCFCommand(randomUUID());
         final String payload = "payload/charge/stagingprosecutors.submit-charge-prosecution-youth-individual-guardian.json";

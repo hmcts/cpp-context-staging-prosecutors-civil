@@ -29,6 +29,13 @@
       "maxLength": 36,
       "pattern": "^[A-Za-z0-9-]+$"
     },
+    "relatedReferenceNumber": {
+      "type": "string",
+      "description": "Civil Authority reference for a case or account to be linked",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[A-Za-z0-9-]+$"
+    },
     "paymentReference": {
       "type": "string",
       "description": "Case payment reference",

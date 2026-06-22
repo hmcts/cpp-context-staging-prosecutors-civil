@@ -30,6 +30,14 @@ public class ProsecutionCaseFileApi {
                 .atMost(20, TimeUnit.SECONDS)
                 .until(() -> createInitiateGroupProsecutionInvokedWith(ResourcesUtils.asJsonObject(resourceName)));
     }
+
+    public static void expectInitiateSummonsProsecution(final String resourceName) {
+        Awaitility
+                .await()
+                .atMost(20, TimeUnit.SECONDS)
+                .until(() -> validateSummonsProsecutionRelatedUrn(ResourcesUtils.asJsonObject(resourceName)));
+    }
+
     public static void expectInitiateSingleProsecution(final String resourceName) {
         Awaitility
                 .await()
@@ -77,6 +85,11 @@ public class ProsecutionCaseFileApi {
             if (actualJsonObjectPayload.isPresent()) {
                 assertThat(expectedPayload.getString("prosecutingAuthority"), is(actualJsonObjectPayload.get().getJsonArray("groupProsecutions").getJsonObject(0).getJsonObject("caseDetails").getString("originatingOrganisation")));
                 assertThat(expectedPayload.getJsonArray("prosecutionCases").getJsonObject(0).getString("urn"), is(actualJsonObjectPayload.get().getJsonArray("groupProsecutions").getJsonObject(0).getJsonObject("caseDetails").getString("prosecutorCaseReference")));
+                final JsonString expectedRelatedRefNumGroup = expectedPayload.getJsonArray("prosecutionCases").getJsonObject(0).getJsonString("relatedReferenceNumber");
+                final JsonString actualRelatedUrnGroup = actualJsonObjectPayload.get().getJsonArray("groupProsecutions").getJsonObject(0).getJsonObject("caseDetails").getJsonString("relatedUrn");
+                if (expectedRelatedRefNumGroup != null && actualRelatedUrnGroup != null) {
+                    assertThat(expectedRelatedRefNumGroup.getString(), is(actualRelatedUrnGroup.getString()));
+                }
                 assertThat(InitiationCode.O.name(), is(actualJsonObjectPayload.get().getJsonArray("groupProsecutions").getJsonObject(0).getJsonObject("caseDetails").getString("initiationCode")));
                 assertThat(expectedPayload.getJsonArray("prosecutionCases").getJsonObject(0).getJsonArray("defendants").getJsonObject(0).getJsonArray("offences").getJsonObject(0).getJsonObject("offenceDetails").getString("cjsOffenceCode"), is(actualJsonObjectPayload.get().getJsonArray("groupProsecutions").getJsonObject(0).getJsonArray("defendants").getJsonObject(0).getJsonArray("offences").getJsonObject(0).getString("offenceCode")));
                 return true;
@@ -84,6 +97,39 @@ public class ProsecutionCaseFileApi {
                 return false;
             }
         }
+    }
+
+    private static boolean validateSummonsProsecutionRelatedUrn(final JsonObject expectedPayload) {
+        final RequestPatternBuilder request = postRequestedFor(
+                urlPathEqualTo("/prosecutioncasefile-service/command/api/rest/prosecutioncasefile/cc-prosecution"))
+                .withHeader(CONTENT_TYPE, equalTo("application/vnd.prosecutioncasefile.command.initiate-cc-prosecution+json"));
+
+        if (findAll(request).size() == 0) {
+            return false;
+        }
+
+        final Optional<JsonObject> actualJsonObjectPayload = findAll(request)
+                .stream()
+                .filter(actualRequest -> {
+                    final JsonObject payloadJsonObject = readFromString(actualRequest.getBodyAsString());
+                    final JsonObject caseDetails = payloadJsonObject.getJsonObject("caseDetails");
+                    final JsonString prosecutorCaseReference = caseDetails.getJsonString("prosecutorCaseReference");
+                    return prosecutorCaseReference != null && prosecutorCaseReference.getString().startsWith("case-urn-value");
+                })
+                .findFirst()
+                .map(LoggedRequest::getBodyAsString)
+                .map(JsonObjectsHelper::readFromString);
+
+        if (actualJsonObjectPayload.isPresent()) {
+            final JsonString expectedRelatedRefNumSummons = expectedPayload.getJsonArray("prosecutionCases").getJsonObject(0).getJsonString("relatedReferenceNumber");
+            final JsonString actualRelatedUrnSummons = actualJsonObjectPayload.get().getJsonObject("caseDetails").getJsonString("relatedUrn");
+            if (expectedRelatedRefNumSummons != null && actualRelatedUrnSummons != null) {
+                assertThat(expectedRelatedRefNumSummons.getString(), is(actualRelatedUrnSummons.getString()));
+            }
+            assertThat("S", is(actualJsonObjectPayload.get().getJsonObject("caseDetails").getString("initiationCode")));
+            return true;
+        }
+        return false;
     }
 
     private static boolean validateJsonForSingleCase(final JsonObject expectedPayload, final RequestPatternBuilder request) {
@@ -110,6 +156,11 @@ public class ProsecutionCaseFileApi {
             if (actualJsonObjectPayload.isPresent()) {
                 assertThat(expectedPayload.getString("prosecutingAuthority"), is(actualJsonObjectPayload.get().getJsonObject("caseDetails").getString("originatingOrganisation")));
                 assertThat(expectedPayload.getJsonArray("prosecutionCases").getJsonObject(0).getString("urn"), is(actualJsonObjectPayload.get().getJsonObject("caseDetails").getString("prosecutorCaseReference")));
+                final JsonString expectedRelatedRefNumSingle = expectedPayload.getJsonArray("prosecutionCases").getJsonObject(0).getJsonString("relatedReferenceNumber");
+                final JsonString actualRelatedUrnSingle = actualJsonObjectPayload.get().getJsonObject("caseDetails").getJsonString("relatedUrn");
+                if (expectedRelatedRefNumSingle != null && actualRelatedUrnSingle != null) {
+                    assertThat(expectedRelatedRefNumSingle.getString(), is(actualRelatedUrnSingle.getString()));
+                }
                 assertThat(InitiationCode.O.name(), is(actualJsonObjectPayload.get().getJsonObject("caseDetails").getString("initiationCode")));
                 assertThat(expectedPayload.getJsonArray("prosecutionCases").getJsonObject(0).getJsonArray("defendants").getJsonObject(0).getJsonArray("offences").getJsonObject(0).getJsonObject("offenceDetails").getString("cjsOffenceCode"), is(actualJsonObjectPayload.get().getJsonArray("defendants").getJsonObject(0).getJsonArray("offences").getJsonObject(0).getString("offenceCode")));
 

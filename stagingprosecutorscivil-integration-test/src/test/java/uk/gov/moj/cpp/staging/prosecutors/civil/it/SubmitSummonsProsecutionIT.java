@@ -52,8 +52,10 @@ public class SubmitSummonsProsecutionIT {
 
     @Test
     public void shouldSubmitSummonsProsecution() {
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution("payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_PROSECUTION_CONTENT_TYPE);
+        final String payload = "payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json";
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution(payload, SUMMONS_PROSECUTION_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSummonsProsecution(payload);
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
 
@@ -87,6 +89,16 @@ public class SubmitSummonsProsecutionIT {
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldSubmitSummonsProsecutionWithRelatedReferenceNumber() {
+        final String payload = "payload/summons/stagingprosecutors.submit-summons-prosecution-with-related-reference.json";
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution(payload, SUMMONS_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSummonsProsecution(payload);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 

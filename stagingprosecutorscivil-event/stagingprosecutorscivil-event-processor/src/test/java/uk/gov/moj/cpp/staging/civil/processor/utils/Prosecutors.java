@@ -59,6 +59,7 @@ public class Prosecutors {
     public static final String INFORMANT = "informant";
     public static final String CASE_MARKER = "ABC";
     public static final String PAYMENT_REFERENCE = "ref_number";
+    public static final String RELATED_REFERENCE_NUMBER = "RELREF-100";
     public static final String ASN = "asn";
     public static final String CRO_NUMBER = "CroNumber";
     public static final String PNC_IDENTIFIER = "PnCidentifier";
@@ -364,6 +365,7 @@ public class Prosecutors {
                 .withCaseMarker(CASE_MARKER)
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 
@@ -375,6 +377,7 @@ public class Prosecutors {
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
                 .withSummonsCode("summons_code")
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 

@@ -186,7 +186,7 @@
                                     <includes>**/*.json</includes>
 
                                     <!-- where to unpack -->
-                                    <outputDirectory>
+                                    this <outputDirectory>
                                         ${project.build.outputDirectory}/schemas
                                     </outputDirectory>
 

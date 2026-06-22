@@ -1,0 +1,61 @@
+{
+  "prosecutingAuthority": "GAAAA01",
+  "hearingDetails": {
+    "courtHearingLocation": "B01BH00",
+    "dateOfHearing": "2019-08-11",
+    "timeOfHearing": "09:01:01"
+  },
+  "prosecutionCases":
+  [
+    {
+      "informant": "Adam",
+      "caseMarker": "Case mark",
+      "urn": "case-urn-value-1",
+      "relatedReferenceNumber": "RELREF-001",
+      "defendants": [
+        {
+          "defendantDetails": {
+            "prosecutorDefendantId": "TFLDEF001",
+            "asn": "SummonsNumber001",
+            "pncIdentifier": "2099/1234567L",
+            "croNumber": "123456/10L",
+            "documentationLanguage": "E",
+            "hearingLanguage": "E",
+            "address": {
+              "address1": "Address Line 1",
+              "address2": "Address Line 2",
+              "address3": "Address Line 3",
+              "address4": "Address Line 4",
+              "address5": "Address Line 5",
+              "postcode": "SE1H 1XX"
+            },
+            "numPreviousConvictions": 3,
+            "prosecutorCosts": "20.99"
+          },
+          "individual": {
+            "nameDetails": {
+              "title": "Mr",
+              "forename": "John",
+              "surname": "SMITH"
+            },
+            "dateOfBirth": "1970-02-03",
+            "gender": 1
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "CA03014",
+                "offenceSequenceNo": 1,
+                "offenceCommittedDate": "2019-06-11",
+                "laidDate": "2019-06-11",
+                "offenceDateCode": 4,
+                "offenceWording": "Test Prosecution charge wording"
+              },
+              "statementOfFacts": "Test Prosecution statements of facts"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
