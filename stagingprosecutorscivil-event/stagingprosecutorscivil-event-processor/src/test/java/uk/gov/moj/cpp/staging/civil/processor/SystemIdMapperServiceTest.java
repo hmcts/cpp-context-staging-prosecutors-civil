@@ -177,7 +177,7 @@ public class SystemIdMapperServiceTest {
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
         when(systemIdMapperClient.addMany(any(SystemidMapList.class), eq(userId))).thenReturn(responses);
 
-        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1", "ref2"));
+        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1", "ref2"), null);
 
         assertThat(result.size(), is(2));
         assertThat(result.get("ref1"), is(caseId1));
@@ -195,7 +195,7 @@ public class SystemIdMapperServiceTest {
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
         when(systemIdMapperClient.addMany(any(SystemidMapList.class), eq(userId))).thenReturn(responses);
 
-        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1", "ref2"));
+        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1", "ref2"), null);
 
         assertThat(result.size(), is(1));
         assertThat(result.get("ref1"), is(caseId1));
@@ -206,7 +206,7 @@ public class SystemIdMapperServiceTest {
     void shouldThrowAccessControlViolationExceptionWhenNoSystemUserContextForGetCppCaseIdMapFor() {
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.empty());
 
-        assertThrows(AccessControlViolationException.class, () -> target.getCppCaseIdMapFor(List.of("ref1")));
+        assertThrows(AccessControlViolationException.class, () -> target.getCppCaseIdMapFor(List.of("ref1"), null));
     }
 
     @Test
@@ -217,9 +217,29 @@ public class SystemIdMapperServiceTest {
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
         when(systemIdMapperClient.addMany(any(SystemidMapList.class), eq(userId))).thenReturn(responses);
 
-        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of());
+        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of(), null);
 
         assertThat(result.isEmpty(), is(true));
+    }
+
+    @Test
+    void shouldReturnCaseIdMapUsingPrefixedReferencesWhenProsecutingAuthorityIsProvided() {
+        final UUID userId = randomUUID();
+        final UUID caseId = randomUUID();
+        final String prefixedRef = PROSECUTING_AUTHORITY + ":ref1";
+        final SystemIdMappings mapping = new SystemIdMappings(null, false, randomUUID(), prefixedRef, caseId);
+        final AdditionResponses firstResponses = new AdditionResponses(List.of());
+        final AdditionResponses secondResponses = new AdditionResponses(List.of(mapping));
+
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
+        when(systemIdMapperClient.addMany(any(SystemidMapList.class), eq(userId)))
+                .thenReturn(firstResponses)
+                .thenReturn(secondResponses);
+
+        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1"), PROSECUTING_AUTHORITY);
+
+        assertThat(result.size(), is(1));
+        assertThat(result.get(prefixedRef), is(caseId));
     }
 
     @Test
@@ -232,7 +252,7 @@ public class SystemIdMapperServiceTest {
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
         when(systemIdMapperClient.addMany(captor.capture(), eq(userId))).thenReturn(responses);
 
-        target.getCppCaseIdMapFor(List.of("ref1"));
+        target.getCppCaseIdMapFor(List.of("ref1"), null);
 
         assertThat(captor.getValue().getSystemIds().size(), is(1));
         assertThat(captor.getValue().getSystemIds().get(0).getSourceId(), is("ref1"));
