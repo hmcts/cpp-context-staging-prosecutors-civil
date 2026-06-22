@@ -92,6 +92,7 @@ public class CivilProsecutionApiTest {
                         .withCaseMarker("caseMarker")
                         .withPaymentReference("PAYREF102")
                         .withSummonsCode("FIRST")
+                        .withRelatedReferenceNumber("RELREF-1")
                         .withDefendants(defendants)
                         .build()
         );
@@ -116,6 +117,7 @@ public class CivilProsecutionApiTest {
         assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.charge-prosecution"));
         assertThat(receivedChargeProsecution.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(receivedChargeProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        assertThat(receivedChargeProsecution.getProsecutionCases().get(0).getRelatedReferenceNumber(), is("RELREF-1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 
@@ -140,6 +142,7 @@ public class CivilProsecutionApiTest {
                 .withCaseMarker("caseMarker")
                 .withPaymentReference("PAYREF102")
                 .withSummonsCode("FIRST")
+                .withRelatedReferenceNumber("RELREF-1")
                 .withDefendants(defendants)
                 .build()
         );
@@ -169,6 +172,7 @@ public class CivilProsecutionApiTest {
         SummonsProsecutionWithSubmissionId receivedSummonProsecution = (SummonsProsecutionWithSubmissionId) capturedEnvelope.payload();
         assertThat(receivedSummonProsecution.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(receivedSummonProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        assertThat(receivedSummonProsecution.getProsecutionCases().get(0).getRelatedReferenceNumber(), is("RELREF-1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 
