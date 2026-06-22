@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.json.Json.createObjectBuilder;
@@ -10,13 +9,13 @@ import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
-import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cps.prosecutioncasefile.domain.event.MaterialRejected;
+import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObjectBuilder;
 
 import org.slf4j.Logger;
@@ -34,27 +33,25 @@ public class ProsecutionCaseFilePublicEventProcessor {
     private Sender sender;
 
     @Handles("public.prosecutioncasefile.material-rejected")
-    public void caseMaterialRejected(final Envelope<MaterialRejected> materialRejectedEnvelope) {
-        final Optional<UUID> submissionIdOptional = ofNullable(materialRejectedEnvelope.metadata().asJsonObject().getString(SUBMISSION_ID, null))
+    public void caseMaterialRejected(final JsonEnvelope materialRejectedEnvelope) {
+        final Optional<UUID> submissionId = ofNullable(materialRejectedEnvelope.metadata().asJsonObject().getString(SUBMISSION_ID, null))
                 .map(UUID::fromString);
-        LOGGER.info("..........submissionId {} ", submissionIdOptional);
+        LOGGER.info("..........Received public.prosecutioncasefile.material-rejected event with metadata: {} and payload: {}",
+                materialRejectedEnvelope.metadata(), materialRejectedEnvelope.toObfuscatedDebugString());
 
-        final MaterialRejected materialRejected = materialRejectedEnvelope.payload();
-        final UUID submissionId = materialRejected.getSubmissionId();
+        LOGGER.info(".......... submission id {} ", submissionId);
 
-        LOGGER.info("..........Received public.prosecutioncasefile.material-rejected event with payload for submission id {} ",
-                submissionId);
-
-        if (isNull(submissionId)) {
+        if (!submissionId.isPresent()) {
             LOGGER.error(SUBMISSION_ID_NOT_FOUND);
             return;
         }
 
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
-                .add(SUBMISSION_ID, submissionId.toString());
+                .add(SUBMISSION_ID, submissionId.get().toString());
 
-        if (nonNull(materialRejected.getErrors())) {
-            jsonObjectBuilder.add("errors", materialRejectedEnvelope.metadata().asJsonObject().getJsonArray("errors"));
+        final JsonArray errors = materialRejectedEnvelope.metadata().asJsonObject().getJsonArray("errors");
+        if (nonNull(errors) && !errors.isEmpty()) {
+            jsonObjectBuilder.add("errors", errors);
         }
         sender.send(envelop(jsonObjectBuilder.build())
                 .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMatcher.isHandler;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
@@ -15,13 +16,10 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAS
 
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
-import uk.gov.moj.cps.prosecutioncasefile.domain.event.MaterialRejected;
-
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -58,11 +56,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
         final JsonArray errors = Json.createArrayBuilder().add("some error").build();
 
-        final Envelope<MaterialRejected> envelope = testEnvelopeWithSubmissionId(
-                MaterialRejected.materialRejected()
-                        .withSubmissionId(submissionId)
-                        .withErrors(List.of(Problem.problem().build()))
-                        .build(),
+        final JsonEnvelope envelope = testEnvelopeWithSubmissionId(
                 "public.prosecutioncasefile.material-rejected",
                 submissionId,
                 eventCreatedTime,
@@ -83,8 +77,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
     public void shouldNotSendCommandWhenSubmissionIdNotPresentInMetadata() {
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
 
-        final Envelope<MaterialRejected> envelope = testEnvelope(
-                MaterialRejected.materialRejected().build(),
+        final JsonEnvelope envelope = testEnvelope(
                 "public.prosecutioncasefile.material-rejected",
                 eventCreatedTime);
 
@@ -93,7 +86,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         verifyNoInteractions(sender);
     }
 
-    private <T> Envelope<T> testEnvelopeWithSubmissionId(final T payload, final String eventName, final UUID submissionId, final ZonedDateTime createdAt, final JsonArray errors) {
+    private JsonEnvelope testEnvelopeWithSubmissionId(final String eventName, final UUID submissionId, final ZonedDateTime createdAt, final JsonArray errors) {
         final MetadataBuilder metadataBuilder = metadataBuilder()
                 .withId(randomUUID())
                 .withName(eventName)
@@ -102,15 +95,17 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
                 .withStreamId(randomUUID())
                 .createdAt(createdAt);
 
-        return Envelope.envelopeFrom(metadataFrom(createObjectBuilder(
-                metadataBuilder.build().asJsonObject())
-                .add("submissionId", submissionId.toString())
-                .add("errors", errors)
-                .build())
-                .withUserId(randomUUID().toString()).build(), payload);
+        return envelopeFrom(
+                metadataFrom(createObjectBuilder(
+                        metadataBuilder.build().asJsonObject())
+                        .add("submissionId", submissionId.toString())
+                        .add("errors", errors)
+                        .build())
+                        .withUserId(randomUUID().toString()).build(),
+                Json.createObjectBuilder().build());
     }
 
-    private <T> Envelope<T> testEnvelope(final T payload, final String eventName, final ZonedDateTime createdAt) {
+    private JsonEnvelope testEnvelope(final String eventName, final ZonedDateTime createdAt) {
         final MetadataBuilder metadataBuilder = metadataBuilder()
                 .withId(randomUUID())
                 .withName(eventName)
@@ -119,8 +114,10 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
                 .withStreamId(randomUUID())
                 .createdAt(createdAt);
 
-        return Envelope.envelopeFrom(metadataFrom(createObjectBuilder(
-                metadataBuilder.build().asJsonObject()).build())
-                .withUserId(randomUUID().toString()).build(), payload);
+        return envelopeFrom(
+                metadataFrom(createObjectBuilder(
+                        metadataBuilder.build().asJsonObject()).build())
+                        .withUserId(randomUUID().toString()).build(),
+                Json.createObjectBuilder().build());
     }
 }
