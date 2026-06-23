@@ -105,7 +105,14 @@ public class SystemIdMapperService {
     public Map<String, UUID> getCppCaseIdMapFor(List<String> prosecutorCaseReferences, final String prosecutingAuthority) {
         LOGGER.info("............SystemIdMapperService : calling bulk system-ids-mapper for {} prosecutorCaseReference's........", prosecutorCaseReferences.size());
         final UUID contextSystemUserId = systemUserProvider.getContextSystemUserId().orElseThrow(() -> new AccessControlViolationException("System user not found"));
-        final Map<String, UUID> caseRefToNewUuid = prosecutorCaseReferences.stream().collect(Collectors.toMap(ref -> ref, ref -> randomUUID()));
+
+        final Map<String, UUID> caseRefToNewUuid = prosecutorCaseReferences.stream().collect(Collectors.toMap(
+                ref -> ref,
+                ref -> {
+                    final Optional<SystemIdMapping> existingMapping = getSystemIdMappingFor(ref);
+                    return existingMapping.isPresent() ? existingMapping.get().getTargetId() : randomUUID();
+                }));
+
         final List<SystemIdMap> systemIdMapList = prosecutorCaseReferences.stream().map(ref -> new SystemIdMap(ref, SOURCE_TYPE, caseRefToNewUuid.get(ref), TARGET_TYPE)).collect(Collectors.toList());
         AdditionResponses additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapList), contextSystemUserId);
 
