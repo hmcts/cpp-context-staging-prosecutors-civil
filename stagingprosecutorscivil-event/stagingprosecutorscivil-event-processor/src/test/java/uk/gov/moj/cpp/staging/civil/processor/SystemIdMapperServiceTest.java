@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.staging.civil.processor;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -264,5 +265,30 @@ public class SystemIdMapperServiceTest {
         assertThat(captor.getValue().getSystemIds().get(0).getSourceType(), is(SOURCE_TYPE));
         assertThat(captor.getValue().getSystemIds().get(0).getTargetType(), is(TARGET_TYPE));
         assertThat(captor.getValue().getSystemIds().get(0).getTargetId(), is(notNullValue()));
+    }
+
+    @Test
+    void shouldReuseExistingTargetIdWhenMappingAlreadyExistsForRef() {
+        final UUID userId = randomUUID();
+        final UUID existingCaseId = randomUUID();
+        final SystemIdMapping existingMapping = new SystemIdMapping(randomUUID(), "ref1", SOURCE_TYPE, existingCaseId, TARGET_TYPE, ZonedDateTime.now());
+        final ArgumentCaptor<SystemidMapList> captor = ArgumentCaptor.forClass(SystemidMapList.class);
+        final AdditionResponses responses = new AdditionResponses(List.of(
+                new SystemIdMappings(null, false, randomUUID(), "ref1", existingCaseId),
+                new SystemIdMappings(null, false, randomUUID(), "ref2", randomUUID())));
+
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
+        when(systemIdMapperClient.findBy("ref1", SOURCE_TYPE, TARGET_TYPE, userId)).thenReturn(Optional.of(existingMapping));
+        when(systemIdMapperClient.findBy("ref2", SOURCE_TYPE, TARGET_TYPE, userId)).thenReturn(Optional.empty());
+        when(systemIdMapperClient.addMany(captor.capture(), eq(userId))).thenReturn(responses);
+
+        target.getCppCaseIdMapFor(List.of("ref1", "ref2"), null);
+
+        final List<SystemIdMap> systemIdMaps = captor.getValue().getSystemIds();
+        final SystemIdMap ref1Map = systemIdMaps.stream().filter(m -> m.getSourceId().equals("ref1")).findFirst().orElseThrow();
+        final SystemIdMap ref2Map = systemIdMaps.stream().filter(m -> m.getSourceId().equals("ref2")).findFirst().orElseThrow();
+        assertThat(ref1Map.getTargetId(), is(existingCaseId));
+        assertThat(ref2Map.getTargetId(), is(notNullValue()));
+        assertThat(ref2Map.getTargetId(), is(not(existingCaseId)));
     }
 }
