@@ -52,15 +52,60 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
 
     @Test
     public void shouldSendRejectMaterialCommandWhenSubmissionIdPresent() {
-        final UUID submissionId = randomUUID();
-        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final JsonArray errors = Json.createArrayBuilder().add("some error").build();
+        final UUID submissionId = UUID.fromString("646c31e8-5ed4-4d0d-ba89-ea0f4aa95edb");
 
-        final JsonEnvelope envelope = testEnvelopeWithSubmissionId(
-                "public.prosecutioncasefile.material-rejected",
-                submissionId,
-                eventCreatedTime,
-                errors);
+        final JsonArray errors = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("code", "DEFENDANT_ID_INVALID")
+                        .add("values", Json.createArrayBuilder()
+                                .add(Json.createObjectBuilder()
+                                        .add("key", "prosecutorDefendantId")
+                                        .add("value", "162d987f-b5e5-4528-b7c1-1396d6f02bb6")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        final JsonObject incomingPayload = Json.createObjectBuilder()
+                .add("caseId", "9c3390ba-66bf-4096-a8bf-8eecee43fc5e")
+                .add("errors", errors)
+                .add("material", Json.createObjectBuilder()
+                        .add("documentType", "Defence Statement")
+                        .add("fileStoreId", "49e2baf9-2f6e-4595-89c2-224a1f0d6b3a")
+                        .add("fileType", "application/pdf")
+                        .build())
+                .add("prosecutingAuthority", "GAEAA01")
+                .add("prosecutorDefendantId", "162d987f-b5e5-4528-b7c1-1396d6f02bb6")
+                .build();
+
+        final JsonObject metadataJson = Json.createObjectBuilder()
+                .add("id", "379100ea-fbfd-4e21-953f-8e5a4d44e4b9")
+                .add("name", "prosecutioncasefile.events.material-rejected")
+                .add("createdAt", "2026-06-23T08:22:01.356Z")
+                .add("source", "prosecutioncasefile")
+                .add("context", Json.createObjectBuilder()
+                        .add("user", "6503ff7a-f05d-11eb-9a03-0242ac130003")
+                        .build())
+                .add("stream", Json.createObjectBuilder()
+                        .add("id", "9c3390ba-66bf-4096-a8bf-8eecee43fc5e")
+                        .add("version", 5)
+                        .build())
+                .add("event", Json.createObjectBuilder()
+                        .add("eventNumber", 2461)
+                        .add("previousEventNumber", 2460)
+                        .build())
+                .add("submissionId", submissionId.toString())
+                .add("causation", Json.createArrayBuilder()
+                        .add("27527e56-30f2-4ca2-ade3-117473d04e33")
+                        .add("589b2682-27ca-43a4-9917-82547fc2140b")
+                        .add("4d837dac-b45a-4794-bc9e-136677abbaae")
+                        .add("4d837dac-b45a-4794-bc9e-136677abbaae")
+                        .build())
+                .build();
+
+        final JsonEnvelope envelope = envelopeFrom(
+                metadataFrom(metadataJson).build(),
+                incomingPayload);
 
         target.caseMaterialRejected(envelope);
 
@@ -68,9 +113,9 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         verify(sender).send(captor.capture());
 
         assertThat(captor.getValue().metadata().name(), is("stagingprosecutorscivil.command.reject-material"));
-        final JsonObject payload = (JsonObject) captor.getValue().payload();
-        assertThat(payload.getString("submissionId"), is(submissionId.toString()));
-        assertThat(payload.getJsonArray("errors"), is(errors));
+        final JsonObject sentPayload = (JsonObject) captor.getValue().payload();
+        assertThat(sentPayload.getString("submissionId"), is(submissionId.toString()));
+        assertThat(sentPayload.getJsonArray("errors"), is(errors));
     }
 
     @Test

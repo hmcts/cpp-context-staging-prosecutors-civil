@@ -49,7 +49,7 @@ public class ProsecutionCaseFilePublicEventProcessor {
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                 .add(SUBMISSION_ID, submissionId.get().toString());
 
-        final JsonArray errors = materialRejectedEnvelope.metadata().asJsonObject().getJsonArray("errors");
+        final JsonArray errors = materialRejectedEnvelope.payload().asJsonObject().getJsonArray("errors");
         if (nonNull(errors) && !errors.isEmpty()) {
             jsonObjectBuilder.add("errors", errors);
         }
