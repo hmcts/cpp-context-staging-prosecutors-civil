@@ -47,13 +47,12 @@ public class MaterialSubmittedProcessor {
 
     @Handles("stagingprosecutorscivil.event.material-submitted")
     public void onMaterialSubmitted(final Envelope<MaterialSubmitted> materialSubmittedEnvelope) {
-        LOGGER.info("Received material submitted event with payload {}", materialSubmittedEnvelope.payload());
+        LOGGER.info("Received material submitted event");
 
         final MaterialSubmitted materialSubmitted = materialSubmittedEnvelope.payload();
-
         final UUID caseId = systemIdMapperService.getCppCaseIdFor(materialSubmitted.getCaseUrn(), materialSubmitted.getProsecutingAuthority());
 
-        LOGGER.info("----------Mapped prosecutorCaseReference {} to caseId {}", materialSubmitted.getCaseUrn(), caseId);
+        LOGGER.info("Mapped prosecutorCaseReference {} to caseId {}", materialSubmitted.getCaseUrn(), caseId);
 
         final JsonObjectBuilder payloadBuilder = createObjectBuilder()
                 .add("material", createObjectBuilder()

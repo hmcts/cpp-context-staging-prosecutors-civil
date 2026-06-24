@@ -54,7 +54,7 @@ public class MaterialSubmission implements Aggregate {
     }
 
     public Stream<Object> rejectMaterial(final List<Problem> errors, final List<Problem> warnings) {
-        LOGGER.info("..........Material submission rejected for submissionId: {} with errors: {} and warnings: {}", submissionId, errors, warnings);
+        LOGGER.info("Material submission rejected for submissionId: {} with errors: {} and warnings: {}", submissionId, errors, warnings);
         return apply(of(materialSubmissionRejected()
                 .withSubmissionId(submissionId)
                 .withErrors(errors)

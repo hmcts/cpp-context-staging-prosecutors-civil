@@ -102,11 +102,9 @@ public class CivilProsecutionApi {
 
     @Handles("stagingprosecutorscivil.submit-material")
     public Envelope<UrlResponse> submitMaterial(final JsonEnvelope envelope) {
-        LOGGER.info(".......Received submission at stagingprosecutorscivil.submit-material with metadata {}",envelope.metadata());
+        LOGGER.info("Received submission at stagingprosecutorscivil.submit-material");
         final String defendantIdField = "defendantId";
         final JsonObject requestPayload = envelope.payloadAsJsonObject();
-
-        LOGGER.info(".........Validating request payload for stagingprosecutorscivil.submit-material with requestPayload {}",requestPayload);
 
         try {
             jsonSchemaValidator.validate(requestPayload.toString(), envelope.metadata().name());
@@ -129,7 +127,6 @@ public class CivilProsecutionApi {
         sender.send(envelop(submitMaterialWithSubmissionIdBuilder.build())
                 .withName("stagingprosecutorscivil.command.submit-material")
                 .withMetadataFrom(envelope));
-
 
         return envelopeFrom(
                 envelope.metadata(),
