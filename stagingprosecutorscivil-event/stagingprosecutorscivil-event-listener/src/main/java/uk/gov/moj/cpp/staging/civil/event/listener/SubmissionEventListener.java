@@ -106,8 +106,10 @@ public class SubmissionEventListener {
     @Handles("stagingprosecutorscivil.event.update-civil-case-received")
     public void updatedCivilCaseReceived(final Envelope<UpdateCivilCaseReceived> event) {
         LOGGER.info("stagingprosecutorscivil.event.update-civil-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+
         final UpdateCivilCaseReceived updatedCivilCaseReceived = event.payload();
         final Submission submission = submissionRepository.findBy(updatedCivilCaseReceived.getSubmissionId());
+
         if (SubmissionStatus.REJECTED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
             submission.setErrors(transformErrorsToJsonArray(updatedCivilCaseReceived.getCaseErrors()));
             submission.setGroupCaseErrors(transformErrorsToJsonArray(updatedCivilCaseReceived.getGroupCaseErrors()));
@@ -117,6 +119,7 @@ public class SubmissionEventListener {
             submission.setCaseWarnings(transformErrorsToJsonArray(updatedCivilCaseReceived.getCaseWarnings()));
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
+
         submission.setSubmissionStatus(updatedCivilCaseReceived.getSubmissionStatus().name());
         submissionRepository.save(submission);
     }
@@ -171,14 +174,13 @@ public class SubmissionEventListener {
         final JsonArray submissionWarnings = transformErrorsOrWarningsToJsonArray(warnings);
         final Submission submission = submissionRepository.findBy(submissionId);
 
-        LOGGER.info("---------------SubmissionId {}", submission.getSubmissionId());
+        LOGGER.info("stagingprosecutorscivil.event.material-submission-rejected event processed in Listener for SubmissionId {} with errors: {} and warnings: {}", submissionId, submissionErrors, submissionWarnings);
 
         submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
         submission.setCompletedAt(timestamp);
         submission.setErrors(submissionErrors);
         submission.setWarnings(submissionWarnings);
         submissionRepository.save(submission);
-        LOGGER.info("stagingprosecutorscivil.event.material-submission-rejected event processed in Listener for SubmissionId {} with errors: {} and warnings: {}", submissionId, submissionErrors, submissionWarnings);
     }
 
     private ZonedDateTime extractCreatedAt(final Metadata metadata) {

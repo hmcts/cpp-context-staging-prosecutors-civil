@@ -41,7 +41,7 @@ public class MaterialHandler {
     @Handles("stagingprosecutorscivil.command.submit-material")
     public void handleSubmitMaterial(final Envelope<SubmitMaterialCommand> command) throws EventStreamException {
         final SubmitMaterialCommand payload = command.payload();
-        LOGGER.info("..........Received command to submit material with payload {}",payload);
+        LOGGER.info("Received command to submit material with SubmissionId {}",payload.getSubmissionId());
 
         applyToAggregate(payload.getSubmissionId(), command, materialSubmission -> materialSubmission.submitMaterial(
                 payload.getSubmissionId(),
@@ -55,7 +55,7 @@ public class MaterialHandler {
     @Handles("stagingprosecutorscivil.command.reject-material")
     public void handleReceiveMaterialSubmissionRejected(final Envelope<RejectMaterial> command) throws EventStreamException {
         final RejectMaterial payload = command.payload();
-        LOGGER.info("..........Received command to reject material submission with payload {}",payload.getSubmissionId());
+        LOGGER.info("Received command to reject material submission with SubmissionId {}",payload.getSubmissionId());
         applyToAggregate(
                 payload.getSubmissionId(),
                 command,
@@ -75,9 +75,9 @@ public class MaterialHandler {
     @Handles("stagingprosecutorscivil.command.receive-material-submission-successful")
     public void handleReceiveMaterial(final Envelope<ReceiveMaterialSubmissionSuccessful> receiveMaterialSubmissionSuccessfulEnvelope) throws EventStreamException {
         final ReceiveMaterialSubmissionSuccessful receiveSubmissionSuccessful = receiveMaterialSubmissionSuccessfulEnvelope.payload();
-        LOGGER.info("..........Received command to receive material submission successful with payload {}", receiveSubmissionSuccessful);
-
         final UUID submissionId = receiveSubmissionSuccessful.getSubmissionId();
+        LOGGER.info("Received command to receive material submission successful with SubmissionId {}", submissionId);
+
         applyToAggregate(submissionId, receiveMaterialSubmissionSuccessfulEnvelope, materialSubmission -> materialSubmission.receiveMaterialSubmissionSuccessful(submissionId));
 
     }
