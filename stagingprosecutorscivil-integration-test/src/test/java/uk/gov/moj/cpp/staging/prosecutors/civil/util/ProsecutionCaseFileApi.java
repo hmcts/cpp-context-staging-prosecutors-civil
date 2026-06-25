@@ -44,6 +44,7 @@ public class ProsecutionCaseFileApi {
                 .atMost(20, TimeUnit.SECONDS)
                 .until(() -> createInitiateSingleProsecution(ResourcesUtils.asJsonObject(resourceName)));
     }
+
     private static boolean createInitiateGroupProsecutionInvokedWith(final JsonObject expectedPayload) {
         final RequestPatternBuilder request = postRequestedFor(
                 urlPathEqualTo("/prosecutioncasefile-service/command/api/rest/prosecutioncasefile/initiate-group-prosecution"))
@@ -167,6 +168,17 @@ public class ProsecutionCaseFileApi {
                 assertThat(actualJsonObjectPayload.get().getBoolean("isGroupMember"), is(false));
                 assertThat(actualJsonObjectPayload.get().getBoolean("isGroupMaster"), is(false));
                 assertThat(actualJsonObjectPayload.get().getBoolean("isCivil"), is(true));
+
+                final JsonObject expectedIndividual = expectedPayload.getJsonArray("prosecutionCases")
+                        .getJsonObject(0).getJsonArray("defendants").getJsonObject(0).getJsonObject("individual");
+                if (expectedIndividual != null && expectedIndividual.containsKey("nationality")) {
+                    final JsonObject selfDefinedInformation = actualJsonObjectPayload.get()
+                            .getJsonArray("defendants").getJsonObject(0)
+                            .getJsonObject("individual").getJsonObject("selfDefinedInformation");
+                    assertThat(selfDefinedInformation.getString("nationality"), is(expectedIndividual.getString("nationality")));
+                    assertThat(selfDefinedInformation.getString("additionalNationality"), is(expectedIndividual.getString("additionalNationality")));
+                }
+
                 return true;
             } else {
                 return false;
