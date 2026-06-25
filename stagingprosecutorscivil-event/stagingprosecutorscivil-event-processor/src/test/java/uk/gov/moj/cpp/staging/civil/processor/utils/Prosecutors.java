@@ -207,7 +207,9 @@ public class Prosecutors {
                 .withBailConditions(("BAIL CONDITIONS"))
                 .withLanguageRequirement(("languageNeeds"))
                 .withSpecificRequirements(("specialNeeds"))
-                .withOccupationCode((1));
+                .withOccupationCode((1))
+                .withNationality("GBR")
+                .withAdditionalNationality("POL");
     }
 
     private static NameDetails prosecutorsNameDetails() {
