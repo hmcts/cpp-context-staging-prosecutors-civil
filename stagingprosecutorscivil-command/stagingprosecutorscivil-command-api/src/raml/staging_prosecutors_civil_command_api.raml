@@ -32,6 +32,33 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
             500:
                 description: Internal Server Error
 
+/prosecutions/upload-bulk:
+  post:
+    description: |
+      Upload bulk charge prosecutions from a CSV payload.
+      POST JSON body with field "file" containing CSV text (UTF-8).
+      Each row represents one prosecution case with one defendant and one offence.
+      ...
+      (mapping):
+        requestType: application/vnd.stagingprosecutorscivil.upload-bulk-prosecution+json
+        name: stagingprosecutorscivil.upload-bulk-prosecution
+      ...
+    body:
+      application/vnd.stagingprosecutorscivil.upload-bulk-prosecution+json:
+        schema: !include json/schema/stagingprosecutorscivil.upload-bulk-prosecution.json
+        example: !include json/stagingprosecutorscivil.upload-bulk-prosecution.json
+    responses:
+      202:
+        description: Accepted
+        body:
+          application/json:
+            schema: !include json/schema/stagingprosecutorscivil.url-response.json
+            example: !include json/stagingprosecutorscivil.url-response.json
+      400:
+        description: Bad Request
+      500:
+        description: Internal Server Error
+
 /v1/prosecutions/{caseUrn}/materials:
   post:
     description: |

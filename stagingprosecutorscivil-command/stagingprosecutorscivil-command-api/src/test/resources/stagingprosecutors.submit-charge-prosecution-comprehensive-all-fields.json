@@ -1,0 +1,299 @@
+{
+  "prosecutingAuthority": "GAAAA01",
+  "hearingDetails": {
+    "courtHearingLocation": "B01BH00",
+    "dateOfHearing": "2024-03-15",
+    "timeOfHearing": "09:30:00"
+  },
+  "prosecutionCases": [
+    {
+      "urn": "case-urn-individual-pg-individual-001",
+      "informant": "Adam Smith",
+      "caseMarker": "CM001",
+      "relatedReferenceNumber": "XYZSystemId123",
+      "paymentReference": "paySlip123456",
+      "defendants": [
+        {
+          "defendantDetails": {
+            "prosecutorDefendantId": "TFLDEF001",
+            "asn": "SummonsNumber001",
+            "pncIdentifier": "2099/1234567L",
+            "croNumber": "123456/10L",
+            "documentationLanguage": "E",
+            "hearingLanguage": "E",
+            "address": {
+              "address1": "Address Line 1",
+              "address2": "Address Line 2",
+              "address3": "Address Line 3",
+              "address4": "Address Line 4",
+              "address5": "Address Line 5",
+              "postcode": "SE1H 1XX"
+            },
+            "numPreviousConvictions": 3,
+            "prosecutorCosts": "20.99"
+          },
+          "individual": {
+            "nameDetails": {
+              "title": "Mr",
+              "forename": "John",
+              "forename2": "Adam",
+              "forename3": "Theodore",
+              "surname": "SMITH"
+            },
+            "contactDetails": {
+              "workTelephoneNumber": "1231231230",
+              "homeTelephoneNumber": "1231231231",
+              "mobileTelephoneNumber": "1231231232",
+              "primaryEmail": "john.smith@example.com",
+              "secondaryEmail": "jsmith@example.com"
+            },
+            "nationality": "GBR",
+            "additionalNationality": "POL",
+            "dateOfBirth": "1970-02-03",
+            "gender": 1,
+            "occupation": "Driver",
+            "occupationCode": 666,
+            "observedEthnicity": 4,
+            "ethnicity": "W1",
+            "driverNumber": "KER99861065SE9RM",
+            "languageRequirement": "no special language needs",
+            "specificRequirements": "no special needs",
+            "nationalInsuranceNumber": "SN123456C",
+            "custodyStatus": "B",
+            "bailConditions": "Must not travel outside England and Wales without prior consent of the court",
+            "aliases": [
+              {
+                "title": "Mr",
+                "forename": "AliasJohn",
+                "forename2": "AliasAdam",
+                "forename3": "Jr",
+                "surname": "AliasSmith"
+              }
+            ],
+            "parentGuardian": {
+              "individual": {
+                "nameDetails": {
+                  "title": "Mr",
+                  "forename": "parentGuardianJack",
+                  "forename2": "parentGuardianAaron",
+                  "forename3": "Sr",
+                  "surname": "parentGuardianSmith"
+                },
+                "contactDetails": {
+                  "workTelephoneNumber": "9991231230",
+                  "homeTelephoneNumber": "9991231231",
+                  "mobileTelephoneNumber": "9991231232",
+                  "primaryEmail": "guardian@test.com",
+                  "secondaryEmail": "guardian2@test.com"
+                },
+                "dateOfBirth": "1979-05-23",
+                "gender": 1,
+                "observedEthnicity": 4,
+                "selfDefinedEthnicity": "W1"
+              },
+              "address": {
+                "address1": "ParentGuardian Address Line 1",
+                "address2": "ParentGuardian Address Line 2",
+                "address3": "ParentGuardian Address Line 3",
+                "address4": "ParentGuardian Address Line 4",
+                "address5": "ParentGuardian Address Line 5",
+                "postcode": "PG0 1XX"
+              }
+            }
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "CA03014",
+                "offenceSequenceNo": 1,
+                "laidDate": "2024-01-15",
+                "offenceCommittedDate": "2024-01-10",
+                "offenceCommittedEndDate": "2024-01-14",
+                "offenceDateCode": 4,
+                "offenceLocation": "Croydon",
+                "offenceWording": "Between 10/01/2024 and 14/01/2024 at Croydon, did drive a motor vehicle on a road without a licence",
+                "offenceWordingWelsh": "Rhwng 10/01/2024 a 14/01/2024 yn Croydon, gyrrodd gerbyd modur ar ffordd heb drwydded",
+                "prosecutorCompensation": "99.99",
+                "backDuty": "+340.99",
+                "backDutyDateFrom": "2023-04-09",
+                "backDutyDateTo": "2023-05-09",
+                "vehicleMake": "Ford",
+                "vehicleRegistrationMark": "AA11 ABC"
+              },
+              "arrestDate": "2024-01-15",
+              "statementOfFacts": "Test Prosecution statements of facts for individual defendant with individual parent guardian",
+              "statementOfFactsWelsh": "Welsh - Test Prosecution statements of facts for individual defendant with individual parent guardian"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "urn": "case-urn-individual-pg-organisation-002",
+      "informant": "Jane Doe",
+      "caseMarker": "CM002",
+      "relatedReferenceNumber": "XYZSystemId456",
+      "paymentReference": "paySlip789534",
+      "defendants": [
+        {
+          "defendantDetails": {
+            "prosecutorDefendantId": "TFLDEF002",
+            "asn": "SummonsNumber002",
+            "pncIdentifier": "2020/9876543A",
+            "croNumber": "SF20/123456M",
+            "documentationLanguage": "W",
+            "hearingLanguage": "W",
+            "address": {
+              "address1": "15 Cardiff Road",
+              "address2": "Canton",
+              "address3": "Cardiff",
+              "postcode": "CF5 1AB"
+            },
+            "numPreviousConvictions": 1,
+            "prosecutorCosts": "50.00"
+          },
+          "individual": {
+            "nameDetails": {
+              "title": "Mrs",
+              "forename": "Jane",
+              "forename2": "Louise",
+              "forename3": "Marie",
+              "surname": "JONES"
+            },
+            "contactDetails": {
+              "mobileTelephoneNumber": "0791234567890",
+              "primaryEmail": "jane.jones@example.com"
+            },
+            "nationality": "GBR",
+            "additionalNationality": "IRL",
+            "dateOfBirth": "1985-11-20",
+            "gender": 2,
+            "occupation": "Teacher",
+            "occupationCode": 250,
+            "observedEthnicity": 2,
+            "ethnicity": "A1",
+            "driverNumber": "JONES851120JL9AB",
+            "languageRequirement": "Welsh interpreter required",
+            "specificRequirements": "Wheelchair access required",
+            "nationalInsuranceNumber": "AB123456C",
+            "aliases": [
+              {
+                "forename": "Janet",
+                "surname": "JONES"
+              }
+            ],
+            "parentGuardian": {
+              "organisation": {
+                "organisationName": "ACME Guardian Services Ltd",
+                "companyTelephoneNumber": "02071234567"
+              },
+              "address": {
+                "address1": "Guardian Org House",
+                "address2": "Business Park",
+                "address3": "Cardiff",
+                "address4": "South Wales",
+                "postcode": "CF1 1AA"
+              }
+            }
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "RT88006",
+                "offenceSequenceNo": 1,
+                "laidDate": "2024-02-01",
+                "offenceCommittedDate": "2024-01-25",
+                "offenceDateCode": 1,
+                "offenceLocation": "Cardiff",
+                "offenceWording": "On 25/01/2024 at Cardiff, did drive a motor vehicle on a road while disqualified",
+                "offenceWordingWelsh": "Ar 25/01/2024 yng Nghaerdydd, gyrrodd gerbyd modur ar ffordd tra yn cael ei ddiarddel",
+                "prosecutorCompensation": "75.50",
+                "vehicleMake": "Toyota",
+                "vehicleRegistrationMark": "WA15 XYZ"
+              },
+              "arrestDate": "2024-01-25",
+              "statementOfFacts": "Individual defendant observed driving while disqualified at Cardiff city centre",
+              "statementOfFactsWelsh": "Welsh - Individual defendant observed driving while disqualified at Cardiff city centre"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "urn": "case-urn-organisation-003",
+      "informant": "Robert Brown",
+      "caseMarker": "CM003",
+      "relatedReferenceNumber": "XYZOrgRef789",
+      "paymentReference": "paySlip112233",
+      "defendants": [
+        {
+          "defendantDetails": {
+            "prosecutorDefendantId": "ORGDEF003",
+            "asn": "OrgSummons003",
+            "pncIdentifier": "2021/5551234Z",
+            "croNumber": "999999/21A",
+            "documentationLanguage": "E",
+            "hearingLanguage": "E",
+            "address": {
+              "address1": "ACME House",
+              "address2": "123 Business Park",
+              "address3": "Industrial Estate",
+              "address4": "Birmingham",
+              "address5": "West Midlands",
+              "postcode": "B1 1AA"
+            },
+            "numPreviousConvictions": 0,
+            "prosecutorCosts": "150.00"
+          },
+          "organisation": {
+            "organisationName": "ACME Transport Ltd",
+            "companyTelephoneNumber": "01212345678",
+            "aliasOrganisationNames": [
+              "ACME Ltd",
+              "ACME Haulage"
+            ]
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "RT88001",
+                "offenceSequenceNo": 1,
+                "laidDate": "2024-03-01",
+                "offenceCommittedDate": "2024-02-20",
+                "offenceCommittedEndDate": "2024-02-25",
+                "offenceDateCode": 4,
+                "offenceLocation": "Birmingham",
+                "offenceWording": "Between 20/02/2024 and 25/02/2024 at Birmingham, being the operator of motor vehicle BM22 TRK, failed to comply with goods vehicle prohibition",
+                "offenceWordingWelsh": "Rhwng 20/02/2024 a 25/02/2024 ym Mirmingham, fel gweithredwr cerbyd nwyddau BM22 TRK, methodd gydymffurfio a gwaharddiad",
+                "prosecutorCompensation": "250.00",
+                "backDuty": "+500.00",
+                "backDutyDateFrom": "2023-12-01",
+                "backDutyDateTo": "2024-02-20",
+                "vehicleMake": "Volvo",
+                "vehicleRegistrationMark": "BM22 TRK"
+              },
+              "arrestDate": "2024-02-26",
+              "statementOfFacts": "Organisation was found to be operating vehicles in breach of goods vehicle legislation",
+              "statementOfFactsWelsh": "Canfuwyd bod y sefydliad yn gweithredu cerbydau yn groes i ddeddfwriaeth cerbydau nwyddau"
+            },
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "RT88002",
+                "offenceSequenceNo": 2,
+                "laidDate": "2024-03-01",
+                "offenceCommittedDate": "2024-02-21",
+                "offenceDateCode": 1,
+                "offenceLocation": "Coventry",
+                "offenceWording": "On 21/02/2024 at Coventry, being the operator of a goods vehicle, failed to maintain vehicle in roadworthy condition",
+                "prosecutorCompensation": "100.00",
+                "vehicleMake": "DAF",
+                "vehicleRegistrationMark": "CV21 GDS"
+              },
+              "statementOfFacts": "Second offence - vehicle maintenance failure for organisation defendant"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

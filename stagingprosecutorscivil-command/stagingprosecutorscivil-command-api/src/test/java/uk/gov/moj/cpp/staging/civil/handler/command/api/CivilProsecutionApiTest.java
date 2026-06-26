@@ -33,6 +33,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -230,6 +231,32 @@ public class CivilProsecutionApiTest {
         final SubmitMaterialWithSubmissionId payload = (SubmitMaterialWithSubmissionId) envelopeCaptor.getValue().payload();
         assertThat(payload.getDefendantId(), is(nullValue()));
         assertThat(payload.getSubmissionId(), is(submissionId));
+    }
+
+    @Test
+    public void shouldHandleUploadBulkProsecution() throws Exception {
+        final String csvContent = new String(
+                getClass().getResourceAsStream("/stagingprosecutors.bulk-charge-prosecution.csv")
+                        .readAllBytes(),
+                StandardCharsets.UTF_8);
+
+        final JsonEnvelope envelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID("stagingprosecutorscivil.upload-bulk-prosecution"),
+                createObjectBuilder().add("file", csvContent).build());
+
+        final Envelope<UrlResponse> result = api.uploadBulkProsecution(envelope);
+
+        verify(sender).send(envelopeCaptor.capture());
+        assertThat(envelopeCaptor.getValue().metadata().name(),
+                is("stagingprosecutorscivil.command.charge-prosecution"));
+
+        final ChargeProsecutionWithSubmissionId sent =
+                (ChargeProsecutionWithSubmissionId) envelopeCaptor.getValue().payload();
+        assertThat(sent.getProsecutingAuthority(), is("GAAAA01"));
+        assertThat(sent.getProsecutionCases().size(), is(3));
+        assertThat(sent.getProsecutionCases().get(0).getUrn(),
+                is("case-urn-individual-pg-individual-001"));
+        assertNotNull(result.payload().getSubmissionId());
     }
 
     @Test
