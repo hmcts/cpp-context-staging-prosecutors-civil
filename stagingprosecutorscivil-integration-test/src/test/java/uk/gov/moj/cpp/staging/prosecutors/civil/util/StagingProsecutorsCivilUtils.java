@@ -34,6 +34,7 @@ import javax.json.JsonReader;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
@@ -43,6 +44,7 @@ public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.summons-prosecution+json";
     public static final String CHARGE_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.charge-prosecution+json";
+    public static final String SUBMISSION_DETAILS_MEDIA_TYPE = "application/vnd.stagingprosecutorscivil.submission-details+json";
     public static final String CJSOUCODE_HEADER = "CJSOUCODE";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil";
@@ -147,20 +149,37 @@ public class StagingProsecutorsCivilUtils {
         }
     }
 
+    public static Response queryRaw(final String submissionIdPath) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionIdPath;
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, UUID.randomUUID());
+        return restClient.query(url, SUBMISSION_DETAILS_MEDIA_TYPE, headers);
+    }
+
+    public static Response queryRawNoAuth(final UUID submissionId) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+        return restClient.query(url, SUBMISSION_DETAILS_MEDIA_TYPE, new MultivaluedHashMap<>());
+    }
+
+    public static Response queryRawWrongMediaType(final UUID submissionId) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, UUID.randomUUID());
+        return restClient.query(url, MediaType.APPLICATION_JSON, headers);
+    }
+
     private static RequestParams getRequestParams(final UUID submissionId) {
         final String url = READ_BASE_URI + "/submissions/" + submissionId;
-        final String mediaType = "application/vnd.stagingprosecutorscivil.submission-details+json";
 
-        return requestParams(url, mediaType)
+        return requestParams(url, SUBMISSION_DETAILS_MEDIA_TYPE)
                 .withHeader(USER_ID, UUID.randomUUID())
                 .build();
     }
 
     private static RequestParams getRequestParamsWithOuCode(final UUID submissionId, final String ouCode) {
         final String url = READ_BASE_URI + "/submissions/" + submissionId;
-        final String mediaType = "application/vnd.stagingprosecutorscivil.submission-details+json";
 
-        return requestParams(url, mediaType)
+        return requestParams(url, SUBMISSION_DETAILS_MEDIA_TYPE)
                 .withHeader(USER_ID, UUID.randomUUID())
                 .withHeader(CJSOUCODE_HEADER, ouCode)
                 .build();

@@ -172,4 +172,44 @@ public class ChargeProsecutionIT {
         assertThat(firstWarning.values.get(0).key, is("dob"));
         assertThat(firstWarning.values.get(0).value, is("2050-01-01"));
     }
+
+    @Test
+    public void shouldReturnRejectedResponseWithErrorCodesForAC4() {
+        final String ouCode = "GAAAA01";
+        stubPCFCommand(randomUUID());
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(
+                "payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json",
+                CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+
+        final JsonObject rejectionEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .add("caseErrors", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("code", "DEFENDANT_DOB_IN_FUTURE")
+                                .add("values", createArrayBuilder()
+                                        .add(createObjectBuilder()
+                                                .add("key", "dob")
+                                                .add("value", "2050-01-01")))))
+                .build();
+        final JsonEnvelope rejectionEventEnvelope = envelopeFrom(
+                buildMetadata("public.prosecutioncasefile.civil-prosecution-rejected", randomUUID().toString()),
+                rejectionEvent);
+        messageProducerClientPublic.sendMessage(
+                "public.prosecutioncasefile.civil-prosecution-rejected",
+                rejectionEventEnvelope);
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED, ouCode);
+
+        assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
+        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.REJECTED.name()));
+        assertThat(submission.getErrors(), hasSize(greaterThanOrEqualTo(1)));
+        final Problem firstError = submission.getErrors().get(0);
+        assertThat(firstError.code, is("DEFENDANT_DOB_IN_FUTURE"));
+        assertThat(firstError.values, hasSize(greaterThanOrEqualTo(1)));
+        assertThat(firstError.values.get(0).key, is("dob"));
+    }
 }
