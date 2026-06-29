@@ -43,6 +43,7 @@ public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.summons-prosecution+json";
     public static final String CHARGE_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.charge-prosecution+json";
+    public static final String CJSOUCODE_HEADER = "CJSOUCODE";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil";
     private static final String TOPIC_NAME = "jms.topic.stagingprosecutorscivil.event";
@@ -104,8 +105,31 @@ public class StagingProsecutorsCivilUtils {
         return getSubmission(submissionId, withJsonPath("status", is(expectedSubmissionStatus.name())));
     }
 
+    public static Submission pollForSubmission(final UUID submissionId, final SubmissionStatus expectedSubmissionStatus, final String ouCode) {
+        return getSubmission(submissionId, ouCode, withJsonPath("status", is(expectedSubmissionStatus.name())));
+    }
+
     public static Submission getSubmission(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
         final String payload = poll(getRequestParams(submissionId))
+                .pollDelay(0, MILLISECONDS)
+                .pollInterval(100, MILLISECONDS)
+                .timeout(10, SECONDS)
+                .until(
+                        status().is(OK),
+                        payload().isJson(matcher)
+                )
+                .getPayload();
+
+        try {
+            return mapper.readValue(payload, Submission.class);
+        } catch (final IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Submission getSubmission(final UUID submissionId, final String ouCode, final Matcher<? super ReadContext> matcher) {
+        final String payload = poll(getRequestParamsWithOuCode(submissionId, ouCode))
                 .pollDelay(0, MILLISECONDS)
                 .pollInterval(100, MILLISECONDS)
                 .timeout(10, SECONDS)
@@ -129,6 +153,16 @@ public class StagingProsecutorsCivilUtils {
 
         return requestParams(url, mediaType)
                 .withHeader(USER_ID, UUID.randomUUID())
+                .build();
+    }
+
+    private static RequestParams getRequestParamsWithOuCode(final UUID submissionId, final String ouCode) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+        final String mediaType = "application/vnd.stagingprosecutorscivil.submission-details+json";
+
+        return requestParams(url, mediaType)
+                .withHeader(USER_ID, UUID.randomUUID())
+                .withHeader(CJSOUCODE_HEADER, ouCode)
                 .build();
     }
 
