@@ -143,7 +143,10 @@ public class ChargeProsecutionIT {
         final UUID submissionId = urlResponse.getSubmissionId();
         ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
 
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
         final JsonObject warningsEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
                 .add("warnings", createArrayBuilder()
@@ -182,6 +185,8 @@ public class ChargeProsecutionIT {
                 CHARGE_PROSECUTION_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
         final JsonObject rejectionEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
