@@ -11,11 +11,11 @@
     }
   ],
   "paths": {
-    "/chargeprosecutions": {
+    "/othersprosecutions": {
       "post": {
-        "summary": "chargeprosecutions",
-        "description": "Submit civil charge prosecutions",
-        "operationId": "chargeprosecutions",
+        "summary": "othersprosecutions",
+        "description": "Submit civil others prosecutions",
+        "operationId": "othersprosecutions",
         "responses": {
           "200": {
             "description": "null"

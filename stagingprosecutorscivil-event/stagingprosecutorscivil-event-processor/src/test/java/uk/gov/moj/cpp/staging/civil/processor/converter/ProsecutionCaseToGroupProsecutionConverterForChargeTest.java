@@ -7,15 +7,15 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker.caseMarker;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.enforcementChargeProsecutionReceived;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupChargeProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.enforcementOthersProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOthersProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsProsecutionCaseDetail;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.RELATED_REFERENCE_NUMBER;
 
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.staging.civil.processor.SystemIdMapperService;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 
@@ -43,9 +43,9 @@ public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
         final UUID groupId = UUID.randomUUID();
         final ZonedDateTime dateReceived = clock.now();
         final Map<String, UUID>  caseRefToCaseId = new HashMap<>();
-        final ChargeProsecutionReceived chargeProsecutionReceived = groupChargeProsecutionReceived();
-        caseRefToCaseId.put(chargeProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, chargeProsecutionReceived, groupId, caseRefToCaseId);
+        final OthersProsecutionReceived othersProsecutionReceived = groupOthersProsecutionReceived();
+        caseRefToCaseId.put(othersProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
+        final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
         final ProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
         final GroupProsecutions prosecutorsCaseFileGroupProsecutions = converter.convert(prosecutionCase);
 
@@ -54,21 +54,21 @@ public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
         assertThat(prosecutorsCaseFileGroupProsecutions.getIsGroupMember(), is(true));
         assertThat(prosecutorsCaseFileGroupProsecutions.getIsGroupMaster(), is(notNullValue()));
         assertThat(prosecutorsCaseFileGroupProsecutions.getPaymentReference(), is(prosecutionCase.getPaymentReference()));
-        assertCaseDetails(prosecutorsCaseFileGroupProsecutions.getCaseDetails(), prosecutionCase, chargeProsecutionReceived, caseFileId);
+        assertCaseDetails(prosecutorsCaseFileGroupProsecutions.getCaseDetails(), prosecutionCase, othersProsecutionReceived, caseFileId);
     }
 
     private void assertCaseDetails(final CaseDetails pcfCaseDetails,
                                    final ProsecutionCase prosecutionCase,
-                                   final ChargeProsecutionReceived chargeProsecutionReceived,
+                                   final OthersProsecutionReceived othersProsecutionReceived,
                                    final UUID caseId) {
 
         assertThat(pcfCaseDetails, notNullValue());
         assertThat(pcfCaseDetails.getCaseId(), is(caseId));
         assertThat(pcfCaseDetails.getDateReceived(), is(clock.now().toLocalDate()));
         assertThat(pcfCaseDetails.getInitiationCode(), is("O"));
-        assertThat(pcfCaseDetails.getOriginatingOrganisation(), is(chargeProsecutionReceived.getProsecutingAuthority()));
+        assertThat(pcfCaseDetails.getOriginatingOrganisation(), is(othersProsecutionReceived.getProsecutingAuthority()));
         assertThat(pcfCaseDetails.getProsecutor().getInformant(), is(prosecutionCase.getInformant()));
-        assertThat(pcfCaseDetails.getProsecutor().getProsecutingAuthority(), is(chargeProsecutionReceived.getProsecutingAuthority()));
+        assertThat(pcfCaseDetails.getProsecutor().getProsecutingAuthority(), is(othersProsecutionReceived.getProsecutingAuthority()));
         assertThat(pcfCaseDetails.getCaseMarkers(), is(singletonList(caseMarker()
                 .withMarkerTypeCode(prosecutionCase.getCaseMarker())
                 .build())));
@@ -86,9 +86,9 @@ public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
         final UUID groupId = UUID.randomUUID();
         final ZonedDateTime dateReceived = clock.now();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
-        final ChargeProsecutionReceived chargeProsecutionReceived = enforcementChargeProsecutionReceived();
-        caseRefToCaseId.put(chargeProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, chargeProsecutionReceived, groupId, caseRefToCaseId);
+        final OthersProsecutionReceived othersProsecutionReceived = enforcementOthersProsecutionReceived();
+        caseRefToCaseId.put(othersProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
+        final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
         final ProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
 
         final GroupProsecutions result = converter.convert(prosecutionCase);

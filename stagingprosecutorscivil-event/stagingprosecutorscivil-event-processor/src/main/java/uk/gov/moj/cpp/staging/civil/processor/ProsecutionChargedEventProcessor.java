@@ -25,7 +25,7 @@ import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForCharge;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForSummons;
 import uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -65,10 +65,10 @@ public class ProsecutionChargedEventProcessor {
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    @Handles("stagingprosecutorscivil.event.charge-prosecution-received")
-    public void processProsecutionCharged(final Envelope<ChargeProsecutionReceived> event) {
-        LOGGER.info("Received stagingprosecutorscivil.event.charge-prosecution-received event with SubmissionId {}", event.payload().getSubmissionId());
-        processChargeReceivedEvent(event);
+    @Handles("stagingprosecutorscivil.event.others-prosecution-received")
+    public void processProsecutionOthers(final Envelope<OthersProsecutionReceived> event) {
+        LOGGER.info("Received stagingprosecutorscivil.event.others-prosecution-received event with SubmissionId {}", event.payload().getSubmissionId());
+        processOthersReceivedEvent(event);
     }
 
     @Handles("stagingprosecutorscivil.event.summons-prosecution-received")
@@ -90,13 +90,13 @@ public class ProsecutionChargedEventProcessor {
         updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
     }
 
-    private void processChargeReceivedEvent(final Envelope<ChargeProsecutionReceived> event) {
+    private void processOthersReceivedEvent(final Envelope<OthersProsecutionReceived> event) {
         final ZonedDateTime dateReceived = event.metadata().createdAt().orElse(now());
-        final ChargeProsecutionReceived chargeProsecutionReceived = event.payload();
-        final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForCharge(dateReceived, chargeProsecutionReceived, randomUUID());
+        final OthersProsecutionReceived othersProsecutionReceived = event.payload();
+        final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForOthers(dateReceived, othersProsecutionReceived, randomUUID());
 
-        initiatePCFCommand(groupProsecutions, chargeProsecutionReceived.getSubmissionId(), event.metadata());
-        updateCivilCaseStatus(event, chargeProsecutionReceived.getSubmissionId().toString(), PENDING);
+        initiatePCFCommand(groupProsecutions, othersProsecutionReceived.getSubmissionId(), event.metadata());
+        updateCivilCaseStatus(event, othersProsecutionReceived.getSubmissionId().toString(), PENDING);
 
     }
 
@@ -110,14 +110,14 @@ public class ProsecutionChargedEventProcessor {
 
     }
 
-    private List<GroupProsecutions> getGroupProsecutionsForCharge(final ZonedDateTime dateReceived,
-                                                                  final ChargeProsecutionReceived chargeProsecutionReceived,
+    private List<GroupProsecutions> getGroupProsecutionsForOthers(final ZonedDateTime dateReceived,
+                                                                  final OthersProsecutionReceived othersProsecutionReceived,
                                                                   final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(chargeProsecutionReceived.getProsecutionCases(), chargeProsecutionReceived.getProsecutingAuthority()));
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(othersProsecutionReceived.getProsecutionCases(), othersProsecutionReceived.getProsecutingAuthority()));
         final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverter
-                = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, chargeProsecutionReceived, groupId, caseRefToCaseId);
+                = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
 
-        return chargeProsecutionReceived.getProsecutionCases()
+        return othersProsecutionReceived.getProsecutionCases()
                 .stream()
                 .map(prosecutionCaseToGroupProsecutionConverter::convert)
                 .collect(Collectors.toList());

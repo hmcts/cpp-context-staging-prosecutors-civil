@@ -28,10 +28,10 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OthersProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -56,8 +56,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CivilProsecutionHandlerTest {
 
-    private static final String PRIVATE_COMMAND_CHARGE_PROSECUTION = "stagingprosecutorscivil.command.charge-prosecution";
-    private static final String PRIVATE_EVENT_CHARGE_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.charge-prosecution-received";
+    private static final String PRIVATE_COMMAND_OTHERS_PROSECUTION = "stagingprosecutorscivil.command.others-prosecution";
+    private static final String PRIVATE_EVENT_OTHERS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.others-prosecution-received";
     private static final String PRIVATE_COMMAND_SUMMONS_PROSECUTION = "stagingprosecutorscivil.command.summons-prosecution";
     private static final String PRIVATE_EVENT_SUMMONS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.summons-prosecution-received";
     private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingprosecutorscivil.command.update-civil-case";
@@ -79,41 +79,41 @@ public class CivilProsecutionHandlerTest {
     private AggregateService aggregateService;
 
     @Spy
-    private final Enveloper enveloper = createEnveloperWithEvents(ChargeProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class);
+    private final Enveloper enveloper = createEnveloperWithEvents(OthersProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class);
 
     @Test
-    public void shouldHandleChargeProsecutionCommand() {
+    public void shouldHandleOthersProsecutionCommand() {
 
         assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
-                .with(method("handleChargeProsecution")
-                        .thatHandles(PRIVATE_COMMAND_CHARGE_PROSECUTION)));
+                .with(method("handleOthersProsecution")
+                        .thatHandles(PRIVATE_COMMAND_OTHERS_PROSECUTION)));
 
     }
 
     @Test
-    public void shouldRaiseChargeProsecutionReceivedPrivateEvent() throws Exception {
+    public void shouldRaiseOthersProsecutionReceivedPrivateEvent() throws Exception {
 
 
-        final Envelope<ChargeProsecution> envelope = buildChargeProsecutionEnvelope();
+        final Envelope<OthersProsecution> envelope = buildOthersProsecutionEnvelope();
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
 
-        civilProsecutionHandler.handleChargeProsecution(envelope);
+        civilProsecutionHandler.handleOthersProsecution(envelope);
 
-        verifyChargeProsecutionReceivedPrivateEvent();
+        verifyOthersProsecutionReceivedPrivateEvent();
 
     }
 
     @Test
-    public void shouldRaiseChargeProsecutionReceivedPrivateEventWithEnforcementFields() throws Exception {
+    public void shouldRaiseOthersProsecutionReceivedPrivateEventWithEnforcementFields() throws Exception {
 
-        final Envelope<ChargeProsecution> envelope = buildEnforcementChargeProsecutionEnvelope();
+        final Envelope<OthersProsecution> envelope = buildEnforcementOthersProsecutionEnvelope();
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
 
-        civilProsecutionHandler.handleChargeProsecution(envelope);
+        civilProsecutionHandler.handleOthersProsecution(envelope);
 
-        verifyEnforcementChargeProsecutionReceivedPrivateEvent();
+        verifyEnforcementOthersProsecutionReceivedPrivateEvent();
 
     }
 
@@ -151,14 +151,14 @@ public class CivilProsecutionHandlerTest {
         verifyUpdateCaseFileReceivedPrivateEvent();
     }
 
-    private void verifyChargeProsecutionReceivedPrivateEvent() throws EventStreamException {
+    private void verifyOthersProsecutionReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
 
         assertThat(envelopeStream, streamContaining(
                 jsonEnvelope(
                         metadata()
-                                .withName(PRIVATE_EVENT_CHARGE_PROSECUTION_RECEIVED),
+                                .withName(PRIVATE_EVENT_OTHERS_PROSECUTION_RECEIVED),
                         payload().isJson(allOf(
                                 withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
                                 withJsonPath("$.submissionId", notNullValue()),
@@ -172,14 +172,14 @@ public class CivilProsecutionHandlerTest {
         );
     }
 
-    private void verifyEnforcementChargeProsecutionReceivedPrivateEvent() throws EventStreamException {
+    private void verifyEnforcementOthersProsecutionReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
 
         assertThat(envelopeStream, streamContaining(
                 jsonEnvelope(
                         metadata()
-                                .withName(PRIVATE_EVENT_CHARGE_PROSECUTION_RECEIVED),
+                                .withName(PRIVATE_EVENT_OTHERS_PROSECUTION_RECEIVED),
                         payload().isJson(allOf(
                                 withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
                                 withJsonPath("$.submissionId", notNullValue()),
@@ -227,9 +227,9 @@ public class CivilProsecutionHandlerTest {
 
     }
 
-    private Envelope<ChargeProsecution> buildChargeProsecutionEnvelope() {
+    private Envelope<OthersProsecution> buildOthersProsecutionEnvelope() {
 
-        final ChargeProsecution chargeProsecution = ChargeProsecution.chargeProsecution()
+        final OthersProsecution othersProsecution = OthersProsecution.othersProsecution()
                 .withHearingDetails(HearingDetails.hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing("10:00:00")
@@ -253,15 +253,15 @@ public class CivilProsecutionHandlerTest {
                         .withUserId(USER_ID.toString()),
                 createObjectBuilder().build());
 
-        return Enveloper.envelop(chargeProsecution)
-                .withName(PRIVATE_COMMAND_CHARGE_PROSECUTION)
+        return Enveloper.envelop(othersProsecution)
+                .withName(PRIVATE_COMMAND_OTHERS_PROSECUTION)
                 .withMetadataFrom(requestEnvelope);
 
     }
 
-    private Envelope<ChargeProsecution> buildEnforcementChargeProsecutionEnvelope() {
+    private Envelope<OthersProsecution> buildEnforcementOthersProsecutionEnvelope() {
 
-        final ChargeProsecution chargeProsecution = ChargeProsecution.chargeProsecution()
+        final OthersProsecution othersProsecution = OthersProsecution.othersProsecution()
                 .withHearingDateRangeDetails(HearingDateRangeDetails.hearingDateRangeDetails()
                         .withStartDateRangeOfHearing(LocalDate.now())
                         .withEndDateRangeOfHearing(LocalDate.now().plusDays(30))
@@ -286,8 +286,8 @@ public class CivilProsecutionHandlerTest {
                         .withUserId(USER_ID.toString()),
                 createObjectBuilder().build());
 
-        return Enveloper.envelop(chargeProsecution)
-                .withName(PRIVATE_COMMAND_CHARGE_PROSECUTION)
+        return Enveloper.envelop(othersProsecution)
+                .withName(PRIVATE_COMMAND_OTHERS_PROSECUTION)
                 .withMetadataFrom(requestEnvelope);
 
     }
@@ -320,7 +320,7 @@ public class CivilProsecutionHandlerTest {
                 createObjectBuilder().build());
 
         return Enveloper.envelop(summonsProsecution)
-                .withName(PRIVATE_COMMAND_CHARGE_PROSECUTION)
+                .withName(PRIVATE_COMMAND_OTHERS_PROSECUTION)
                 .withMetadataFrom(requestEnvelope);
 
     }

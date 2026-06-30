@@ -3,12 +3,12 @@ package uk.gov.moj.cpp.staging.civil.processor.converter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupChargeProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOthersProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.prosecutorsDefendant;
 
 import uk.gov.justice.cps.prosecutioncasefile.InitialHearing;
 import uk.gov.justice.services.common.converter.Converter;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
@@ -24,16 +24,16 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
     @Test
     public void shouldConvertProsecutionDefendantToProsecutionCaseFileDefendant() {
 
-        final ChargeProsecutionReceived chargeProsecutionReceived = groupChargeProsecutionReceived();
+        final OthersProsecutionReceived othersProsecutionReceived = groupOthersProsecutionReceived();
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> converter
-                = new DefendantToProsecutionCaseFileDefendantConverter(chargeProsecutionReceived.getHearingDetails(), null);
+                = new DefendantToProsecutionCaseFileDefendantConverter(othersProsecutionReceived.getHearingDetails(), null);
 
         final Defendant prosecutorsDefendant = prosecutorsDefendant();
 
 
         final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant prosecutionCaseFileDefendant = converter.convert(prosecutorsDefendant);
 
-        assertProsecutionCaseFileDefendantMatchesProsecutionDefendant(prosecutionCaseFileDefendant, prosecutorsDefendant, chargeProsecutionReceived);
+        assertProsecutionCaseFileDefendantMatchesProsecutionDefendant(prosecutionCaseFileDefendant, prosecutorsDefendant, othersProsecutionReceived);
     }
 
     @Test
@@ -59,7 +59,7 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
 
 
     private static void assertProsecutionCaseFileDefendantMatchesProsecutionDefendant(final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant prosecutionCaseFileDefendant,
-                                                                                      final Defendant prosecutorsDefendant, final ChargeProsecutionReceived chargeProsecutionReceived) {
+                                                                                      final Defendant prosecutorsDefendant, final OthersProsecutionReceived othersProsecutionReceived) {
 
         assertThat(prosecutionCaseFileDefendant, is(notNullValue()));
 
@@ -75,7 +75,7 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
         assertThat(prosecutionCaseFileDefendant.getNumPreviousConvictions(), is(prosecutorsDefendant.getDefendantDetails().getNumPreviousConvictions()));
 
         assertAddress(prosecutionCaseFileDefendant.getAddress(), prosecutorsDefendant.getDefendantDetails().getAddress());
-        assertHearingDetails(prosecutionCaseFileDefendant.getInitialHearing(), chargeProsecutionReceived.getHearingDetails());
+        assertHearingDetails(prosecutionCaseFileDefendant.getInitialHearing(), othersProsecutionReceived.getHearingDetails());
 
         assertThat(prosecutionCaseFileDefendant.getCustodyStatus(), is(prosecutorsDefendant.getIndividual().getCustodyStatus()));
         assertThat(prosecutionCaseFileDefendant.getIndividual().getCustodyStatus(), is(prosecutorsDefendant.getIndividual().getCustodyStatus()));

@@ -3,22 +3,22 @@ title: Case Management Command API
 version: 1.0
 baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil
 
-/prosecutions:
+/cases:
   post:
       description:  |
         Submit civil prosecutions
         ...
         (mapping):
-            requestType: application/vnd.stagingprosecutorscivil.charge-prosecution+json
-            name: stagingprosecutorscivil.charge-prosecution
+            requestType: application/vnd.stagingprosecutorscivil.others-prosecution+json
+            name: stagingprosecutorscivil.others-prosecution
         (mapping):
             requestType: application/vnd.stagingprosecutorscivil.summons-prosecution+json
             name: stagingprosecutorscivil.summons-prosecution
         ...
       body:
-        application/vnd.stagingprosecutorscivil.charge-prosecution+json:
-          schema: !include json/schema/stagingprosecutorscivil.charge-prosecution.json
-          example: !include json/stagingprosecutorscivil.charge-prosecution.json
+        application/vnd.stagingprosecutorscivil.others-prosecution+json:
+          schema: !include json/schema/stagingprosecutorscivil.others-prosecution.json
+          example: !include json/stagingprosecutorscivil.others-prosecution.json
         application/vnd.stagingprosecutorscivil.summons-prosecution+json:
           schema: !include json/schema/stagingprosecutorscivil.summons-prosecution.json
           example: !include json/stagingprosecutorscivil.summons-prosecution.json

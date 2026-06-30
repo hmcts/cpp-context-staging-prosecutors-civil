@@ -15,8 +15,8 @@ import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatc
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAST_UTC_DATE_TIME;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.chargeProsecutionReceived;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupChargeProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.othersProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOthersProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSummonsProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilCaseReceived;
@@ -28,7 +28,7 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
@@ -87,10 +87,10 @@ public class ProsecutionChargedEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleChargeProsecutionReceivedEvent() {
+    public void shouldHandleOthersProsecutionReceivedEvent() {
         assertThat(target, isHandler(EVENT_PROCESSOR)
-                .with(method("processProsecutionCharged")
-                        .thatHandles("stagingprosecutorscivil.event.charge-prosecution-received")
+                .with(method("processProsecutionOthers")
+                        .thatHandles("stagingprosecutorscivil.event.others-prosecution-received")
                 ));
     }
 
@@ -131,17 +131,17 @@ public class ProsecutionChargedEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateProsecutionCommandToPCFForChargeProsecution() {
-        final ChargeProsecutionReceived prosecutionReceived = chargeProsecutionReceived();
+    public void shouldInitiateProsecutionCommandToPCFForOthersProsecution() {
+        final OthersProsecutionReceived prosecutionReceived = othersProsecutionReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<ChargeProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.charge-prosecution-received",
+        final Envelope<OthersProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.others-prosecution-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         caseRefToCaseId.put(prosecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
         when(systemIdMapperService.getCppCaseIdMapFor(any())).thenReturn(caseRefToCaseId);
 
-        target.processProsecutionCharged(prosecutionReceivedEnvelope);
+        target.processProsecutionOthers(prosecutionReceivedEnvelope);
 
         verify(sender).sendAsAdmin(singleEnvelopeCaptor.capture());
         final InitiateProsecution initiateProsecution = singleEnvelopeCaptor.getValue().payload();
@@ -178,13 +178,13 @@ public class ProsecutionChargedEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateGroupProsecutionCommandToPCFForChargeProsecution() {
-        final ChargeProsecutionReceived prosecutionReceived = groupChargeProsecutionReceived();
+    public void shouldInitiateGroupProsecutionCommandToPCFForOthersProsecution() {
+        final OthersProsecutionReceived prosecutionReceived = groupOthersProsecutionReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<ChargeProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.charge-prosecution-received",
+        final Envelope<OthersProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.others-prosecution-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
-        target.processProsecutionCharged(prosecutionReceivedEnvelope);
+        target.processProsecutionOthers(prosecutionReceivedEnvelope);
 
         verify(sender).sendAsAdmin(groupEnvelopeCaptor.capture());
         final InitiateGroupProsecution initiateGroupProsecution = groupEnvelopeCaptor.getValue().payload();
@@ -223,12 +223,12 @@ public class ProsecutionChargedEventProcessorTest {
 
     @Test
     public void shouldCallCommandToUpdateCivilCase() {
-        final ChargeProsecutionReceived prosecutionReceived = groupChargeProsecutionReceived();
+        final OthersProsecutionReceived prosecutionReceived = groupOthersProsecutionReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<ChargeProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.charge-prosecution-received",
+        final Envelope<OthersProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.others-prosecution-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
-        target.processProsecutionCharged(prosecutionReceivedEnvelope);
+        target.processProsecutionOthers(prosecutionReceivedEnvelope);
 
         ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
         verify(sender).send(captor.capture());

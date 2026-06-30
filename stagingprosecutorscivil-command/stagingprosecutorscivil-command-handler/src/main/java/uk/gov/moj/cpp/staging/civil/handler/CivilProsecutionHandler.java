@@ -12,7 +12,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OthersProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
@@ -33,14 +33,14 @@ public class CivilProsecutionHandler {
     @Inject
     private AggregateService aggregateService;
 
-    @Handles("stagingprosecutorscivil.command.charge-prosecution")
-    public void handleChargeProsecution(final Envelope<ChargeProsecution> envelope) throws EventStreamException {
-        LOGGER.info("stagingprosecutorscivil.command.charge-prosecution with SubmissionId {}", envelope.payload().getSubmissionId());
+    @Handles("stagingprosecutorscivil.command.others-prosecution")
+    public void handleOthersProsecution(final Envelope<OthersProsecution> envelope) throws EventStreamException {
+        LOGGER.info("stagingprosecutorscivil.command.others-prosecution with SubmissionId {}", envelope.payload().getSubmissionId());
 
-        final ChargeProsecution chargeProsecution = envelope.payload();
-        final EventStream eventStream = eventSource.getStreamById(chargeProsecution.getSubmissionId());
+        final OthersProsecution othersProsecution = envelope.payload();
+        final EventStream eventStream = eventSource.getStreamById(othersProsecution.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
-        final Stream<Object> events = aggregate.receiveChargeProsecution(chargeProsecution.getSubmissionId(), chargeProsecution.getHearingDetails(), chargeProsecution.getHearingDateRangeDetails(), chargeProsecution.getProsecutingAuthority(), chargeProsecution.getProsecutionCases(), chargeProsecution.getRelatedReferenceNumber());
+        final Stream<Object> events = aggregate.receiveOthersProsecution(othersProsecution.getSubmissionId(), othersProsecution.getHearingDetails(), othersProsecution.getHearingDateRangeDetails(), othersProsecution.getProsecutingAuthority(), othersProsecution.getProsecutionCases(), othersProsecution.getRelatedReferenceNumber());
 
         appendEventsToStream(envelope, eventStream, events);
     }

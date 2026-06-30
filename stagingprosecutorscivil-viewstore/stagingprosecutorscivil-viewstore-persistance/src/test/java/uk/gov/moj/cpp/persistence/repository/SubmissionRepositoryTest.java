@@ -26,7 +26,7 @@ public class SubmissionRepositoryTest extends BaseTransactionalJunit4Test {
     private SubmissionRepository repository;
 
     @Test
-    public void shouldSaveAndReadChargeProsecution() {
+    public void shouldSaveAndReadOthersProsecution() {
         final UUID key = randomUUID();
         final UUID caseId = randomUUID();
         final Submission submission = Submission.builder().withSubmissionId(key).withCaseDetail(Collections.singleton(CaseDetail.builder().withId(caseId).build())).withReceivedAt(now()).build();

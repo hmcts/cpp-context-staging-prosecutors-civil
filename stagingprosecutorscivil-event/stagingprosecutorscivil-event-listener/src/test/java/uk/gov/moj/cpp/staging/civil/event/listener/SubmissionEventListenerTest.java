@@ -14,7 +14,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PE
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -44,21 +44,21 @@ public class SubmissionEventListenerTest {
     private ArgumentCaptor<Submission> argumentCaptor;
 
     @Test
-    public void shouldChargeProsecution() {
+    public void shouldOthersProsecution() {
 
         final UUID submissionId = randomUUID();
         final String prosecutingAuthority = "GAAAA01";
         final String urn = "urn_value";
-        final ChargeProsecutionReceived chargeProsecutionReceived = ChargeProsecutionReceived.chargeProsecutionReceived()
+        final OthersProsecutionReceived othersProsecutionReceived = OthersProsecutionReceived.othersProsecutionReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(PENDING)
                 .withProsecutingAuthority(prosecutingAuthority)
                 .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
                 .build();
 
-        final Envelope<ChargeProsecutionReceived> envelope = newEnvelope("stagingprosecutorscivil.event.charge-prosecution-received", chargeProsecutionReceived);
+        final Envelope<OthersProsecutionReceived> envelope = newEnvelope("stagingprosecutorscivil.event.others-prosecution-received", othersProsecutionReceived);
 
-        submissionEventListener.chargeProsecutionReceived(envelope);
+        submissionEventListener.othersProsecutionReceived(envelope);
 
         verify(submissionRepository).save(argumentCaptor.capture());
 

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/command/handler/charge-prosecution.json",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/command/handler/others-prosecution.json",
   "type": "object",
   "properties": {
     "prosecutionCases": {

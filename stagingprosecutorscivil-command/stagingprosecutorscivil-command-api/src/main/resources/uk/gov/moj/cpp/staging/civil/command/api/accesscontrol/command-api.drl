@@ -5,10 +5,10 @@ import uk.gov.moj.cpp.accesscontrol.drools.Action;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.accesscontrol.RuleConstants;
 global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
 
-rule "Command - Rule for Charge Prosecution"
+rule "Command - Rule for Others Prosecution"
   when
     $outcome: Outcome();
-    $action: Action(name == "stagingprosecutorscivil.charge-prosecution");
+    $action: Action(name == "stagingprosecutorscivil.others-prosecution");
     eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
   then
     $outcome.setSuccess(true);

@@ -42,7 +42,7 @@ import org.hamcrest.Matcher;
 public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.summons-prosecution+json";
-    public static final String CHARGE_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.charge-prosecution+json";
+    public static final String OTHERS_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.others-prosecution+json";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil";
     private static final String TOPIC_NAME = "jms.topic.stagingprosecutorscivil.event";
@@ -58,9 +58,9 @@ public class StagingProsecutorsCivilUtils {
 
     }
 
-    public static UrlResponse submitChargeProsecution(final String inputFileName, final String contentType) {
+    public static UrlResponse submitOthersProsecution(final String inputFileName, final String contentType) {
 
-        return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.charge-prosecution-received");
+        return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.others-prosecution-received");
 
     }
 
@@ -94,7 +94,7 @@ public class StagingProsecutorsCivilUtils {
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
         headers.putSingle(USER_ID, UUID.randomUUID());
 
-        return restClient.postCommand(COMMAND_BASE_URI + "/prosecutions/",
+        return restClient.postCommand(COMMAND_BASE_URI + "/cases/",
                 contentType,
                 ResourcesUtils.readResource(resourceName), headers
         );

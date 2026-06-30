@@ -7,7 +7,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoN
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -33,16 +33,16 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
         );
     }
 
-    public Stream<Object> receiveChargeProsecution(final UUID submissionId,
+    public Stream<Object> receiveOthersProsecution(final UUID submissionId,
                                                    final HearingDetails hearingDetails,
                                                    final HearingDateRangeDetails hearingDateRangeDetails,
                                                    final String prosecutingAuthority,
                                                    final List<ProsecutionCase> prosecutionCases,
                                                    final String relatedReferenceNumber) {
-        LOGGER.info("Raising private event stagingprosecutorscivil.event.charge-prosecution-received for submission id {}", submissionId);
+        LOGGER.info("Raising private event stagingprosecutorscivil.event.others-prosecution-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
-                        ChargeProsecutionReceived.chargeProsecutionReceived()
+                        OthersProsecutionReceived.othersProsecutionReceived()
                                 .withSubmissionId(submissionId)
                                 .withSubmissionStatus(SubmissionStatus.PENDING)
                                 .withProsecutingAuthority(prosecutingAuthority)
