@@ -37,7 +37,7 @@ public class GroupSubmissionSucceededPublicEventProcessor {
                 .add("submissionId", submissionId)
                 .add("submissionStatus", SubmissionStatus.SUCCESS.name());
         sender.send(envelop(jsonObjectBuilder.build())
-                .withName("stagingprosecutorscivil.command.update-civil-case")
+                .withName("stagingcivil.command.update-civil-case")
                 .withMetadataFrom(groupSubmissionSucceededEnvelope));
 
     }
