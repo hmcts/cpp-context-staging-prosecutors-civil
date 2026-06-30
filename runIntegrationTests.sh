@@ -40,6 +40,8 @@ buildDeployAndTest() {
   runLiquibase
   deployWiremock
   deployWars
+  healthchecks
+  integrationTests
 }
 
 buildDeployAndTest

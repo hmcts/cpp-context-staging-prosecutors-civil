@@ -22,7 +22,7 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForCharge;
+import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForOthers;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForSummons;
 import uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
@@ -52,9 +52,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ServiceComponent(EVENT_PROCESSOR)
-public class ProsecutionChargedEventProcessor {
+public class ProsecutionEventProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProsecutionChargedEventProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProsecutionEventProcessor.class);
 
     @Inject
     private Sender sender;
@@ -115,7 +115,7 @@ public class ProsecutionChargedEventProcessor {
                                                                   final UUID groupId) {
         final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(othersProsecutionReceived.getProsecutionCases(), othersProsecutionReceived.getProsecutingAuthority()));
         final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverter
-                = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
+                = new ProsecutionCaseToGroupProsecutionConverterForOthers(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
 
         return othersProsecutionReceived.getProsecutionCases()
                 .stream()

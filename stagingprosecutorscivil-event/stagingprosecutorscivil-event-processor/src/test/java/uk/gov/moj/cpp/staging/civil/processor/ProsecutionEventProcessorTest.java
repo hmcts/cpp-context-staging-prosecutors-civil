@@ -56,7 +56,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ProsecutionChargedEventProcessorTest {
+public class ProsecutionEventProcessorTest {
 
     private static final UUID CASE_FILE_ID = randomUUID();
 
@@ -73,7 +73,7 @@ public class ProsecutionChargedEventProcessorTest {
     private SystemIdMapperService systemIdMapperService;
 
     @InjectMocks
-    private ProsecutionChargedEventProcessor target;
+    private ProsecutionEventProcessor target;
 
     @Spy
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
