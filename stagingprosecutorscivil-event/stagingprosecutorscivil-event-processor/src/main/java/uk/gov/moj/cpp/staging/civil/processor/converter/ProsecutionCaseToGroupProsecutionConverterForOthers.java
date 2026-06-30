@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class ProsecutionCaseToGroupProsecutionConverterForCharge implements Converter<ProsecutionCase, GroupProsecutions> {
+public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Converter<ProsecutionCase, GroupProsecutions> {
 
     private static final String INITIATION_CODE_CIVIL_CASE = "O";
     private final ZonedDateTime dateReceived;
@@ -29,7 +29,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForCharge implements Conv
     private UUID groupId;
     private Map<String, UUID> caseRefToCaseId;
 
-    public ProsecutionCaseToGroupProsecutionConverterForCharge(final ZonedDateTime dateReceived, final OthersProsecutionReceived othersProsecutionReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
+    public ProsecutionCaseToGroupProsecutionConverterForOthers(final ZonedDateTime dateReceived, final OthersProsecutionReceived othersProsecutionReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
         this.dateReceived = dateReceived;
         this.othersProsecutionReceived = othersProsecutionReceived;
         this.groupId = groupId;

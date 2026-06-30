@@ -32,7 +32,7 @@ function runLiquibase {
    printf "${CYAN}All liquibase $LIQUIBASE_COMMAND scripts run${NO_COLOUR}\n\n"
 }
 
-buildDeployAndTest() {
+buildDeployAndTest() {2
   loginToDockerContainerRegistry
   buildWars
   undeployWarsFromDocker

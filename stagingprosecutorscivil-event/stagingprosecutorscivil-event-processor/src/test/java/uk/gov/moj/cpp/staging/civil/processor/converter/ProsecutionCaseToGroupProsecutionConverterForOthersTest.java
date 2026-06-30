@@ -30,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
+public class ProsecutionCaseToGroupProsecutionConverterForOthersTest {
 
     private final StoppedClock clock = new StoppedClock(now());
 
@@ -45,7 +45,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
         final Map<String, UUID>  caseRefToCaseId = new HashMap<>();
         final OthersProsecutionReceived othersProsecutionReceived = groupOthersProsecutionReceived();
         caseRefToCaseId.put(othersProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
+        final ProsecutionCaseToGroupProsecutionConverterForOthers converter = new ProsecutionCaseToGroupProsecutionConverterForOthers(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
         final ProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
         final GroupProsecutions prosecutorsCaseFileGroupProsecutions = converter.convert(prosecutionCase);
 
@@ -88,7 +88,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         final OthersProsecutionReceived othersProsecutionReceived = enforcementOthersProsecutionReceived();
         caseRefToCaseId.put(othersProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
+        final ProsecutionCaseToGroupProsecutionConverterForOthers converter = new ProsecutionCaseToGroupProsecutionConverterForOthers(dateReceived, othersProsecutionReceived, groupId, caseRefToCaseId);
         final ProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
 
         final GroupProsecutions result = converter.convert(prosecutionCase);
