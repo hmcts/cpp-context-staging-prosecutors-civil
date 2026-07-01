@@ -69,7 +69,7 @@ public class SubmitSummonsProsecutionIT {
 
     @Test
     public void shouldSubmitOthersProsecution() {
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOthersProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-all-fields.json", OTHERS_PROSECUTION_CONTENT_TYPE);
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOthersProsecution("payload/other/stagingprosecutors.submit-other-prosecution-all-fields.json", OTHERS_PROSECUTION_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
