@@ -38,7 +38,7 @@ public class CivilProsecutionQueryApiTest {
     public void shouldReturnSubmissionDetails() {
 
         final String submissionId = UUID.randomUUID().toString();
-        JsonEnvelope envelope = createEnvelope("stagingprosecutorscivil.query.submission-details",
+        JsonEnvelope envelope = createEnvelope("stagingcivil.query.submission-details",
                 createObjectBuilder()
                         .add("submissionId", submissionId)
                         .build()
@@ -48,7 +48,7 @@ public class CivilProsecutionQueryApiTest {
         verify(civilProsecutionQueryView).querySubmission(jsonEnvelopeArgumentCaptor.capture());
 
         final JsonEnvelope jsonEnvelope = jsonEnvelopeArgumentCaptor.getValue();
-        assertThat(jsonEnvelope.metadata().name(), is("stagingprosecutorscivil.query.submission-details"));
+        assertThat(jsonEnvelope.metadata().name(), is("stagingcivil.query.submission-details"));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("submissionId"), is(submissionId));
     }
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/summons-prosecution-received.json",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/other-cases-received.json",
   "type": "object",
   "properties": {
     "submissionId": {
@@ -24,16 +24,23 @@
       "maxLength": 7
     },
     "hearingDetails": {
-      "description": "Court Hearing details",
+      "description": "Court Hearing details for civil/summons cases",
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json"
+    },
+    "hearingDateRangeDetails": {
+      "description": "Court Hearing date range details for enforcement cases",
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-date-range-details.json"
     }
   },
   "required": [
     "submissionId",
     "submissionStatus",
     "prosecutionCases",
-    "prosecutingAuthority",
-    "hearingDetails"
+    "prosecutingAuthority"
+  ],
+  "oneOf": [
+    { "required": ["hearingDetails"] },
+    { "required": ["hearingDateRangeDetails"] }
   ],
   "additionalProperties": false
 }

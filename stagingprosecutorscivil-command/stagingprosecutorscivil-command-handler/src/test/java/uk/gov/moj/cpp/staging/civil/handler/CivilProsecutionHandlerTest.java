@@ -28,12 +28,12 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OthersProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCases;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
@@ -56,12 +56,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CivilProsecutionHandlerTest {
 
-    private static final String PRIVATE_COMMAND_OTHERS_PROSECUTION = "stagingprosecutorscivil.command.others-prosecution";
-    private static final String PRIVATE_EVENT_OTHERS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.others-prosecution-received";
-    private static final String PRIVATE_COMMAND_SUMMONS_PROSECUTION = "stagingprosecutorscivil.command.summons-prosecution";
-    private static final String PRIVATE_EVENT_SUMMONS_PROSECUTION_RECEIVED = "stagingprosecutorscivil.event.summons-prosecution-received";
-    private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingprosecutorscivil.command.update-civil-case";
-    private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingprosecutorscivil.event.update-civil-case-received";
+    private static final String PRIVATE_COMMAND_OTHER_CASES = "stagingcivil.command.other-cases";
+    private static final String PRIVATE_EVENT_OTHER_CASES_RECEIVED = "stagingcivil.event.other-cases-received";
+    private static final String PRIVATE_COMMAND_SUMMONS = "stagingcivil.command.summons";
+    private static final String PRIVATE_EVENT_SUMMONS_RECEIVED = "stagingcivil.event.summons-received";
+    private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingcivil.command.update-civil-case";
+    private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingcivil.event.update-civil-case-received";
 
 
     @InjectMocks
@@ -79,64 +79,64 @@ public class CivilProsecutionHandlerTest {
     private AggregateService aggregateService;
 
     @Spy
-    private final Enveloper enveloper = createEnveloperWithEvents(OthersProsecutionReceived.class, SummonsProsecutionReceived.class, UpdateCivilCaseReceived.class);
+    private final Enveloper enveloper = createEnveloperWithEvents(OtherCasesReceived.class, SummonsReceived.class, UpdateCivilCaseReceived.class);
 
     @Test
-    public void shouldHandleOthersProsecutionCommand() {
+    public void shouldHandleOtherCasesCommand() {
 
         assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
-                .with(method("handleOthersProsecution")
-                        .thatHandles(PRIVATE_COMMAND_OTHERS_PROSECUTION)));
+                .with(method("handleOtherCases")
+                        .thatHandles(PRIVATE_COMMAND_OTHER_CASES)));
 
     }
 
     @Test
-    public void shouldRaiseOthersProsecutionReceivedPrivateEvent() throws Exception {
+    public void shouldRaiseOtherCasesReceivedPrivateEvent() throws Exception {
 
 
-        final Envelope<OthersProsecution> envelope = buildOthersProsecutionEnvelope();
+        final Envelope<OtherCases> envelope = buildOtherCasesEnvelope();
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
 
-        civilProsecutionHandler.handleOthersProsecution(envelope);
+        civilProsecutionHandler.handleOtherCases(envelope);
 
-        verifyOthersProsecutionReceivedPrivateEvent();
+        verifyOtherCasesReceivedPrivateEvent();
 
     }
 
     @Test
-    public void shouldRaiseOthersProsecutionReceivedPrivateEventWithEnforcementFields() throws Exception {
+    public void shouldRaiseOtherCasesReceivedPrivateEventWithEnforcementFields() throws Exception {
 
-        final Envelope<OthersProsecution> envelope = buildEnforcementOthersProsecutionEnvelope();
+        final Envelope<OtherCases> envelope = buildEnforcementOtherCasesEnvelope();
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
 
-        civilProsecutionHandler.handleOthersProsecution(envelope);
+        civilProsecutionHandler.handleOtherCases(envelope);
 
-        verifyEnforcementOthersProsecutionReceivedPrivateEvent();
+        verifyEnforcementOtherCasesReceivedPrivateEvent();
 
     }
 
     @Test
-    public void shouldHandleSummonsProsecutionCommand() {
+    public void shouldHandleSummonsCommand() {
 
         assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
-                .with(method("handleSummonsProsecution")
-                        .thatHandles(PRIVATE_COMMAND_SUMMONS_PROSECUTION)));
+                .with(method("handleSummons")
+                        .thatHandles(PRIVATE_COMMAND_SUMMONS)));
 
     }
 
     @Test
-    public void shouldRaiseSummonsProsecutionReceivedPrivateEvent() throws Exception {
+    public void shouldRaiseSummonsReceivedPrivateEvent() throws Exception {
 
-        final Envelope<SummonsProsecution> envelope = buildSummonsProsecutionEnvelope();
+        final Envelope<Summons> envelope = buildSummonsEnvelope();
 
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
 
-        civilProsecutionHandler.handleSummonsProsecution(envelope);
+        civilProsecutionHandler.handleSummons(envelope);
 
-        verifySummonsProsecutionReceivedPrivateEvent();;
+        verifySummonsReceivedPrivateEvent();;
 
     }
 
@@ -151,14 +151,14 @@ public class CivilProsecutionHandlerTest {
         verifyUpdateCaseFileReceivedPrivateEvent();
     }
 
-    private void verifyOthersProsecutionReceivedPrivateEvent() throws EventStreamException {
+    private void verifyOtherCasesReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
 
         assertThat(envelopeStream, streamContaining(
                 jsonEnvelope(
                         metadata()
-                                .withName(PRIVATE_EVENT_OTHERS_PROSECUTION_RECEIVED),
+                                .withName(PRIVATE_EVENT_OTHER_CASES_RECEIVED),
                         payload().isJson(allOf(
                                 withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
                                 withJsonPath("$.submissionId", notNullValue()),
@@ -172,14 +172,14 @@ public class CivilProsecutionHandlerTest {
         );
     }
 
-    private void verifyEnforcementOthersProsecutionReceivedPrivateEvent() throws EventStreamException {
+    private void verifyEnforcementOtherCasesReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
 
         assertThat(envelopeStream, streamContaining(
                 jsonEnvelope(
                         metadata()
-                                .withName(PRIVATE_EVENT_OTHERS_PROSECUTION_RECEIVED),
+                                .withName(PRIVATE_EVENT_OTHER_CASES_RECEIVED),
                         payload().isJson(allOf(
                                 withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
                                 withJsonPath("$.submissionId", notNullValue()),
@@ -188,14 +188,14 @@ public class CivilProsecutionHandlerTest {
         ));
     }
 
-    private void verifySummonsProsecutionReceivedPrivateEvent() throws EventStreamException {
+    private void verifySummonsReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
 
         assertThat(envelopeStream, streamContaining(
                 jsonEnvelope(
                         metadata()
-                                .withName(PRIVATE_EVENT_SUMMONS_PROSECUTION_RECEIVED),
+                                .withName(PRIVATE_EVENT_SUMMONS_RECEIVED),
                         payload().isJson(allOf(
                                 withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
                                 withJsonPath("$.submissionId", notNullValue()),
@@ -227,9 +227,9 @@ public class CivilProsecutionHandlerTest {
 
     }
 
-    private Envelope<OthersProsecution> buildOthersProsecutionEnvelope() {
+    private Envelope<OtherCases> buildOtherCasesEnvelope() {
 
-        final OthersProsecution othersProsecution = OthersProsecution.othersProsecution()
+        final OtherCases otherCases = OtherCases.otherCases()
                 .withHearingDetails(HearingDetails.hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing("10:00:00")
@@ -253,15 +253,15 @@ public class CivilProsecutionHandlerTest {
                         .withUserId(USER_ID.toString()),
                 createObjectBuilder().build());
 
-        return Enveloper.envelop(othersProsecution)
-                .withName(PRIVATE_COMMAND_OTHERS_PROSECUTION)
+        return Enveloper.envelop(otherCases)
+                .withName(PRIVATE_COMMAND_OTHER_CASES)
                 .withMetadataFrom(requestEnvelope);
 
     }
 
-    private Envelope<OthersProsecution> buildEnforcementOthersProsecutionEnvelope() {
+    private Envelope<OtherCases> buildEnforcementOtherCasesEnvelope() {
 
-        final OthersProsecution othersProsecution = OthersProsecution.othersProsecution()
+        final OtherCases otherCases = OtherCases.otherCases()
                 .withHearingDateRangeDetails(HearingDateRangeDetails.hearingDateRangeDetails()
                         .withStartDateRangeOfHearing(LocalDate.now())
                         .withEndDateRangeOfHearing(LocalDate.now().plusDays(30))
@@ -286,15 +286,15 @@ public class CivilProsecutionHandlerTest {
                         .withUserId(USER_ID.toString()),
                 createObjectBuilder().build());
 
-        return Enveloper.envelop(othersProsecution)
-                .withName(PRIVATE_COMMAND_OTHERS_PROSECUTION)
+        return Enveloper.envelop(otherCases)
+                .withName(PRIVATE_COMMAND_OTHER_CASES)
                 .withMetadataFrom(requestEnvelope);
 
     }
 
-    private Envelope<SummonsProsecution> buildSummonsProsecutionEnvelope() {
+    private Envelope<Summons> buildSummonsEnvelope() {
 
-        final SummonsProsecution summonsProsecution = SummonsProsecution.summonsProsecution()
+        final Summons summons = Summons.summons()
                 .withHearingDetails(HearingDetails.hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing("10:00:00")
@@ -319,8 +319,8 @@ public class CivilProsecutionHandlerTest {
                         .withUserId(USER_ID.toString()),
                 createObjectBuilder().build());
 
-        return Enveloper.envelop(summonsProsecution)
-                .withName(PRIVATE_COMMAND_OTHERS_PROSECUTION)
+        return Enveloper.envelop(summons)
+                .withName(PRIVATE_COMMAND_OTHER_CASES)
                 .withMetadataFrom(requestEnvelope);
 
     }

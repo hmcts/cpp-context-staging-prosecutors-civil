@@ -7,9 +7,9 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoN
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
@@ -33,16 +33,16 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
         );
     }
 
-    public Stream<Object> receiveOthersProsecution(final UUID submissionId,
+    public Stream<Object> receiveOtherCases(final UUID submissionId,
                                                    final HearingDetails hearingDetails,
                                                    final HearingDateRangeDetails hearingDateRangeDetails,
                                                    final String prosecutingAuthority,
                                                    final List<ProsecutionCase> prosecutionCases,
                                                    final String relatedReferenceNumber) {
-        LOGGER.info("Raising private event stagingprosecutorscivil.event.others-prosecution-received for submission id {}", submissionId);
+        LOGGER.info("Raising private event stagingcivil.event.other-cases-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
-                        OthersProsecutionReceived.othersProsecutionReceived()
+                        OtherCasesReceived.otherCasesReceived()
                                 .withSubmissionId(submissionId)
                                 .withSubmissionStatus(SubmissionStatus.PENDING)
                                 .withProsecutingAuthority(prosecutingAuthority)
@@ -55,14 +55,14 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
         );
     }
 
-    public Stream<Object> receiveSummonsProsecution(final UUID submissionId,
+    public Stream<Object> receiveSummons(final UUID submissionId,
                                                     final HearingDetails hearingDetails,
                                                     final String prosecutingAuthority,
                                                     final List<ProsecutionCase> prosecutionCases) {
-        LOGGER.info("Raising private event stagingprosecutorscivil.event.summons-prosecution-received for submission id {}", submissionId);
+        LOGGER.info("Raising private event stagingcivil.event.summons-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
-                        SummonsProsecutionReceived.summonsProsecutionReceived()
+                        SummonsReceived.summonsReceived()
                                 .withSubmissionId(submissionId)
                                 .withSubmissionStatus(SubmissionStatus.PENDING)
                                 .withProsecutingAuthority(prosecutingAuthority)
@@ -76,7 +76,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
     public Stream<Object> receiveCivilCaseUpdate(final UUID submissionId, final String submissionStatus, final List<Problem> caseErrors,
                                                  final List<DefendantProblem> defendantErrors, final List<Problem> groupCaseErrors,
                                                  final List<Problem> warnings, final List<Problem> caseWarnings, final List<DefendantProblem> defendantWarnings) {
-        LOGGER.info("Raising private event stagingprosecutorscivil.event.update-civil-case-received for submission id {} and status {}", submissionId, submissionStatus);
+        LOGGER.info("Raising private event stagingcivil.event.update-civil-case-received for submission id {} and status {}", submissionId, submissionStatus);
         return apply(
                 Stream.of(
                         UpdateCivilCaseReceived.updateCivilCaseReceived()

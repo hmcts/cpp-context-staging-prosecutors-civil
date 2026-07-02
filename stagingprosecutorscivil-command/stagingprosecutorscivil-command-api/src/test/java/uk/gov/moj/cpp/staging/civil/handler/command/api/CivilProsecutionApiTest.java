@@ -11,10 +11,10 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OthersProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OthersProsecutionWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecutionWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCases;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCasesWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -49,7 +49,7 @@ public class CivilProsecutionApiTest {
     }
 
     @Test
-    public void shouldHandleOthersProsecution() {
+    public void shouldHandleOtherCases() {
 
         List<Defendant> defendants = new ArrayList<>();
         defendants.add(
@@ -72,32 +72,32 @@ public class CivilProsecutionApiTest {
                         .withDefendants(defendants)
                         .build()
         );
-        OthersProsecution othersProsecution = OthersProsecution
-                .othersProsecution()
+        OtherCases otherCases = OtherCases
+                .otherCases()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .build();
 
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingprosecutorscivil.others-prosecution")
+                .withName("stagingcivil.other-cases")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        Envelope<UrlResponse> resultEnvelop = api.othersProsecution(Envelope.envelopeFrom(metadata, othersProsecution));
+        Envelope<UrlResponse> resultEnvelop = api.otherCases(Envelope.envelopeFrom(metadata, otherCases));
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        OthersProsecutionWithSubmissionId receivedOthersProsecution = (OthersProsecutionWithSubmissionId) capturedEnvelope.payload();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.others-prosecution"));
-        assertThat(receivedOthersProsecution.getProsecutingAuthority(), is("GAAAA01"));
-        assertThat(receivedOthersProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        OtherCasesWithSubmissionId receivedOtherCases = (OtherCasesWithSubmissionId) capturedEnvelope.payload();
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-cases"));
+        assertThat(receivedOtherCases.getProsecutingAuthority(), is("GAAAA01"));
+        assertThat(receivedOtherCases.getProsecutionCases().get(0).getUrn(), is("urn1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 
     @Test
-    public void shouldHandleOthersProsecutionWithEnforcementFields() {
+    public void shouldHandleOtherCasesWithEnforcementFields() {
         List<ProsecutionCase> prosecutionCaseList = new ArrayList();
         prosecutionCaseList.add(
                 ProsecutionCase.prosecutionCase()
@@ -105,32 +105,32 @@ public class CivilProsecutionApiTest {
                         .withDefendants(new ArrayList<>())
                         .build()
         );
-        OthersProsecution othersProsecution = OthersProsecution
-                .othersProsecution()
+        OtherCases otherCases = OtherCases
+                .otherCases()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .withRelatedReferenceNumber("GOB123456789")
                 .build();
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingprosecutorscivil.others-prosecution")
+                .withName("stagingcivil.other-cases")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        Envelope<UrlResponse> resultEnvelop = api.othersProsecution(Envelope.envelopeFrom(metadata, othersProsecution));
+        Envelope<UrlResponse> resultEnvelop = api.otherCases(Envelope.envelopeFrom(metadata, otherCases));
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        OthersProsecutionWithSubmissionId receivedOthersProsecution = (OthersProsecutionWithSubmissionId) capturedEnvelope.payload();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.others-prosecution"));
-        assertThat(receivedOthersProsecution.getRelatedReferenceNumber(), is("GOB123456789"));
-        assertThat(receivedOthersProsecution.getProsecutionCases().get(0).getUrn(), is("urn-enforcement-1"));
+        OtherCasesWithSubmissionId receivedOtherCases = (OtherCasesWithSubmissionId) capturedEnvelope.payload();
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-cases"));
+        assertThat(receivedOtherCases.getRelatedReferenceNumber(), is("GOB123456789"));
+        assertThat(receivedOtherCases.getProsecutionCases().get(0).getUrn(), is("urn-enforcement-1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 
     @Test
-    public void shouldHandleSummonsProsecution() {
+    public void shouldHandleSummons() {
 
         List<Defendant> defendants = new ArrayList<>();
         defendants.add(
@@ -153,30 +153,30 @@ public class CivilProsecutionApiTest {
                 .withDefendants(defendants)
                 .build()
         );
-        SummonsProsecution summonsProsecution = SummonsProsecution
-                .summonsProsecution()
+        Summons summons = Summons
+                .summons()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .build();
 
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingprosecutorscivil.summons-prosecution")
+                .withName("stagingcivil.summons")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        final Envelope commandEnvelope = Envelope.envelopeFrom(metadata, summonsProsecution);
+        final Envelope commandEnvelope = Envelope.envelopeFrom(metadata, summons);
 
-        Envelope<UrlResponse> resultEnvelop = api.summonsProsecution(commandEnvelope);
+        Envelope<UrlResponse> resultEnvelop = api.summons(commandEnvelope);
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
 
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.summons-prosecution"));
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.summons"));
         assertNotNull(urlResponse.getSubmissionId());
 
-        SummonsProsecutionWithSubmissionId receivedSummonProsecution = (SummonsProsecutionWithSubmissionId) capturedEnvelope.payload();
+        SummonsWithSubmissionId receivedSummonProsecution = (SummonsWithSubmissionId) capturedEnvelope.payload();
         assertThat(receivedSummonProsecution.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(receivedSummonProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
         assertNotNull(urlResponse.getSubmissionId());

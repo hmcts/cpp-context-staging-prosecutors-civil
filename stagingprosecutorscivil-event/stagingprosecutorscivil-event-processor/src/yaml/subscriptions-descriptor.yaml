@@ -5,10 +5,10 @@ subscriptions_descriptor:
   subscriptions:
     - name: event processor subscription
       events:
-        - name: stagingprosecutorscivil.event.others-prosecution-received
-          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.others-prosecution-received.json
-        - name: stagingprosecutorscivil.event.summons-prosecution-received
-          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.summons-prosecution-received.json
+        - name: stagingcivil.event.other-cases-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingcivil.event.other-cases-received.json
+        - name: stagingcivil.event.summons-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingcivil.event.summons-received.json
       event_source_name: stagingprosecutorscivil
 
     - name: public processor subscription

@@ -12,8 +12,8 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OthersProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCases;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
 import java.util.stream.Stream;
@@ -33,33 +33,33 @@ public class CivilProsecutionHandler {
     @Inject
     private AggregateService aggregateService;
 
-    @Handles("stagingprosecutorscivil.command.others-prosecution")
-    public void handleOthersProsecution(final Envelope<OthersProsecution> envelope) throws EventStreamException {
-        LOGGER.info("stagingprosecutorscivil.command.others-prosecution with SubmissionId {}", envelope.payload().getSubmissionId());
+    @Handles("stagingcivil.command.other-cases")
+    public void handleOtherCases(final Envelope<OtherCases> envelope) throws EventStreamException {
+        LOGGER.info("stagingcivil.command.other-cases with SubmissionId {}", envelope.payload().getSubmissionId());
 
-        final OthersProsecution othersProsecution = envelope.payload();
-        final EventStream eventStream = eventSource.getStreamById(othersProsecution.getSubmissionId());
+        final OtherCases otherCases = envelope.payload();
+        final EventStream eventStream = eventSource.getStreamById(otherCases.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
-        final Stream<Object> events = aggregate.receiveOthersProsecution(othersProsecution.getSubmissionId(), othersProsecution.getHearingDetails(), othersProsecution.getHearingDateRangeDetails(), othersProsecution.getProsecutingAuthority(), othersProsecution.getProsecutionCases(), othersProsecution.getRelatedReferenceNumber());
+        final Stream<Object> events = aggregate.receiveOtherCases(otherCases.getSubmissionId(), otherCases.getHearingDetails(), otherCases.getHearingDateRangeDetails(), otherCases.getProsecutingAuthority(), otherCases.getProsecutionCases(), otherCases.getRelatedReferenceNumber());
 
         appendEventsToStream(envelope, eventStream, events);
     }
 
-    @Handles("stagingprosecutorscivil.command.summons-prosecution")
-    public void handleSummonsProsecution(final Envelope<SummonsProsecution> envelope) throws EventStreamException {
-        LOGGER.info("stagingprosecutorscivil.command.summons-prosecution with SubmissionId {}", envelope.payload().getSubmissionId());
+    @Handles("stagingcivil.command.summons")
+    public void handleSummons(final Envelope<Summons> envelope) throws EventStreamException {
+        LOGGER.info("stagingcivil.command.summons with SubmissionId {}", envelope.payload().getSubmissionId());
 
-        final SummonsProsecution summonsProsecution = envelope.payload();
-        final EventStream eventStream = eventSource.getStreamById(summonsProsecution.getSubmissionId());
+        final Summons summons = envelope.payload();
+        final EventStream eventStream = eventSource.getStreamById(summons.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
-        final Stream<Object> events = aggregate.receiveSummonsProsecution(summonsProsecution.getSubmissionId(), summonsProsecution.getHearingDetails(), summonsProsecution.getProsecutingAuthority(), summonsProsecution.getProsecutionCases());
+        final Stream<Object> events = aggregate.receiveSummons(summons.getSubmissionId(), summons.getHearingDetails(), summons.getProsecutingAuthority(), summons.getProsecutionCases());
 
         appendEventsToStream(envelope, eventStream, events);
     }
 
-    @Handles("stagingprosecutorscivil.command.update-civil-case")
+    @Handles("stagingcivil.command.update-civil-case")
     public void handleCivilCaseUpdate(final Envelope<UpdateCivilCase> envelope) throws EventStreamException {
-        LOGGER.info("stagingprosecutorscivil.command.update-civil-case with SubmissionId {} and status {}", envelope.payload().getSubmissionId(), envelope.payload().getSubmissionStatus());
+        LOGGER.info("stagingcivil.command.update-civil-case with SubmissionId {} and status {}", envelope.payload().getSubmissionId(), envelope.payload().getSubmissionStatus());
 
         final UpdateCivilCase update = envelope.payload();
         final EventStream eventStream = eventSource.getStreamById(update.getSubmissionId());

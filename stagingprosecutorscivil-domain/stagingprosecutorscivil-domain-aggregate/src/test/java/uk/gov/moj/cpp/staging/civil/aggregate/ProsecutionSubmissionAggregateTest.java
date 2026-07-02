@@ -6,9 +6,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -33,7 +33,7 @@ public class ProsecutionSubmissionAggregateTest {
     }
 
     @Test
-    public void shouldRaiseOthersProsecutionReceivedEvent() {
+    public void shouldRaiseOtherCasesReceivedEvent() {
         final UUID submissionId = UUID.randomUUID();
         final HearingDetails hearingDetails = HearingDetails.hearingDetails()
                 .withDateOfHearing(LocalDate.now())
@@ -44,13 +44,13 @@ public class ProsecutionSubmissionAggregateTest {
                 .withUrn("URN123")
                 .build());
 
-        final Stream<Object> events = aggregate.receiveOthersProsecution(
+        final Stream<Object> events = aggregate.receiveOtherCases(
                 submissionId, hearingDetails, null, "GAAAA01", cases, null);
 
         final List<Object> eventList = events.collect(Collectors.toList());
         assertThat(eventList.size(), is(1));
-        assertThat(eventList.get(0), instanceOf(OthersProsecutionReceived.class));
-        final OthersProsecutionReceived event = (OthersProsecutionReceived) eventList.get(0);
+        assertThat(eventList.get(0), instanceOf(OtherCasesReceived.class));
+        final OtherCasesReceived event = (OtherCasesReceived) eventList.get(0);
         assertThat(event.getSubmissionId(), is(submissionId));
         assertThat(event.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(event.getSubmissionStatus(), is(SubmissionStatus.PENDING));
@@ -58,7 +58,7 @@ public class ProsecutionSubmissionAggregateTest {
     }
 
     @Test
-    public void shouldRaiseOthersProsecutionReceivedEventWithRelatedReferenceNumber() {
+    public void shouldRaiseOtherCasesReceivedEventWithRelatedReferenceNumber() {
         final UUID submissionId = UUID.randomUUID();
         final HearingDateRangeDetails hearingDateRangeDetails = HearingDateRangeDetails.hearingDateRangeDetails()
                 .withStartDateRangeOfHearing(LocalDate.of(2026, 3, 12))
@@ -69,12 +69,12 @@ public class ProsecutionSubmissionAggregateTest {
                 .withUrn("URN-ENF-001")
                 .build());
 
-        final Stream<Object> events = aggregate.receiveOthersProsecution(
+        final Stream<Object> events = aggregate.receiveOtherCases(
                 submissionId, null, hearingDateRangeDetails, "GAAAA01", cases, "GOB123456789");
 
         final List<Object> eventList = events.collect(Collectors.toList());
         assertThat(eventList.size(), is(1));
-        final OthersProsecutionReceived event = (OthersProsecutionReceived) eventList.get(0);
+        final OtherCasesReceived event = (OtherCasesReceived) eventList.get(0);
         assertThat(event.getSubmissionId(), is(submissionId));
         assertThat(event.getRelatedReferenceNumber(), is("GOB123456789"));
         assertThat(event.getSubmissionStatus(), is(SubmissionStatus.PENDING));
@@ -83,7 +83,7 @@ public class ProsecutionSubmissionAggregateTest {
     }
 
     @Test
-    public void shouldRaiseSummonsProsecutionReceivedEvent() {
+    public void shouldRaiseSummonsReceivedEvent() {
         final UUID submissionId = UUID.randomUUID();
         final HearingDetails hearingDetails = HearingDetails.hearingDetails()
                 .withDateOfHearing(LocalDate.now())
@@ -94,13 +94,13 @@ public class ProsecutionSubmissionAggregateTest {
                 .withUrn("URN456")
                 .build());
 
-        final Stream<Object> events = aggregate.receiveSummonsProsecution(
+        final Stream<Object> events = aggregate.receiveSummons(
                 submissionId, hearingDetails, "GAAAA01", cases);
 
         final List<Object> eventList = events.collect(Collectors.toList());
         assertThat(eventList.size(), is(1));
-        assertThat(eventList.get(0), instanceOf(SummonsProsecutionReceived.class));
-        final SummonsProsecutionReceived event = (SummonsProsecutionReceived) eventList.get(0);
+        assertThat(eventList.get(0), instanceOf(SummonsReceived.class));
+        final SummonsReceived event = (SummonsReceived) eventList.get(0);
         assertThat(event.getSubmissionId(), is(submissionId));
         assertThat(event.getSubmissionStatus(), is(SubmissionStatus.PENDING));
     }

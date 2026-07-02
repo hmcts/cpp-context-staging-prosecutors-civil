@@ -14,8 +14,8 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PE
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
@@ -44,21 +44,21 @@ public class SubmissionEventListenerTest {
     private ArgumentCaptor<Submission> argumentCaptor;
 
     @Test
-    public void shouldOthersProsecution() {
+    public void shouldOtherCases() {
 
         final UUID submissionId = randomUUID();
         final String prosecutingAuthority = "GAAAA01";
         final String urn = "urn_value";
-        final OthersProsecutionReceived othersProsecutionReceived = OthersProsecutionReceived.othersProsecutionReceived()
+        final OtherCasesReceived otherCasesReceived = OtherCasesReceived.otherCasesReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(PENDING)
                 .withProsecutingAuthority(prosecutingAuthority)
                 .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
                 .build();
 
-        final Envelope<OthersProsecutionReceived> envelope = newEnvelope("stagingprosecutorscivil.event.others-prosecution-received", othersProsecutionReceived);
+        final Envelope<OtherCasesReceived> envelope = newEnvelope("stagingcivil.event.other-cases-received", otherCasesReceived);
 
-        submissionEventListener.othersProsecutionReceived(envelope);
+        submissionEventListener.otherCasesReceived(envelope);
 
         verify(submissionRepository).save(argumentCaptor.capture());
 
@@ -71,21 +71,21 @@ public class SubmissionEventListenerTest {
     }
 
     @Test
-    public void shouldSummonsProsecution() {
+    public void shouldSummons() {
 
         final UUID submissionId = randomUUID();
         final String prosecutingAuthority = "GAAAA01";
         final String urn = "urn_value";
-        final SummonsProsecutionReceived summonsProsecutionReceived = SummonsProsecutionReceived.summonsProsecutionReceived()
+        final SummonsReceived summonsReceived = SummonsReceived.summonsReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(PENDING)
                 .withProsecutingAuthority(prosecutingAuthority)
                 .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
                 .build();
 
-        final Envelope<SummonsProsecutionReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        final Envelope<SummonsReceived> envelope = newEnvelope("stagingcivil.event.summons-received", summonsReceived);
 
-        submissionEventListener.summonsProsecutionReceived(envelope);
+        submissionEventListener.summonsReceived(envelope);
 
         verify(submissionRepository).save(argumentCaptor.capture());
 
@@ -100,7 +100,7 @@ public class SubmissionEventListenerTest {
     @Test
     public void shouldUpdateCaseFile() {
         final UUID submissionId = randomUUID();
-        final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+        final UpdateCivilCaseReceived summonsReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(PENDING)
                 .build();
@@ -110,7 +110,7 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(PENDING.name())
                 .build();
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingcivil.event.summons-received", summonsReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());

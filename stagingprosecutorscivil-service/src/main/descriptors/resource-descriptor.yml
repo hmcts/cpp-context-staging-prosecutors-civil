@@ -36,9 +36,9 @@ resource_descriptor:
             type: jar
             version: '${project.version}'
 
-    - name: stagingprosecutorscivil.handler.command
+    - name: stagingcivil.handler.command
       type: queue
-    - name: stagingprosecutorscivil.event
+    - name: stagingcivil.event
       type: topic
     - name: public.event
       type: topic

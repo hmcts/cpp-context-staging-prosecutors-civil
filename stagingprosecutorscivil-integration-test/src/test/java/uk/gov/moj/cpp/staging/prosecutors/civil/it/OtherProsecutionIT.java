@@ -6,7 +6,7 @@ import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProduc
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.OTHERS_PROSECUTION_CONTENT_TYPE;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.OTHER_CASES_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
 
@@ -49,9 +49,9 @@ public class OtherProsecutionIT {
     @Test
     public void shouldSubmitProsecutionForGroupCaseSuccess() {
         stubPCFCommand(randomUUID());
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOthersProsecution("payload/other/stagingprosecutors.submit-other-prosecution-all-fields.json", OTHERS_PROSECUTION_CONTENT_TYPE);
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOtherCases("payload/other/stagingcivil.submit-other-prosecution-all-fields.json", OTHER_CASES_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
-        ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/other/stagingprosecutors.submit-other-prosecution-all-fields.json");
+        ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/other/stagingcivil.submit-other-prosecution-all-fields.json");
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
 
@@ -68,8 +68,8 @@ public class OtherProsecutionIT {
     @Test
     public void shouldSubmitProsecutionForGroupCaseSuccessWithOnlyMandatoryFields() {
         stubPCFCommand(randomUUID());
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOthersProsecution("payload/other/stagingprosecutors.submit-other-prosecution-mandatory-fields-only.json", OTHERS_PROSECUTION_CONTENT_TYPE);
-        ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/other/stagingprosecutors.submit-other-prosecution-all-fields.json");
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOtherCases("payload/other/stagingcivil.submit-other-prosecution-mandatory-fields-only.json", OTHER_CASES_CONTENT_TYPE);
+        ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/other/stagingcivil.submit-other-prosecution-all-fields.json");
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(urlResponse.getSubmissionId(), SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(urlResponse.getSubmissionId().toString()));
     }
@@ -77,9 +77,9 @@ public class OtherProsecutionIT {
     @Test
     public void shouldSubmitProsecutionForSingleCaseSuccess() {
         stubPCFCommand(randomUUID());
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOthersProsecution("payload/other/stagingprosecutors.submit-other-prosecution-single-case.json", OTHERS_PROSECUTION_CONTENT_TYPE);
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOtherCases("payload/other/stagingcivil.submit-other-prosecution-single-case.json", OTHER_CASES_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
-        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/other/stagingprosecutors.submit-other-prosecution-single-case.json");
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/other/stagingcivil.submit-other-prosecution-single-case.json");
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(urlResponse.getSubmissionId().toString()));
 

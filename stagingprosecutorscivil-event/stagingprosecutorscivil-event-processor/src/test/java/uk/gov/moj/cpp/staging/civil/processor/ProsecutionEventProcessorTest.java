@@ -15,10 +15,10 @@ import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatc
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAST_UTC_DATE_TIME;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.othersProsecutionReceived;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOthersProsecutionReceived;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSummonsProsecutionReceived;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.otherCasesReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOtherCasesReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSummonsReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilProsecutionCaseReceived;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
@@ -28,9 +28,9 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateGroupProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateProsecution;
@@ -87,18 +87,18 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleOthersProsecutionReceivedEvent() {
+    public void shouldHandleOtherCasesReceivedEvent() {
         assertThat(target, isHandler(EVENT_PROCESSOR)
                 .with(method("processProsecutionOthers")
-                        .thatHandles("stagingprosecutorscivil.event.others-prosecution-received")
+                        .thatHandles("stagingcivil.event.other-cases-received")
                 ));
     }
 
     @Test
-    public void shouldHandleSummonsProsecutionReceivedEvent() {
+    public void shouldHandleSummonsReceivedEvent() {
         assertThat(target, isHandler(EVENT_PROCESSOR)
                 .with(method("processProsecutionSummons")
-                        .thatHandles("stagingprosecutorscivil.event.summons-prosecution-received")
+                        .thatHandles("stagingcivil.event.summons-received")
                 ));
     }
 
@@ -131,10 +131,10 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateProsecutionCommandToPCFForOthersProsecution() {
-        final OthersProsecutionReceived prosecutionReceived = othersProsecutionReceived();
+    public void shouldInitiateProsecutionCommandToPCFForOtherCases() {
+        final OtherCasesReceived prosecutionReceived = otherCasesReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OthersProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.others-prosecution-received",
+        final Envelope<OtherCasesReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-cases-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
@@ -156,10 +156,10 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateProsecutionCommandToPCFForSummonsProsecution() {
-        final SummonsProsecutionReceived prosecutionReceived = summonsProsecutionReceived();
+    public void shouldInitiateProsecutionCommandToPCFForSummons() {
+        final SummonsReceived prosecutionReceived = summonsReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<SummonsProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.summons-prosecution-received",
+        final Envelope<SummonsReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.summons-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         final UUID caseFileId = UUID.randomUUID();
@@ -178,10 +178,10 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateGroupProsecutionCommandToPCFForOthersProsecution() {
-        final OthersProsecutionReceived prosecutionReceived = groupOthersProsecutionReceived();
+    public void shouldInitiateGroupProsecutionCommandToPCFForOtherCases() {
+        final OtherCasesReceived prosecutionReceived = groupOtherCasesReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OthersProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.others-prosecution-received",
+        final Envelope<OtherCasesReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-cases-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);
@@ -200,10 +200,10 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateGroupProsecutionCommandToPCFForSummonsProsecution() {
-        final SummonsProsecutionReceived prosecutionReceived = groupSummonsProsecutionReceived();
+    public void shouldInitiateGroupProsecutionCommandToPCFForSummons() {
+        final SummonsReceived prosecutionReceived = groupSummonsReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<SummonsProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.summons-prosecution-received",
+        final Envelope<SummonsReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.summons-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionSummons(prosecutionReceivedEnvelope);
@@ -223,9 +223,9 @@ public class ProsecutionEventProcessorTest {
 
     @Test
     public void shouldCallCommandToUpdateCivilCase() {
-        final OthersProsecutionReceived prosecutionReceived = groupOthersProsecutionReceived();
+        final OtherCasesReceived prosecutionReceived = groupOtherCasesReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OthersProsecutionReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.others-prosecution-received",
+        final Envelope<OtherCasesReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-cases-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);

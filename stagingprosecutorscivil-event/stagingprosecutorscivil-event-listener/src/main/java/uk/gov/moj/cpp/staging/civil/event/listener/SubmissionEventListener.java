@@ -14,9 +14,9 @@ import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OthersProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 
 import java.time.ZonedDateTime;
@@ -42,23 +42,23 @@ public class SubmissionEventListener {
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    @Handles("stagingprosecutorscivil.event.others-prosecution-received")
-    public void othersProsecutionReceived(final Envelope<OthersProsecutionReceived> event) {
-        LOGGER.info("stagingprosecutorscivil.event.others-prosecution-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+    @Handles("stagingcivil.event.other-cases-received")
+    public void otherCasesReceived(final Envelope<OtherCasesReceived> event) {
+        LOGGER.info("stagingcivil.event.other-cases-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
 
-        final OthersProsecutionReceived othersProsecutionReceived = event.payload();
+        final OtherCasesReceived otherCasesReceived = event.payload();
 
         final Set<CaseDetail> caseDetails = new HashSet<>();
-        othersProsecutionReceived.getProsecutionCases().forEach(prosecutionCase -> caseDetails.add(CaseDetail
+        otherCasesReceived.getProsecutionCases().forEach(prosecutionCase -> caseDetails.add(CaseDetail
                 .builder()
                 .withId(randomUUID())
                 .withCaseUrn(prosecutionCase.getUrn())
                 .build()));
 
         final Submission submission = Submission.builder()
-                .withSubmissionId(othersProsecutionReceived.getSubmissionId())
-                .withSubmissionStatus(othersProsecutionReceived.getSubmissionStatus().name())
-                .withOuCode(othersProsecutionReceived.getProsecutingAuthority())
+                .withSubmissionId(otherCasesReceived.getSubmissionId())
+                .withSubmissionStatus(otherCasesReceived.getSubmissionStatus().name())
+                .withOuCode(otherCasesReceived.getProsecutingAuthority())
                 .withReceivedAt(extractCreatedAt(event.metadata()))
                 .withCaseDetail(caseDetails)
                 .withErrors(null)
@@ -68,23 +68,23 @@ public class SubmissionEventListener {
         submissionRepository.save(submission);
     }
 
-    @Handles("stagingprosecutorscivil.event.summons-prosecution-received")
-    public void summonsProsecutionReceived(final Envelope<SummonsProsecutionReceived> event) {
-        LOGGER.info("stagingprosecutorscivil.event.summons-prosecution-received event received in Listener  for SubmissionId {}", event.payload().getSubmissionId());
+    @Handles("stagingcivil.event.summons-received")
+    public void summonsReceived(final Envelope<SummonsReceived> event) {
+        LOGGER.info("stagingcivil.event.summons-received event received in Listener  for SubmissionId {}", event.payload().getSubmissionId());
 
-        final SummonsProsecutionReceived summonsProsecutionReceived = event.payload();
+        final SummonsReceived summonsReceived = event.payload();
 
         final Set<CaseDetail> caseDetails = new HashSet<>();
-        summonsProsecutionReceived.getProsecutionCases().forEach(prosecutionCase -> caseDetails.add(CaseDetail
+        summonsReceived.getProsecutionCases().forEach(prosecutionCase -> caseDetails.add(CaseDetail
                 .builder()
                 .withId(randomUUID())
                 .withCaseUrn(prosecutionCase.getUrn())
                 .build()));
 
         final Submission submission = Submission.builder()
-                .withSubmissionId(summonsProsecutionReceived.getSubmissionId())
-                .withSubmissionStatus(summonsProsecutionReceived.getSubmissionStatus().name())
-                .withOuCode(summonsProsecutionReceived.getProsecutingAuthority())
+                .withSubmissionId(summonsReceived.getSubmissionId())
+                .withSubmissionStatus(summonsReceived.getSubmissionStatus().name())
+                .withOuCode(summonsReceived.getProsecutingAuthority())
                 .withReceivedAt(extractCreatedAt(event.metadata()))
                 .withCaseDetail(caseDetails)
                 .withErrors(null)
@@ -94,9 +94,9 @@ public class SubmissionEventListener {
         submissionRepository.save(submission);
     }
 
-    @Handles("stagingprosecutorscivil.event.update-civil-case-received")
+    @Handles("stagingcivil.event.update-civil-case-received")
     public void updatedCivilCaseReceived(final Envelope<UpdateCivilCaseReceived> event) {
-        LOGGER.info("stagingprosecutorscivil.event.update-civil-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+        LOGGER.info("stagingcivil.event.update-civil-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
         final UpdateCivilCaseReceived updatedCivilCaseReceived = event.payload();
         final Submission submission = submissionRepository.findBy(updatedCivilCaseReceived.getSubmissionId());
         if (SubmissionStatus.REJECTED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
