@@ -16,6 +16,8 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.json.JsonSchemaValidationException;
 import uk.gov.justice.services.core.json.JsonSchemaValidator;
 import uk.gov.justice.services.core.sender.Sender;
@@ -46,6 +48,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,14 +65,19 @@ public class CivilProsecutionApiTest {
     @Mock
     private JsonSchemaValidator jsonSchemaValidator;
 
+    @Spy
+    ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
     @Captor
     private ArgumentCaptor<DefaultEnvelope> envelopeCaptor;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         api.baseResponseURL = "test-base-url/";
+        setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         setField(api, "uuidProducer", uuidProducer);
         setField(api, "jsonSchemaValidator", jsonSchemaValidator);
+        setField(api, "objectToJsonObjectConverter", objectToJsonObjectConverter);
     }
 
     @Test

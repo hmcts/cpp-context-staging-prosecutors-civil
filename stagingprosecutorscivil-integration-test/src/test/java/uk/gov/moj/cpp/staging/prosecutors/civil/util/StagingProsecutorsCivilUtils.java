@@ -53,6 +53,7 @@ public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.summons-prosecution+json";
     public static final String CHARGE_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.charge-prosecution+json";
+    public static final String UPLOAD_BULK_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.upload-bulk-prosecution+json";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil";
     private static final String TOPIC_NAME = "jms.topic.stagingprosecutorscivil.event";
@@ -64,6 +65,36 @@ public class StagingProsecutorsCivilUtils {
     private static final String WRITE_BASE_URI = COMMAND_BASE_URI + "/v1";
     private static final String PROSECUTOR_DOCUMENT_UPLOAD_COMMAND_URL = WRITE_BASE_URI + "/prosecutions/%s/materials";
 
+
+    public static UrlResponse submitBulkChargeProsecution(final String csvResourceName) {
+        try (final MessageConsumerClient messageConsumerClient = new MessageConsumerClient()) {
+            messageConsumerClient.startConsumer("stagingprosecutorscivil.event.charge-prosecution-received", TOPIC_NAME);
+            return postBulkUploadCommand(csvResourceName);
+        }
+    }
+
+    private static UrlResponse postBulkUploadCommand(final String csvResourceName) {
+        final String csvContent = ResourcesUtils.readResource(csvResourceName);
+        final String requestBody = Json.createObjectBuilder()
+                .add("file", csvContent)
+                .build()
+                .toString();
+
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, UUID.randomUUID());
+
+        final Response response = restClient.postCommand(
+                COMMAND_BASE_URI + "/prosecutions/upload-bulk",
+                UPLOAD_BULK_PROSECUTION_CONTENT_TYPE,
+                requestBody,
+                headers);
+
+        assertEquals(Response.Status.ACCEPTED.getStatusCode(), response.getStatus());
+        final String responseFromCommandAPI = response.readEntity(String.class);
+        final JsonReader jsonReader = Json.createReader(new ByteArrayInputStream(responseFromCommandAPI.getBytes()));
+        final JsonObject jsonObject = jsonReader.readObject();
+        return jsonObjectToObjectConverter.convert(jsonObject, UrlResponse.class);
+    }
 
     public static UrlResponse submitSummonsProsecution(final String inputFileName, final String contentType) {
 

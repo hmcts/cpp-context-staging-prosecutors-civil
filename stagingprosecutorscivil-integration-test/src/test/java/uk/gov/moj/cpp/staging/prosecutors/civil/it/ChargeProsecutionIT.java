@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-public class ChargeProsecutionIT {
+public class  ChargeProsecutionIT {
 
     private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED       = "public.prosecutioncasefile.civil.prosecution-submission-succeeded";
     private static final String PUBLIC_EVENT_PCF_GROUP_SUBMISSION_SUCCEEDED                   = "public.prosecutioncasefile.group-submission-succeeded";
@@ -176,6 +176,49 @@ public class ChargeProsecutionIT {
 
         final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
         assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldSubmitBulkChargeProsecutionSuccessfully() {
+        final UUID groupId = randomUUID();
+        stubPCFCommand(groupId);
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitBulkChargeProsecution("payload/charge/stagingprosecutors.upload-bulk-charge-prosecution-all-fields.csv");
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/charge/stagingprosecutors.submit-charge-prosecution-all-fields.json");
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+
+        final JsonObject caseSucceededPublicEvent = Json.createObjectBuilder()
+                .add("groupId", groupId.toString())
+                .add("externalId", submissionId.toString())
+                .build();
+        final JsonEnvelope publicEventEnvelope = envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_GROUP_SUBMISSION_SUCCEEDED, randomUUID().toString()), caseSucceededPublicEvent);
+        messageProducerClientPublic.sendMessage(PUBLIC_EVENT_PCF_GROUP_SUBMISSION_SUCCEEDED, publicEventEnvelope);
+
+        final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
+        assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldUpdateStatusToRejectedForBulkChargeProsecution() {
+        final UUID groupId = randomUUID();
+        stubPCFCommand(groupId);
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitBulkChargeProsecution("payload/charge/stagingprosecutors.upload-bulk-charge-prosecution-all-fields.csv");
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/charge/stagingprosecutors.submit-charge-prosecution-all-fields.json");
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final JsonObject rejectedEvent = Json.createObjectBuilder()
+                .add("groupId", groupId.toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
     @Disabled("Works locally but fails in pipeline")
