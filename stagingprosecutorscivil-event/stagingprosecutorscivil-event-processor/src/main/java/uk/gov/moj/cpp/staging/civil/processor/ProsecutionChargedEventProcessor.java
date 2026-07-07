@@ -10,6 +10,7 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
 import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReferences;
+import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getSummonsProsecutorCaseReferences;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
 
@@ -30,6 +31,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateGroupProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateProsecution;
@@ -127,8 +129,8 @@ public class ProsecutionChargedEventProcessor {
     private List<GroupProsecutions> getGroupProsecutionsForSummons(final ZonedDateTime dateReceived,
                                                                    final SummonsProsecutionReceived summonsProsecutionReceived,
                                                                    final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(summonsProsecutionReceived.getProsecutionCases(), summonsProsecutionReceived.getProsecutingAuthority()), null);
-        final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverterForSummons
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getSummonsProsecutorCaseReferences(summonsProsecutionReceived.getProsecutionCases(), summonsProsecutionReceived.getProsecutingAuthority()), null);
+        final Converter<SummonsProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverterForSummons
                 = new ProsecutionCaseToGroupProsecutionConverterForSummons(dateReceived, summonsProsecutionReceived, groupId, caseRefToCaseId);
 
         return summonsProsecutionReceived.getProsecutionCases()

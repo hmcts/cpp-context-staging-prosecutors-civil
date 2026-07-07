@@ -4,6 +4,7 @@
     {
       "informant": "John Doe",
       "urn": "SCIV12345",
+      "summonsCode": "A",
       "defendants": [
         {
           "organisation": {

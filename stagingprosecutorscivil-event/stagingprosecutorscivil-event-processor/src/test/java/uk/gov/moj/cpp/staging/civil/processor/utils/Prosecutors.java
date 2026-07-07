@@ -19,6 +19,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardianIndi
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardianNameDetails.parentGuardianNameDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardianOrganisation.parentGuardianOrganisation;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase.prosecutionCase;
+import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase.summonsProsecutionCase;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation.selfDefinedInformation;
 
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel;
@@ -38,6 +39,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.OffenceDateCode;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Organisation;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardian;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.CivilProsecutionSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.GroupSubmissionSucceeded;
@@ -371,14 +373,14 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ProsecutionCase summonsProsecutionCaseDetail() {
-        return prosecutionCase()
+    public static SummonsProsecutionCase summonsProsecutionCaseDetail() {
+        return summonsProsecutionCase()
                 .withUrn(URN)
                 .withInformant(INFORMANT)
                 .withCaseMarker(CASE_MARKER)
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
-                .withSummonsCode("summons_code")
+                .withSummonsCode("A")
                 .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }

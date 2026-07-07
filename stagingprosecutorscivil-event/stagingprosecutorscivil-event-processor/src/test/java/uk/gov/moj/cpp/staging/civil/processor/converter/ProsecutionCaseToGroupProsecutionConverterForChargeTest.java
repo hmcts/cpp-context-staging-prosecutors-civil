@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker.caseMarker;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupChargeProsecutionReceived;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsProsecutionCaseDetail;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.chargeProsecutionCaseDetail;
 
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
@@ -44,7 +44,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForChargeTest {
         final ChargeProsecutionReceived chargeProsecutionReceived = groupChargeProsecutionReceived();
         caseRefToCaseId.put(chargeProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
         final ProsecutionCaseToGroupProsecutionConverterForCharge converter = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, chargeProsecutionReceived, groupId, caseRefToCaseId);
-        final ProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
+        final ProsecutionCase prosecutionCase = chargeProsecutionCaseDetail();
         final GroupProsecutions prosecutorsCaseFileGroupProsecutions = converter.convert(prosecutionCase);
 
         assertThat(prosecutorsCaseFileGroupProsecutions.getGroupId(), is(notNullValue()));

@@ -42,6 +42,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -174,7 +175,7 @@ public class CivilProsecutionHandlerTest {
                                 withJsonPath("$.submissionId", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].caseMarker", is("Markers")),
                                 withJsonPath("$.prosecutionCases[0].paymentReference", is("PAYREF123")),
-                                withJsonPath("$.prosecutionCases[0].summonsCode", is("FIRST")),
+                                withJsonPath("$.prosecutionCases[0].summonsCode", is("A")),
                                 withJsonPath("$.prosecutionCases[0].defendants[0]", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].defendants[0].offences[0]", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].defendants[0].offences[0].arrestDate", is(LocalDate.now().toString())))
@@ -237,10 +238,10 @@ public class CivilProsecutionHandlerTest {
                         .withDateOfHearing(LocalDate.now())
                         .build())
                 .withProsecutingAuthority("THREE RIVER")
-                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                .withProsecutionCases(Arrays.asList(SummonsProsecutionCase.summonsProsecutionCase()
                         .withCaseMarker("Markers")
                         .withPaymentReference("PAYREF123")
-                        .withSummonsCode("FIRST")
+                        .withSummonsCode("A")
                         .withDefendants(Arrays.asList(Defendant.defendant()
                                 .withOffences(Arrays.asList(Offence.offence()
                                         .withArrestDate(LocalDate.now())

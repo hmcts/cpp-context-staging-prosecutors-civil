@@ -71,6 +71,10 @@ public class StagingProsecutorsCivilUtils {
 
     }
 
+    public static int submitSummonsProsecutionStatus(final String inputFileName, final String contentType) {
+        return postCommand(inputFileName, contentType).getStatus();
+    }
+
     public static UrlResponse submitChargeProsecution(final String inputFileName, final String contentType) {
 
         return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.charge-prosecution-received");
