@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/command/api/other-cases.json",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/command/api/other-case-with-submission-id.json",
   "type": "object",
   "properties": {
     "prosecutionCases": {
@@ -29,11 +29,15 @@
       "description": "GoB account number (Libra account reference) tied to the defendant. Required for enforcement cases.",
       "type": "string",
       "maxLength": 13
+    },
+    "submissionId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
     }
   },
   "required": [
     "prosecutionCases",
-    "prosecutingAuthority"
+    "prosecutingAuthority",
+    "submissionId"
   ],
   "oneOf": [
     {

@@ -42,7 +42,7 @@ import org.hamcrest.Matcher;
 public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_CONTENT_TYPE = "application/vnd.stagingcivil.summons+json";
-    public static final String OTHER_CASES_CONTENT_TYPE = "application/vnd.stagingcivil.other-cases+json";
+    public static final String OTHER_CASE_CONTENT_TYPE = "application/vnd.stagingcivil.other-case+json";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/staging-civil";
     private static final String TOPIC_NAME = "jms.topic.stagingcivil.event";
@@ -58,9 +58,9 @@ public class StagingProsecutorsCivilUtils {
 
     }
 
-    public static UrlResponse submitOtherCases(final String inputFileName, final String contentType) {
+    public static UrlResponse submitOtherCase(final String inputFileName, final String contentType) {
 
-        return submitProsecution(inputFileName, contentType, "stagingcivil.event.other-cases-received");
+        return submitProsecution(inputFileName, contentType, "stagingcivil.event.other-case-received");
 
     }
 

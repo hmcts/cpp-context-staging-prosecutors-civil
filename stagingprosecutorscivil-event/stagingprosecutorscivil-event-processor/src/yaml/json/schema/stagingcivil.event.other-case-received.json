@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/other-cases-received.json",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/other-case-received.json",
   "type": "object",
   "properties": {
     "submissionId": {
@@ -30,11 +30,6 @@
     "hearingDateRangeDetails": {
       "description": "Court Hearing date range details for enforcement cases",
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-date-range-details.json"
-    },
-    "relatedReferenceNumber": {
-      "description": "GoB account number (Libra account reference) tied to the defendant. Present for enforcement cases.",
-      "type": "string",
-      "maxLength": 13
     }
   },
   "required": [
@@ -44,16 +39,8 @@
     "prosecutingAuthority"
   ],
   "oneOf": [
-    {
-      "required": [
-        "hearingDetails"
-      ]
-    },
-    {
-      "required": [
-        "hearingDateRangeDetails"
-      ]
-    }
+    { "required": ["hearingDetails"] },
+    { "required": ["hearingDateRangeDetails"] }
   ],
   "additionalProperties": false
 }

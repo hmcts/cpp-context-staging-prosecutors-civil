@@ -14,7 +14,7 @@ import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -42,23 +42,23 @@ public class SubmissionEventListener {
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    @Handles("stagingcivil.event.other-cases-received")
-    public void otherCasesReceived(final Envelope<OtherCasesReceived> event) {
-        LOGGER.info("stagingcivil.event.other-cases-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+    @Handles("stagingcivil.event.other-case-received")
+    public void otherCaseReceived(final Envelope<OtherCaseReceived> event) {
+        LOGGER.info("stagingcivil.event.other-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
 
-        final OtherCasesReceived otherCasesReceived = event.payload();
+        final OtherCaseReceived otherCaseReceived = event.payload();
 
         final Set<CaseDetail> caseDetails = new HashSet<>();
-        otherCasesReceived.getProsecutionCases().forEach(prosecutionCase -> caseDetails.add(CaseDetail
+        otherCaseReceived.getProsecutionCases().forEach(prosecutionCase -> caseDetails.add(CaseDetail
                 .builder()
                 .withId(randomUUID())
                 .withCaseUrn(prosecutionCase.getUrn())
                 .build()));
 
         final Submission submission = Submission.builder()
-                .withSubmissionId(otherCasesReceived.getSubmissionId())
-                .withSubmissionStatus(otherCasesReceived.getSubmissionStatus().name())
-                .withOuCode(otherCasesReceived.getProsecutingAuthority())
+                .withSubmissionId(otherCaseReceived.getSubmissionId())
+                .withSubmissionStatus(otherCaseReceived.getSubmissionStatus().name())
+                .withOuCode(otherCaseReceived.getProsecutingAuthority())
                 .withReceivedAt(extractCreatedAt(event.metadata()))
                 .withCaseDetail(caseDetails)
                 .withErrors(null)

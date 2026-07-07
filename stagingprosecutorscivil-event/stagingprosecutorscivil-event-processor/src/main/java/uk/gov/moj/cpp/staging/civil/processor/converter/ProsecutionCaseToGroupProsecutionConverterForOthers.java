@@ -11,7 +11,7 @@ import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Prosecutor;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
@@ -25,13 +25,13 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
 
     private static final String INITIATION_CODE_CIVIL_CASE = "O";
     private final ZonedDateTime dateReceived;
-    private final OtherCasesReceived otherCasesReceived;
+    private final OtherCaseReceived otherCaseReceived;
     private UUID groupId;
     private Map<String, UUID> caseRefToCaseId;
 
-    public ProsecutionCaseToGroupProsecutionConverterForOthers(final ZonedDateTime dateReceived, final OtherCasesReceived otherCasesReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
+    public ProsecutionCaseToGroupProsecutionConverterForOthers(final ZonedDateTime dateReceived, final OtherCaseReceived otherCaseReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
         this.dateReceived = dateReceived;
-        this.otherCasesReceived = otherCasesReceived;
+        this.otherCaseReceived = otherCaseReceived;
         this.groupId = groupId;
         this.caseRefToCaseId = caseRefToCaseId;
     }
@@ -40,7 +40,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
     public GroupProsecutions convert(final ProsecutionCase prosecutionCase) {
 
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> defendantToProsecutionCaseFileDefendantConverter
-                = new DefendantToProsecutionCaseFileDefendantConverter(otherCasesReceived.getHearingDetails(), otherCasesReceived.getHearingDateRangeDetails());
+                = new DefendantToProsecutionCaseFileDefendantConverter(otherCaseReceived.getHearingDetails(), otherCaseReceived.getHearingDateRangeDetails());
 
         return GroupProsecutions.groupProsecutions()
                 .withCaseDetails(buildCaseDetails(prosecutionCase))
@@ -63,7 +63,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
 
     private CaseDetails buildCaseDetails(final ProsecutionCase prosecutionCase) {
 
-        final UUID caseFileId = caseRefToCaseId.get(getProsecutorCaseReference(otherCasesReceived.getProsecutingAuthority(), prosecutionCase.getUrn()));
+        final UUID caseFileId = caseRefToCaseId.get(getProsecutorCaseReference(otherCaseReceived.getProsecutingAuthority(), prosecutionCase.getUrn()));
 
         return CaseDetails.caseDetails()
                 .withDateReceived(dateReceived.toLocalDate())
@@ -73,12 +73,12 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
                 .withSummonsCode(prosecutionCase.getSummonsCode())
                 .withCpsOrganisation(null)
                 .withInitiationCode(INITIATION_CODE_CIVIL_CASE)
-                .withOriginatingOrganisation(otherCasesReceived.getProsecutingAuthority())
+                .withOriginatingOrganisation(otherCaseReceived.getProsecutingAuthority())
                 .withCaseMarkers(buildCaseMarkers(ofNullable(prosecutionCase.getCaseMarker()).orElse(null)))
                 .withProsecutor(Prosecutor.prosecutor()
                         .withInformant(ofNullable(prosecutionCase.getInformant()).orElse(null))
-                        .withProsecutingAuthority(otherCasesReceived.getProsecutingAuthority()).build())
-                .withRelatedUrn(otherCasesReceived.getRelatedReferenceNumber())
+                        .withProsecutingAuthority(otherCaseReceived.getProsecutingAuthority()).build())
+                .withRelatedUrn(otherCaseReceived.getRelatedReferenceNumber())
                 .build();
     }
 

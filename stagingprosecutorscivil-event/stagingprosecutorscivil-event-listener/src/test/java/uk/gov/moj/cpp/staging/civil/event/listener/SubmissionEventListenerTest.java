@@ -14,7 +14,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PE
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -44,21 +44,21 @@ public class SubmissionEventListenerTest {
     private ArgumentCaptor<Submission> argumentCaptor;
 
     @Test
-    public void shouldOtherCases() {
+    public void shouldOtherCase() {
 
         final UUID submissionId = randomUUID();
         final String prosecutingAuthority = "GAAAA01";
         final String urn = "urn_value";
-        final OtherCasesReceived otherCasesReceived = OtherCasesReceived.otherCasesReceived()
+        final OtherCaseReceived otherCaseReceived = OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(PENDING)
                 .withProsecutingAuthority(prosecutingAuthority)
                 .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
                 .build();
 
-        final Envelope<OtherCasesReceived> envelope = newEnvelope("stagingcivil.event.other-cases-received", otherCasesReceived);
+        final Envelope<OtherCaseReceived> envelope = newEnvelope("stagingcivil.event.other-case-received", otherCaseReceived);
 
-        submissionEventListener.otherCasesReceived(envelope);
+        submissionEventListener.otherCaseReceived(envelope);
 
         verify(submissionRepository).save(argumentCaptor.capture());
 

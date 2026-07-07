@@ -25,7 +25,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInforma
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails;
@@ -304,10 +304,10 @@ public class Prosecutors {
                 .build();
     }
 
-    public static OtherCasesReceived ccOtherCasesReceived() {
-        return OtherCasesReceived.otherCasesReceived()
+    public static OtherCaseReceived ccOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(otherCasesCaseDetail(), otherCasesCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
@@ -315,10 +315,10 @@ public class Prosecutors {
                         .build())
                 .build();
     }
-    public static OtherCasesReceived groupOtherCasesReceived() {
-        return OtherCasesReceived.otherCasesReceived()
+    public static OtherCaseReceived groupOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(otherCasesCaseDetail(), otherCasesCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
@@ -327,10 +327,10 @@ public class Prosecutors {
                 .build();
     }
 
-    public static OtherCasesReceived enforcementOtherCasesReceived() {
-        return OtherCasesReceived.otherCasesReceived()
+    public static OtherCaseReceived enforcementOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(otherCasesCaseDetail(), otherCasesCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
                 .withHearingDateRangeDetails(hearingDateRangeDetails()
                         .withStartDateRangeOfHearing(START_DATE_RANGE_OF_HEARING)
                         .withEndDateRangeOfHearing(END_DATE_RANGE_OF_HEARING)
@@ -352,10 +352,10 @@ public class Prosecutors {
                 .build();
     }
 
-    public static OtherCasesReceived otherCasesReceived() {
-        return OtherCasesReceived.otherCasesReceived()
+    public static OtherCaseReceived otherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(otherCasesCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
@@ -376,7 +376,7 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ProsecutionCase otherCasesCaseDetail() {
+    public static ProsecutionCase otherCaseCaseDetail() {
         return prosecutionCase()
                 .withUrn(URN)
                 .withInformant(INFORMANT)
@@ -397,8 +397,8 @@ public class Prosecutors {
                 .build();
     }
 
-    public static OtherCasesReceived prosecutorsProsecutionReceivedWithMultipleDefendent() {
-        return OtherCasesReceived.otherCasesReceived()
+    public static OtherCaseReceived prosecutorsProsecutionReceivedWithMultipleDefendent() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
                 .withProsecutionCases(singletonList(prosecutionCaseDetailWithMultipleDefendant()))
                 .withHearingDetails(hearingDetails()
@@ -409,8 +409,8 @@ public class Prosecutors {
                 .build();
     }
 
-    public static OtherCasesReceived prosecutorsProsecutionReceivedWithDefendentHavingDifferentOffences() {
-        return OtherCasesReceived.otherCasesReceived()
+    public static OtherCaseReceived prosecutorsProsecutionReceivedWithDefendentHavingDifferentOffences() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
                 .withProsecutionCases(singletonList(prosecutionCaseDetailWithDefendantAndMultipleOffences()))
                 .withHearingDetails(hearingDetails()

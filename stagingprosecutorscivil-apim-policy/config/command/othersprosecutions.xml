@@ -17,7 +17,7 @@
         <check-header name="CJSCPPUID" failed-check-httpcode="401" failed-check-error-message="Not authorized" ignore-case="false" />
         <!-- set Accept header -->
         <set-header name="Content-Type" exists-action="override">
-            <value>application/vnd.stagingcivil.other-cases+json</value>
+            <value>application/vnd.stagingcivil.other-case+json</value>
         </set-header>
         <rewrite-uri template="@{
             return "/stagingprosecutorscivil-command-api/command/api/rest/staging-civil/cases";

@@ -8,7 +8,7 @@ global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAn
 rule "Command - Rule for Others Prosecution"
   when
     $outcome: Outcome();
-    $action: Action(name == "stagingcivil.other-cases");
+    $action: Action(name == "stagingcivil.other-case");
     eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
   then
     $outcome.setSuccess(true);

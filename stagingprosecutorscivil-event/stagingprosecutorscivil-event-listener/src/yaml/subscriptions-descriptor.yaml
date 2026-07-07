@@ -5,8 +5,8 @@ subscriptions_descriptor:
   subscriptions:
     - name: event listener subscription
       events:
-        - name: stagingcivil.event.other-cases-received
-          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/other-cases-received.json
+        - name: stagingcivil.event.other-case-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/other-case-received.json
         - name: stagingcivil.event.summons-received
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/summons-received.json
         - name: stagingcivil.event.update-civil-case-received

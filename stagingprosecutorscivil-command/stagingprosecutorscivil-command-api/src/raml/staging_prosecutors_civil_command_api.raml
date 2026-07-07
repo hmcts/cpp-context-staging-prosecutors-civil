@@ -9,16 +9,16 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
         Submit civil prosecutions
         ...
         (mapping):
-            requestType: application/vnd.stagingcivil.other-cases+json
-            name: stagingcivil.other-cases
+            requestType: application/vnd.stagingcivil.other-case+json
+            name: stagingcivil.other-case
         (mapping):
             requestType: application/vnd.stagingcivil.summons+json
             name: stagingcivil.summons
         ...
       body:
-        application/vnd.stagingcivil.other-cases+json:
-          schema: !include json/schema/stagingcivil.other-cases.json
-          example: !include json/stagingcivil.other-cases.json
+        application/vnd.stagingcivil.other-case+json:
+          schema: !include json/schema/stagingcivil.other-case.json
+          example: !include json/stagingcivil.other-case.json
         application/vnd.stagingcivil.summons+json:
           schema: !include json/schema/stagingcivil.summons.json
           example: !include json/stagingcivil.summons.json

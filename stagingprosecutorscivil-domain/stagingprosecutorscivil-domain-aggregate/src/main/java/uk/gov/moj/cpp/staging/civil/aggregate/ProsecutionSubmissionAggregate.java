@@ -7,7 +7,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoN
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -33,16 +33,16 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
         );
     }
 
-    public Stream<Object> receiveOtherCases(final UUID submissionId,
+    public Stream<Object> receiveOtherCase(final UUID submissionId,
                                                    final HearingDetails hearingDetails,
                                                    final HearingDateRangeDetails hearingDateRangeDetails,
                                                    final String prosecutingAuthority,
                                                    final List<ProsecutionCase> prosecutionCases,
                                                    final String relatedReferenceNumber) {
-        LOGGER.info("Raising private event stagingcivil.event.other-cases-received for submission id {}", submissionId);
+        LOGGER.info("Raising private event stagingcivil.event.other-case-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
-                        OtherCasesReceived.otherCasesReceived()
+                        OtherCaseReceived.otherCaseReceived()
                                 .withSubmissionId(submissionId)
                                 .withSubmissionStatus(SubmissionStatus.PENDING)
                                 .withProsecutingAuthority(prosecutingAuthority)

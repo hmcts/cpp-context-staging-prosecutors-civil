@@ -15,8 +15,8 @@ import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatc
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAST_UTC_DATE_TIME;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.otherCasesReceived;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOtherCasesReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.otherCaseReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOtherCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSummonsReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilCaseReceived;
@@ -28,7 +28,7 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCasesReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
@@ -87,10 +87,10 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleOtherCasesReceivedEvent() {
+    public void shouldHandleOtherCaseReceivedEvent() {
         assertThat(target, isHandler(EVENT_PROCESSOR)
                 .with(method("processProsecutionOthers")
-                        .thatHandles("stagingcivil.event.other-cases-received")
+                        .thatHandles("stagingcivil.event.other-case-received")
                 ));
     }
 
@@ -131,10 +131,10 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateProsecutionCommandToPCFForOtherCases() {
-        final OtherCasesReceived prosecutionReceived = otherCasesReceived();
+    public void shouldInitiateProsecutionCommandToPCFForOtherCase() {
+        final OtherCaseReceived prosecutionReceived = otherCaseReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OtherCasesReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-cases-received",
+        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-case-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
@@ -178,10 +178,10 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldInitiateGroupProsecutionCommandToPCFForOtherCases() {
-        final OtherCasesReceived prosecutionReceived = groupOtherCasesReceived();
+    public void shouldInitiateGroupProsecutionCommandToPCFForOtherCase() {
+        final OtherCaseReceived prosecutionReceived = groupOtherCaseReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OtherCasesReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-cases-received",
+        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-case-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);
@@ -223,9 +223,9 @@ public class ProsecutionEventProcessorTest {
 
     @Test
     public void shouldCallCommandToUpdateCivilCase() {
-        final OtherCasesReceived prosecutionReceived = groupOtherCasesReceived();
+        final OtherCaseReceived prosecutionReceived = groupOtherCaseReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OtherCasesReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-cases-received",
+        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-case-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);

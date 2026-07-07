@@ -11,8 +11,8 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCases;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCasesWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCase;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCaseWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -49,7 +49,7 @@ public class CivilProsecutionApiTest {
     }
 
     @Test
-    public void shouldHandleOtherCases() {
+    public void shouldHandleOtherCase() {
 
         List<Defendant> defendants = new ArrayList<>();
         defendants.add(
@@ -72,32 +72,32 @@ public class CivilProsecutionApiTest {
                         .withDefendants(defendants)
                         .build()
         );
-        OtherCases otherCases = OtherCases
-                .otherCases()
+        OtherCase otherCase = OtherCase
+                .otherCase()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .build();
 
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingcivil.other-cases")
+                .withName("stagingcivil.other-case")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        Envelope<UrlResponse> resultEnvelop = api.otherCases(Envelope.envelopeFrom(metadata, otherCases));
+        Envelope<UrlResponse> resultEnvelop = api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        OtherCasesWithSubmissionId receivedOtherCases = (OtherCasesWithSubmissionId) capturedEnvelope.payload();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-cases"));
-        assertThat(receivedOtherCases.getProsecutingAuthority(), is("GAAAA01"));
-        assertThat(receivedOtherCases.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        OtherCaseWithSubmissionId receivedOtherCase = (OtherCaseWithSubmissionId) capturedEnvelope.payload();
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-case"));
+        assertThat(receivedOtherCase.getProsecutingAuthority(), is("GAAAA01"));
+        assertThat(receivedOtherCase.getProsecutionCases().get(0).getUrn(), is("urn1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 
     @Test
-    public void shouldHandleOtherCasesWithEnforcementFields() {
+    public void shouldHandleOtherCaseWithEnforcementFields() {
         List<ProsecutionCase> prosecutionCaseList = new ArrayList();
         prosecutionCaseList.add(
                 ProsecutionCase.prosecutionCase()
@@ -105,27 +105,27 @@ public class CivilProsecutionApiTest {
                         .withDefendants(new ArrayList<>())
                         .build()
         );
-        OtherCases otherCases = OtherCases
-                .otherCases()
+        OtherCase otherCase = OtherCase
+                .otherCase()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .withRelatedReferenceNumber("GOB123456789")
                 .build();
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingcivil.other-cases")
+                .withName("stagingcivil.other-case")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        Envelope<UrlResponse> resultEnvelop = api.otherCases(Envelope.envelopeFrom(metadata, otherCases));
+        Envelope<UrlResponse> resultEnvelop = api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        OtherCasesWithSubmissionId receivedOtherCases = (OtherCasesWithSubmissionId) capturedEnvelope.payload();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-cases"));
-        assertThat(receivedOtherCases.getRelatedReferenceNumber(), is("GOB123456789"));
-        assertThat(receivedOtherCases.getProsecutionCases().get(0).getUrn(), is("urn-enforcement-1"));
+        OtherCaseWithSubmissionId receivedOtherCase = (OtherCaseWithSubmissionId) capturedEnvelope.payload();
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-case"));
+        assertThat(receivedOtherCase.getRelatedReferenceNumber(), is("GOB123456789"));
+        assertThat(receivedOtherCase.getProsecutionCases().get(0).getUrn(), is("urn-enforcement-1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 

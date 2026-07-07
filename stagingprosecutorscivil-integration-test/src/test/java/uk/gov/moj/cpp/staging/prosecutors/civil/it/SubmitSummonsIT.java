@@ -6,7 +6,7 @@ import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProduc
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.OTHER_CASES_CONTENT_TYPE;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.OTHER_CASE_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.SUMMONS_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
@@ -68,8 +68,8 @@ public class SubmitSummonsIT {
     }
 
     @Test
-    public void shouldSubmitOtherCases() {
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOtherCases("payload/other/stagingcivil.submit-other-prosecution-all-fields.json", OTHER_CASES_CONTENT_TYPE);
+    public void shouldSubmitOtherCase() {
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitOtherCase("payload/other/stagingcivil.submit-other-prosecution-all-fields.json", OTHER_CASE_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
