@@ -5,6 +5,7 @@ import static java.util.Objects.isNull;
 
 import uk.gov.moj.cpp.staging.civil.processor.exception.InvalidCaseUrnProvided;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +30,11 @@ public class ProsecutorCaseReferenceUtil {
     }
 
     public static List<String> getProsecutorCaseReferences(final List<ProsecutionCase> prosecutionCases, final String prosecutingAuthority) {
+        return prosecutionCases.stream()
+                .map(pc -> ProsecutorCaseReferenceUtil.getProsecutorCaseReference(prosecutingAuthority, pc.getUrn())).collect(Collectors.toList());
+    }
+
+    public static List<String> getSummonsProsecutorCaseReferences(final List<SummonsProsecutionCase> prosecutionCases, final String prosecutingAuthority) {
         return prosecutionCases.stream()
                 .map(pc -> ProsecutorCaseReferenceUtil.getProsecutorCaseReference(prosecutingAuthority, pc.getUrn())).collect(Collectors.toList());
     }

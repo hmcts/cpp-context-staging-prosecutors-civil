@@ -11,6 +11,7 @@
       "informant": "Adam",
       "caseMarker": "Case mark",
       "urn": "case-urn-value1",
+      "summonsCode": "A",
       "defendants": [
         {
           "defendantDetails": {

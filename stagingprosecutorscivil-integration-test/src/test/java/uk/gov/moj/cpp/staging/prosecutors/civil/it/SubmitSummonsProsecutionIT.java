@@ -8,6 +8,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFComma
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.SUMMONS_PROSECUTION_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.submitSummonsProsecutionStatus;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -120,6 +121,14 @@ public class SubmitSummonsProsecutionIT {
 
         final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
         assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldRejectSummonsProsecutionWhenSummonsCodeAbsent() {
+        int status = submitSummonsProsecutionStatus(
+                "payload/summons/stagingprosecutors.submit-summons-prosecution-missing-summons-code.json",
+                SUMMONS_PROSECUTION_CONTENT_TYPE);
+        assertThat(status, Matchers.is(400));
     }
 
     @Disabled("Works locally but fails in pipeline")

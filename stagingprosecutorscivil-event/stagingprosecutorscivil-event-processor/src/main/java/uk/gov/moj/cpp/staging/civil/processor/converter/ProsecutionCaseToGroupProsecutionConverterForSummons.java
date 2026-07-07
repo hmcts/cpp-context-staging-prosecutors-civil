@@ -13,7 +13,7 @@ import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Prosecutor;
 import uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 
 import java.time.ZonedDateTime;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Converter<ProsecutionCase, GroupProsecutions> {
+public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Converter<SummonsProsecutionCase, GroupProsecutions> {
 
     private static final String INITIATION_CODE_SUMMONS_CASE = "S";
     private final ZonedDateTime dateReceived;
@@ -36,7 +36,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
     }
 
     @Override
-    public GroupProsecutions convert(final ProsecutionCase prosecutionCase) {
+    public GroupProsecutions convert(final SummonsProsecutionCase prosecutionCase) {
 
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> defendantToProsecutionCaseFileDefendantConverter
                 = new DefendantToProsecutionCaseFileDefendantConverter(summonsProsecutionReceived.getHearingDetails());
@@ -52,7 +52,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
                 .build();
     }
 
-    private List<uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> buildDefendants(final ProsecutionCase prosecutionCase,
+    private List<uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> buildDefendants(final SummonsProsecutionCase prosecutionCase,
                                                                                              final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> defendantToProsecutionCaseFileDefendantConverter) {
         return prosecutionCase.getDefendants()
                 .stream()
@@ -60,7 +60,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
                 .collect(toList());
     }
 
-    private CaseDetails buildCaseDetails(final ProsecutionCase prosecutionCase) {
+    private CaseDetails buildCaseDetails(final SummonsProsecutionCase prosecutionCase) {
         final UUID caseFileId = caseRefToCaseId.get(ProsecutorCaseReferenceUtil.getProsecutorCaseReference(summonsProsecutionReceived.getProsecutingAuthority(), prosecutionCase.getUrn()));
 
         return CaseDetails.caseDetails()

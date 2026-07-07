@@ -28,6 +28,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -95,7 +96,7 @@ public class SubmissionEventListenerTest {
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(PENDING)
                 .withProsecutingAuthority(prosecutingAuthority)
-                .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
+                .withProsecutionCases(Collections.singletonList(SummonsProsecutionCase.summonsProsecutionCase().withUrn(urn).build()))
                 .build();
 
         final Envelope<SummonsProsecutionReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);

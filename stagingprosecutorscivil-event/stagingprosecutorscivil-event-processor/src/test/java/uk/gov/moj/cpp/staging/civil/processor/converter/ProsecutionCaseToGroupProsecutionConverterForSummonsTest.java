@@ -14,7 +14,7 @@ import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.staging.civil.processor.SystemIdMapperService;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 
 import java.time.ZonedDateTime;
@@ -44,7 +44,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummonsTest {
         final SummonsProsecutionReceived summonsProsecutionReceived = groupSummonsProsecutionReceived();
         caseRefToCaseId.put(summonsProsecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
         final ProsecutionCaseToGroupProsecutionConverterForSummons converter = new ProsecutionCaseToGroupProsecutionConverterForSummons(dateReceived, summonsProsecutionReceived, groupId, caseRefToCaseId);
-        final ProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
+        final SummonsProsecutionCase prosecutionCase = summonsProsecutionCaseDetail();
         final GroupProsecutions prosecutorsCaseFileGroupProsecutions = converter.convert(prosecutionCase);
 
         assertThat(prosecutorsCaseFileGroupProsecutions.getGroupId(), is(notNullValue()));
@@ -56,7 +56,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummonsTest {
     }
 
     private void assertCaseDetails(final CaseDetails pcfCaseDetails,
-                                   final ProsecutionCase prosecutionCase,
+                                   final SummonsProsecutionCase prosecutionCase,
                                    final SummonsProsecutionReceived summonsProsecutionReceived,
                                    final UUID caseId) {
         assertThat(pcfCaseDetails, notNullValue());

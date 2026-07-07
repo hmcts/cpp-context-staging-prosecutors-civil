@@ -13,6 +13,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.util.List;
 import java.util.UUID;
@@ -53,7 +54,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
     public Stream<Object> receiveSummonsProsecution(final UUID submissionId,
                                                     final HearingDetails hearingDetails,
                                                     final String prosecutingAuthority,
-                                                    final List<ProsecutionCase> prosecutionCases) {
+                                                    final List<SummonsProsecutionCase> prosecutionCases) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.summons-prosecution-received for submission id {}", submissionId);
         return apply(
                 Stream.of(

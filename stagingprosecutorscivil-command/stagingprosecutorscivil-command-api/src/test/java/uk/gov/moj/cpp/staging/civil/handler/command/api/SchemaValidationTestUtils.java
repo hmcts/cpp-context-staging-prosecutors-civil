@@ -23,6 +23,8 @@ class SchemaValidationTestUtils {
     static final Map<String, String> SCHEMA_MAP = Map.ofEntries(
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json", "schemas/hearing-details.json"),
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/prosecution-case.json", "schemas/prosecution-case.json"),
+            Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-prosecution-case.json", "schemas/summons-prosecution-case.json"),
+            Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-code.json", "schemas/summons-code.json"),
             Map.entry("http://justice.gov.uk/domain/core/common/definitions.json", "schemas/json/schema/definitions.json"),
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant.json", "schemas/defendant.json"),
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant-details.json", "schemas/defendant-details.json"),

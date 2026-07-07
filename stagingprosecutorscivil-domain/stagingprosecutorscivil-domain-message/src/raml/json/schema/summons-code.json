@@ -2,7 +2,8 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-code.json",
   "type": "string",
-  "description": "Mandatory if Initiation Code is 'S'",
+  "description": "Mandatory if Initiation Code is 'S'. Allowed values: A, E, M, W",
   "minLength": 1,
-  "maxLength": 1
+  "maxLength": 1,
+  "pattern": "^[AEMW]$"
 }
