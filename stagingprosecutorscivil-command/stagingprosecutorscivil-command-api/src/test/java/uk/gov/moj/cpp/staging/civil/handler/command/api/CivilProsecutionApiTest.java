@@ -32,6 +32,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecutionWi
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -134,14 +135,14 @@ public class CivilProsecutionApiTest {
                 )
                 .build()
         );
-        List<ProsecutionCase> prosecutionCaseList = new ArrayList();
+        List<SummonsProsecutionCase> prosecutionCaseList = new ArrayList();
         prosecutionCaseList.add(
-            ProsecutionCase.prosecutionCase()
+            SummonsProsecutionCase.summonsProsecutionCase()
                 .withUrn("urn1")
                 .withInformant("Adam")
                 .withCaseMarker("caseMarker")
                 .withPaymentReference("PAYREF102")
-                .withSummonsCode("FIRST")
+                .withSummonsCode("A")
                 .withRelatedReferenceNumber("RELREF-1")
                 .withDefendants(defendants)
                 .build()
