@@ -56,7 +56,7 @@ public class SubmissionEventListenerTest {
                 .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
                 .build();
 
-        final Envelope<OtherCaseReceived> envelope = newEnvelope("stagingcivil.event.other-case-received", otherCaseReceived);
+        final Envelope<OtherCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.other-case-received", otherCaseReceived);
 
         submissionEventListener.otherCaseReceived(envelope);
 
@@ -83,7 +83,7 @@ public class SubmissionEventListenerTest {
                 .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
                 .build();
 
-        final Envelope<SummonsReceived> envelope = newEnvelope("stagingcivil.event.summons-received", summonsReceived);
+        final Envelope<SummonsReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-received", summonsReceived);
 
         submissionEventListener.summonsReceived(envelope);
 
@@ -110,7 +110,7 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(PENDING.name())
                 .build();
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingcivil.event.summons-received", summonsReceived);
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-received", summonsReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());

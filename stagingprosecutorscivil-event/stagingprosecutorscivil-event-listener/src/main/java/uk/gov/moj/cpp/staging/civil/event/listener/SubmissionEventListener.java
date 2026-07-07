@@ -42,9 +42,9 @@ public class SubmissionEventListener {
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    @Handles("stagingcivil.event.other-case-received")
+    @Handles("stagingprosecutorscivil.event.other-case-received")
     public void otherCaseReceived(final Envelope<OtherCaseReceived> event) {
-        LOGGER.info("stagingcivil.event.other-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+        LOGGER.info("stagingprosecutorscivil.event.other-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
 
         final OtherCaseReceived otherCaseReceived = event.payload();
 
@@ -68,9 +68,9 @@ public class SubmissionEventListener {
         submissionRepository.save(submission);
     }
 
-    @Handles("stagingcivil.event.summons-received")
+    @Handles("stagingprosecutorscivil.event.summons-received")
     public void summonsReceived(final Envelope<SummonsReceived> event) {
-        LOGGER.info("stagingcivil.event.summons-received event received in Listener  for SubmissionId {}", event.payload().getSubmissionId());
+        LOGGER.info("stagingprosecutorscivil.event.summons-received event received in Listener  for SubmissionId {}", event.payload().getSubmissionId());
 
         final SummonsReceived summonsReceived = event.payload();
 
@@ -94,9 +94,9 @@ public class SubmissionEventListener {
         submissionRepository.save(submission);
     }
 
-    @Handles("stagingcivil.event.update-civil-case-received")
+    @Handles("stagingprosecutorscivil.event.update-civil-case-received")
     public void updatedCivilCaseReceived(final Envelope<UpdateCivilCaseReceived> event) {
-        LOGGER.info("stagingcivil.event.update-civil-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+        LOGGER.info("stagingprosecutorscivil.event.update-civil-case-received event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
         final UpdateCivilCaseReceived updatedCivilCaseReceived = event.payload();
         final Submission submission = submissionRepository.findBy(updatedCivilCaseReceived.getSubmissionId());
         if (SubmissionStatus.REJECTED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {

@@ -90,7 +90,7 @@ public class ProsecutionEventProcessorTest {
     public void shouldHandleOtherCaseReceivedEvent() {
         assertThat(target, isHandler(EVENT_PROCESSOR)
                 .with(method("processProsecutionOthers")
-                        .thatHandles("stagingcivil.event.other-case-received")
+                        .thatHandles("stagingprosecutorscivil.event.other-case-received")
                 ));
     }
 
@@ -98,7 +98,7 @@ public class ProsecutionEventProcessorTest {
     public void shouldHandleSummonsReceivedEvent() {
         assertThat(target, isHandler(EVENT_PROCESSOR)
                 .with(method("processProsecutionSummons")
-                        .thatHandles("stagingcivil.event.summons-received")
+                        .thatHandles("stagingprosecutorscivil.event.summons-received")
                 ));
     }
 
@@ -134,7 +134,7 @@ public class ProsecutionEventProcessorTest {
     public void shouldInitiateProsecutionCommandToPCFForOtherCase() {
         final OtherCaseReceived prosecutionReceived = otherCaseReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-case-received",
+        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.other-case-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
@@ -159,7 +159,7 @@ public class ProsecutionEventProcessorTest {
     public void shouldInitiateProsecutionCommandToPCFForSummons() {
         final SummonsReceived prosecutionReceived = summonsReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<SummonsReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.summons-received",
+        final Envelope<SummonsReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.summons-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         final UUID caseFileId = UUID.randomUUID();
@@ -181,7 +181,7 @@ public class ProsecutionEventProcessorTest {
     public void shouldInitiateGroupProsecutionCommandToPCFForOtherCase() {
         final OtherCaseReceived prosecutionReceived = groupOtherCaseReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-case-received",
+        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.other-case-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);
@@ -203,7 +203,7 @@ public class ProsecutionEventProcessorTest {
     public void shouldInitiateGroupProsecutionCommandToPCFForSummons() {
         final SummonsReceived prosecutionReceived = groupSummonsReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<SummonsReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.summons-received",
+        final Envelope<SummonsReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.summons-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionSummons(prosecutionReceivedEnvelope);
@@ -225,7 +225,7 @@ public class ProsecutionEventProcessorTest {
     public void shouldCallCommandToUpdateCivilCase() {
         final OtherCaseReceived prosecutionReceived = groupOtherCaseReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingcivil.event.other-case-received",
+        final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.other-case-received",
                 prosecutionReceived.getSubmissionId().toString(), eventCreatedTime);
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);

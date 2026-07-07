@@ -11,11 +11,11 @@
     }
   ],
   "paths": {
-    "/othersprosecutions": {
+    "/othercase": {
       "post": {
-        "summary": "othersprosecutions",
-        "description": "Submit civil others prosecutions",
-        "operationId": "othersprosecutions",
+        "summary": "othercase",
+        "description": "Submit civil other case prosecutions",
+        "operationId": "othercase",
         "responses": {
           "200": {
             "description": "null"
@@ -23,11 +23,11 @@
         }
       }
     },
-    "/summonsprosecutions": {
+    "/summons": {
       "post": {
-        "summary": "summonsprosecutions",
+        "summary": "summons",
         "description": "Submit civil summons prosecutions",
-        "operationId": "summonsprosecutions",
+        "operationId": "summons",
         "responses": {
           "200": {
             "description": "null"

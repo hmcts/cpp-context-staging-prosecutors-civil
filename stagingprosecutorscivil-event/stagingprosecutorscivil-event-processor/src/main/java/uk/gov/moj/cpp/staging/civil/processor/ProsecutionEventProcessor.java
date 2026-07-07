@@ -65,15 +65,15 @@ public class ProsecutionEventProcessor {
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    @Handles("stagingcivil.event.other-case-received")
+    @Handles("stagingprosecutorscivil.event.other-case-received")
     public void processProsecutionOthers(final Envelope<OtherCaseReceived> event) {
-        LOGGER.info("Received stagingcivil.event.other-case-received event with SubmissionId {}", event.payload().getSubmissionId());
+        LOGGER.info("Received stagingprosecutorscivil.event.other-case-received event with SubmissionId {}", event.payload().getSubmissionId());
         processOthersReceivedEvent(event);
     }
 
-    @Handles("stagingcivil.event.summons-received")
+    @Handles("stagingprosecutorscivil.event.summons-received")
     public void processProsecutionSummons(final Envelope<SummonsReceived> event) {
-        LOGGER.info("Received stagingcivil.event.summons-received event with SubmissionId {}", event.payload().getSubmissionId());
+        LOGGER.info("Received stagingprosecutorscivil.event.summons-received event with SubmissionId {}", event.payload().getSubmissionId());
         processSummonsReceivedEvent(event);
     }
 

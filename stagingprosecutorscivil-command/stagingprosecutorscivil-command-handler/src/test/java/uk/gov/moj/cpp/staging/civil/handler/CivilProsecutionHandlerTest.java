@@ -57,11 +57,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CivilProsecutionHandlerTest {
 
     private static final String PRIVATE_COMMAND_OTHER_CASE = "stagingcivil.command.other-case";
-    private static final String PRIVATE_EVENT_OTHER_CASE_RECEIVED = "stagingcivil.event.other-case-received";
+    private static final String PRIVATE_EVENT_OTHER_CASE_RECEIVED = "stagingprosecutorscivil.event.other-case-received";
     private static final String PRIVATE_COMMAND_SUMMONS = "stagingcivil.command.summons";
-    private static final String PRIVATE_EVENT_SUMMONS_RECEIVED = "stagingcivil.event.summons-received";
+    private static final String PRIVATE_EVENT_SUMMONS_RECEIVED = "stagingprosecutorscivil.event.summons-received";
     private static final String PRIVATE_COMMAND_UPDATE_CASE_PROFILE = "stagingcivil.command.update-civil-case";
-    private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingcivil.event.update-civil-case-received";
+    private static final String PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED = "stagingprosecutorscivil.event.update-civil-case-received";
 
 
     @InjectMocks

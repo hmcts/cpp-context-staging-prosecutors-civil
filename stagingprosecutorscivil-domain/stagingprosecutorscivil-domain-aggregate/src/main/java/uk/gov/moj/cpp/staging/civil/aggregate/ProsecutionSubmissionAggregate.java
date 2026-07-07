@@ -39,7 +39,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                                    final String prosecutingAuthority,
                                                    final List<ProsecutionCase> prosecutionCases,
                                                    final String relatedReferenceNumber) {
-        LOGGER.info("Raising private event stagingcivil.event.other-case-received for submission id {}", submissionId);
+        LOGGER.info("Raising private event stagingprosecutorscivil.event.other-case-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
                         OtherCaseReceived.otherCaseReceived()
@@ -59,7 +59,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                                     final HearingDetails hearingDetails,
                                                     final String prosecutingAuthority,
                                                     final List<ProsecutionCase> prosecutionCases) {
-        LOGGER.info("Raising private event stagingcivil.event.summons-received for submission id {}", submissionId);
+        LOGGER.info("Raising private event stagingprosecutorscivil.event.summons-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
                         SummonsReceived.summonsReceived()
@@ -76,7 +76,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
     public Stream<Object> receiveCivilCaseUpdate(final UUID submissionId, final String submissionStatus, final List<Problem> caseErrors,
                                                  final List<DefendantProblem> defendantErrors, final List<Problem> groupCaseErrors,
                                                  final List<Problem> warnings, final List<Problem> caseWarnings, final List<DefendantProblem> defendantWarnings) {
-        LOGGER.info("Raising private event stagingcivil.event.update-civil-case-received for submission id {} and status {}", submissionId, submissionStatus);
+        LOGGER.info("Raising private event stagingprosecutorscivil.event.update-civil-case-received for submission id {} and status {}", submissionId, submissionStatus);
         return apply(
                 Stream.of(
                         UpdateCivilCaseReceived.updateCivilCaseReceived()
