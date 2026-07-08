@@ -11,7 +11,7 @@ import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Prosecutor;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
@@ -21,17 +21,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class ProsecutionCaseToGroupProsecutionConverterForCharge implements Converter<ProsecutionCase, GroupProsecutions> {
+public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Converter<ProsecutionCase, GroupProsecutions> {
 
     private static final String INITIATION_CODE_CIVIL_CASE = "O";
     private final ZonedDateTime dateReceived;
-    private final ChargeProsecutionReceived chargeProsecutionReceived;
+    private final OtherCaseReceived otherCaseReceived;
     private UUID groupId;
     private Map<String, UUID> caseRefToCaseId;
 
-    public ProsecutionCaseToGroupProsecutionConverterForCharge(final ZonedDateTime dateReceived, final ChargeProsecutionReceived chargeProsecutionReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
+    public ProsecutionCaseToGroupProsecutionConverterForOthers(final ZonedDateTime dateReceived, final OtherCaseReceived otherCaseReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
         this.dateReceived = dateReceived;
-        this.chargeProsecutionReceived = chargeProsecutionReceived;
+        this.otherCaseReceived = otherCaseReceived;
         this.groupId = groupId;
         this.caseRefToCaseId = caseRefToCaseId;
     }
@@ -40,7 +40,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForCharge implements Conv
     public GroupProsecutions convert(final ProsecutionCase prosecutionCase) {
 
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> defendantToProsecutionCaseFileDefendantConverter
-                = new DefendantToProsecutionCaseFileDefendantConverter(chargeProsecutionReceived.getHearingDetails());
+                = new DefendantToProsecutionCaseFileDefendantConverter(otherCaseReceived.getHearingDetails());
 
         return GroupProsecutions.groupProsecutions()
                 .withCaseDetails(buildCaseDetails(prosecutionCase))
@@ -63,7 +63,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForCharge implements Conv
 
     private CaseDetails buildCaseDetails(final ProsecutionCase prosecutionCase) {
 
-        final UUID caseFileId = caseRefToCaseId.get(getProsecutorCaseReference(chargeProsecutionReceived.getProsecutingAuthority(), prosecutionCase.getUrn()));
+        final UUID caseFileId = caseRefToCaseId.get(getProsecutorCaseReference(otherCaseReceived.getProsecutingAuthority(), prosecutionCase.getUrn()));
 
         return CaseDetails.caseDetails()
                 .withDateReceived(dateReceived.toLocalDate())
@@ -73,11 +73,11 @@ public class ProsecutionCaseToGroupProsecutionConverterForCharge implements Conv
                 .withSummonsCode(prosecutionCase.getSummonsCode())
                 .withCpsOrganisation(null)
                 .withInitiationCode(INITIATION_CODE_CIVIL_CASE)
-                .withOriginatingOrganisation(chargeProsecutionReceived.getProsecutingAuthority())
+                .withOriginatingOrganisation(otherCaseReceived.getProsecutingAuthority())
                 .withCaseMarkers(buildCaseMarkers(ofNullable(prosecutionCase.getCaseMarker()).orElse(null)))
                 .withProsecutor(Prosecutor.prosecutor()
                         .withInformant(ofNullable(prosecutionCase.getInformant()).orElse(null))
-                        .withProsecutingAuthority(chargeProsecutionReceived.getProsecutingAuthority()).build())
+                        .withProsecutingAuthority(otherCaseReceived.getProsecutingAuthority()).build())
                 .build();
     }
 

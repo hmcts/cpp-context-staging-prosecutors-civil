@@ -8,10 +8,10 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecutionWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecutionWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCase;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCaseWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
 
 import java.util.UUID;
 
@@ -38,22 +38,22 @@ public class CivilProsecutionApi {
         this.sender = sender;
     }
 
-    @Handles("stagingprosecutorscivil.charge-prosecution")
-    public Envelope<UrlResponse> chargeProsecution(final Envelope<ChargeProsecution> envelope) {
+    @Handles("stagingcivil.other-case")
+    public Envelope<UrlResponse> otherCase(final Envelope<OtherCase> envelope) {
         final UUID submissionId = UUID.randomUUID();
-        final ChargeProsecution chargeProsecution = envelope.payload();
+        final OtherCase otherCase = envelope.payload();
 
-        final ChargeProsecutionWithSubmissionId chargeProsecutionWithSubmissionId
-                = ChargeProsecutionWithSubmissionId.chargeProsecutionWithSubmissionId()
-                .withProsecutionCases(chargeProsecution.getProsecutionCases())
-                .withProsecutingAuthority(chargeProsecution.getProsecutingAuthority())
-                .withHearingDetails(chargeProsecution.getHearingDetails())
+        final OtherCaseWithSubmissionId otherCaseWithSubmissionId
+                = OtherCaseWithSubmissionId.otherCaseWithSubmissionId()
+                .withProsecutionCases(otherCase.getProsecutionCases())
+                .withProsecutingAuthority(otherCase.getProsecutingAuthority())
+                .withHearingDetails(otherCase.getHearingDetails())
                 .withSubmissionId(submissionId)
                 .build();
 
-        LOGGER.info("Received submission at stagingprosecutorscivil.charge-prosecution  with submissionId {}",submissionId);
-        sender.send(envelop(chargeProsecutionWithSubmissionId)
-                .withName("stagingprosecutorscivil.command.charge-prosecution")
+        LOGGER.info("Received submission at stagingcivil.other-case with submissionId {}",submissionId);
+        sender.send(envelop(otherCaseWithSubmissionId)
+                .withName("stagingcivil.command.other-case")
                 .withMetadataFrom(envelope));
 
         return Envelope.envelopeFrom(envelope.metadata(),
@@ -64,20 +64,20 @@ public class CivilProsecutionApi {
 
     }
 
-    @Handles("stagingprosecutorscivil.summons-prosecution")
-    public Envelope<UrlResponse> summonsProsecution(final Envelope<SummonsProsecution> envelope) {
+    @Handles("stagingcivil.summons")
+    public Envelope<UrlResponse> summons(final Envelope<Summons> envelope) {
         final UUID submissionId = UUID.randomUUID();
-        final SummonsProsecution summonsProsecution = envelope.payload();
-        final SummonsProsecutionWithSubmissionId summonsProsecutionWithSubmissionId
-                = SummonsProsecutionWithSubmissionId.summonsProsecutionWithSubmissionId()
-                .withProsecutionCases(summonsProsecution.getProsecutionCases())
-                .withProsecutingAuthority(summonsProsecution.getProsecutingAuthority())
-                .withHearingDetails(summonsProsecution.getHearingDetails())
+        final Summons summons = envelope.payload();
+        final SummonsWithSubmissionId summonsWithSubmissionId
+                = SummonsWithSubmissionId.summonsWithSubmissionId()
+                .withProsecutionCases(summons.getProsecutionCases())
+                .withProsecutingAuthority(summons.getProsecutingAuthority())
+                .withHearingDetails(summons.getHearingDetails())
                 .withSubmissionId(submissionId)
                 .build();
-        LOGGER.info("Received submission at  stagingprosecutorscivil.summons-prosecution with submissionId {}",submissionId);
-        sender.send(envelop(summonsProsecutionWithSubmissionId)
-                .withName("stagingprosecutorscivil.command.summons-prosecution")
+        LOGGER.info("Received submission at  stagingcivil.summons with submissionId {}",submissionId);
+        sender.send(envelop(summonsWithSubmissionId)
+                .withName("stagingcivil.command.summons")
                 .withMetadataFrom(envelope));
 
         return Envelope.envelopeFrom(envelope.metadata(),
