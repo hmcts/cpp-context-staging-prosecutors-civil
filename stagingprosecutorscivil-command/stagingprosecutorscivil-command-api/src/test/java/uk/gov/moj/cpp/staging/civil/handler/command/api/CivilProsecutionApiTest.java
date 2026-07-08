@@ -11,10 +11,10 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.ChargeProsecutionWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecutionWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCase;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCaseWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -49,7 +49,7 @@ public class CivilProsecutionApiTest {
     }
 
     @Test
-    public void shouldHandleChargeProsecution() {
+    public void shouldHandleOtherCase() {
 
         List<Defendant> defendants = new ArrayList<>();
         defendants.add(
@@ -72,32 +72,32 @@ public class CivilProsecutionApiTest {
                         .withDefendants(defendants)
                         .build()
         );
-        ChargeProsecution chargeProsecution = ChargeProsecution
-                .chargeProsecution()
+        OtherCase otherCase = OtherCase
+                .otherCase()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .build();
 
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingprosecutorscivil.charge-prosecution")
+                .withName("stagingcivil.other-case")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        Envelope<UrlResponse> resultEnvelop = api.chargeProsecution(Envelope.envelopeFrom(metadata, chargeProsecution));
+        Envelope<UrlResponse> resultEnvelop = api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        ChargeProsecutionWithSubmissionId receivedChargeProsecution = (ChargeProsecutionWithSubmissionId) capturedEnvelope.payload();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.charge-prosecution"));
-        assertThat(receivedChargeProsecution.getProsecutingAuthority(), is("GAAAA01"));
-        assertThat(receivedChargeProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
+        OtherCaseWithSubmissionId receivedOtherCase = (OtherCaseWithSubmissionId) capturedEnvelope.payload();
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-case"));
+        assertThat(receivedOtherCase.getProsecutingAuthority(), is("GAAAA01"));
+        assertThat(receivedOtherCase.getProsecutionCases().get(0).getUrn(), is("urn1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 
     @Test
-    public void shouldHandleChargeProsecutionWithEnforcementFields() {
+    public void shouldHandleOtherCaseWithEnforcementFields() {
         List<ProsecutionCase> prosecutionCaseList = new ArrayList();
         prosecutionCaseList.add(
                 ProsecutionCase.prosecutionCase()
@@ -105,32 +105,32 @@ public class CivilProsecutionApiTest {
                         .withDefendants(new ArrayList<>())
                         .build()
         );
-        ChargeProsecution chargeProsecution = ChargeProsecution
-                .chargeProsecution()
+        OtherCase otherCase = OtherCase
+                .otherCase()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .withRelatedReferenceNumber("GOB123456789")
                 .build();
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingprosecutorscivil.charge-prosecution")
+                .withName("stagingcivil.other-case")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        Envelope<UrlResponse> resultEnvelop = api.chargeProsecution(Envelope.envelopeFrom(metadata, chargeProsecution));
+        Envelope<UrlResponse> resultEnvelop = api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        ChargeProsecutionWithSubmissionId receivedChargeProsecution = (ChargeProsecutionWithSubmissionId) capturedEnvelope.payload();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.charge-prosecution"));
-        assertThat(receivedChargeProsecution.getRelatedReferenceNumber(), is("GOB123456789"));
-        assertThat(receivedChargeProsecution.getProsecutionCases().get(0).getUrn(), is("urn-enforcement-1"));
+        OtherCaseWithSubmissionId receivedOtherCase = (OtherCaseWithSubmissionId) capturedEnvelope.payload();
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.other-case"));
+        assertThat(receivedOtherCase.getRelatedReferenceNumber(), is("GOB123456789"));
+        assertThat(receivedOtherCase.getProsecutionCases().get(0).getUrn(), is("urn-enforcement-1"));
         assertNotNull(urlResponse.getSubmissionId());
     }
 
     @Test
-    public void shouldHandleSummonsProsecution() {
+    public void shouldHandleSummons() {
 
         List<Defendant> defendants = new ArrayList<>();
         defendants.add(
@@ -153,30 +153,30 @@ public class CivilProsecutionApiTest {
                 .withDefendants(defendants)
                 .build()
         );
-        SummonsProsecution summonsProsecution = SummonsProsecution
-                .summonsProsecution()
+        Summons summons = Summons
+                .summons()
                 .withProsecutionCases(prosecutionCaseList)
                 .withProsecutingAuthority("GAAAA01")
                 .build();
 
 
         final Metadata metadata = metadataBuilder()
-                .withName("stagingprosecutorscivil.summons-prosecution")
+                .withName("stagingcivil.summons")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
 
-        final Envelope commandEnvelope = Envelope.envelopeFrom(metadata, summonsProsecution);
+        final Envelope commandEnvelope = Envelope.envelopeFrom(metadata, summons);
 
-        Envelope<UrlResponse> resultEnvelop = api.summonsProsecution(commandEnvelope);
+        Envelope<UrlResponse> resultEnvelop = api.summons(commandEnvelope);
         UrlResponse urlResponse = resultEnvelop.payload();
         verify(sender).send(envelopeCaptor.capture());
 
         final DefaultEnvelope capturedEnvelope = envelopeCaptor.getValue();
-        assertThat(capturedEnvelope.metadata().name(), is("stagingprosecutorscivil.command.summons-prosecution"));
+        assertThat(capturedEnvelope.metadata().name(), is("stagingcivil.command.summons"));
         assertNotNull(urlResponse.getSubmissionId());
 
-        SummonsProsecutionWithSubmissionId receivedSummonProsecution = (SummonsProsecutionWithSubmissionId) capturedEnvelope.payload();
+        SummonsWithSubmissionId receivedSummonProsecution = (SummonsWithSubmissionId) capturedEnvelope.payload();
         assertThat(receivedSummonProsecution.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(receivedSummonProsecution.getProsecutionCases().get(0).getUrn(), is("urn1"));
         assertNotNull(urlResponse.getSubmissionId());
