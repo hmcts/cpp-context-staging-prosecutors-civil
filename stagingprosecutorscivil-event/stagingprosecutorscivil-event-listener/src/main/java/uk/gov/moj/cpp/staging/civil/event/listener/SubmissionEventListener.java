@@ -1,9 +1,9 @@
 package uk.gov.moj.cpp.staging.civil.event.listener;
 
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 

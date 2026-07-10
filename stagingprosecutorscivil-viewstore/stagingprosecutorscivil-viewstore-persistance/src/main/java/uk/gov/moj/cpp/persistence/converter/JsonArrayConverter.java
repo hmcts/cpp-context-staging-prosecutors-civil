@@ -1,11 +1,11 @@
 package uk.gov.moj.cpp.persistence.converter;
 
 import static java.util.Optional.ofNullable;
-import static javax.json.Json.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 
 import java.io.StringReader;
 
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
@@ -25,7 +25,7 @@ public class JsonArrayConverter implements AttributeConverter<JsonArray, String>
     }
 
     private JsonArray convertNotNullStringToArray(final String dbData) {
-        try (final JsonReader reader = Json.createReader(new StringReader(dbData))) {
+        try (final JsonReader reader = createReader(new StringReader(dbData))) {
             return reader.readArray();
         }
     }
