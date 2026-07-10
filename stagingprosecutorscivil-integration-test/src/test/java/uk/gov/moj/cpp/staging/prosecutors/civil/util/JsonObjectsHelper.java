@@ -2,12 +2,12 @@ package uk.gov.moj.cpp.staging.prosecutors.civil.util;
 
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
@@ -60,7 +60,7 @@ public class JsonObjectsHelper {
 
 
     public static JsonObject readFromString(final String jsonObjectStr) {
-        try (JsonReader reader = Json.createReader(new StringReader(jsonObjectStr))) {
+        try (JsonReader reader = createReader(new StringReader(jsonObjectStr))) {
             return reader.readObject();
         }
     }
