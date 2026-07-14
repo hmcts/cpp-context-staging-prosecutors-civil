@@ -35,7 +35,6 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Language;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.NameDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.OffenceDateCode;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Organisation;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardian;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -78,20 +77,14 @@ public class Prosecutors {
 
         return Offence.offence()
                 .withOffenceDetails(offenceDetails()
-                        .withBackDuty(("12"))
-                        .withBackDutyDateFrom((parse("2018-02-02")))
-                        .withBackDutyDateTo((parse("2018-02-20")))
                         .withCjsOffenceCode("PS0000" + sequenceNo)
                         .withOffenceCommittedDate(parse("2018-02-25"))
                         .withOffenceCommittedEndDate((parse("2018-02-25")))
-                        .withOffenceDateCode(OffenceDateCode.NUMBER_1)
                         .withOffenceLocation(("fenceLocation"))
                         .withOffenceSequenceNo(sequenceNo)
                         .withOffenceWording("fenceWording")
                         .withOffenceWordingWelsh(("fenceWordingWelsh"))
                         .withProsecutorCompensation(("23"))
-                        .withVehicleMake(("Ford"))
-                        .withVehicleRegistrationMark(("AA11 ABC"))
                         .build())
                 .withStatementOfFacts("Statement  facts")
                 .withStatementOfFactsWelsh("Statement  facts welsh")
@@ -195,7 +188,6 @@ public class Prosecutors {
 
     private static Individual.Builder prosecutorsIndividual() {
         return individual()
-                .withAliases(asList(prosecutorsNameDetails(), prosecutorsNameDetails()))
                 .withContactDetails(prosecutorsContactDetails())
                 .withDateOfBirth(LocalDate.now())
                 .withDriverNumber(("Driver Number"))
@@ -206,10 +198,8 @@ public class Prosecutors {
                 .withObservedEthnicity((BigDecimal.ONE))
                 .withOccupation(("Occupation"))
                 .withCustodyStatus(("E"))
-                .withBailConditions(("BAIL CONDITIONS"))
                 .withLanguageRequirement(("languageNeeds"))
                 .withSpecificRequirements(("specialNeeds"))
-                .withOccupationCode((1))
                 .withNationality("GBR")
                 .withAdditionalNationality("POL");
     }
@@ -264,7 +254,6 @@ public class Prosecutors {
                         .withCroNumber(CRO_NUMBER)
                         .withDocumentationLanguage(Language.E)
                         .withHearingLanguage(Language.E)
-                        .withNumPreviousConvictions(1)
                         .withPncIdentifier(PNC_IDENTIFIER)
                         .withProsecutorCosts(BigDecimal.TEN.toString())
                         .withProsecutorDefendantId(randomUUID().toString())
@@ -274,7 +263,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }
@@ -288,7 +276,6 @@ public class Prosecutors {
                         .withCroNumber(CRO_NUMBER)
                         .withDocumentationLanguage(Language.E)
                         .withHearingLanguage(Language.E)
-                        .withNumPreviousConvictions(1)
                         .withPncIdentifier(PNC_IDENTIFIER)
                         .withProsecutorCosts(BigDecimal.TEN.toString())
                         .withProsecutorDefendantId(randomUUID().toString())
@@ -298,7 +285,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }

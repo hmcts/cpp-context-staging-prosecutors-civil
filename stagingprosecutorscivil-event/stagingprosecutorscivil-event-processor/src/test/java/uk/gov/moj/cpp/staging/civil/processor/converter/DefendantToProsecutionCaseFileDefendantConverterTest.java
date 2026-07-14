@@ -40,7 +40,6 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
 
         assertThat(prosecutionCaseFileDefendant, is(notNullValue()));
 
-        assertThat(prosecutionCaseFileDefendant.getAliasForCorporate(), is(prosecutorsDefendant.getOrganisation().getAliasOrganisationNames()));
         assertThat(prosecutionCaseFileDefendant.getAppliedProsecutorCosts(), is( new BigDecimal(prosecutorsDefendant.getDefendantDetails().getProsecutorCosts())));
         assertThat(prosecutionCaseFileDefendant.getAsn(), is(prosecutorsDefendant.getDefendantDetails().getAsn()));
         assertThat(prosecutionCaseFileDefendant.getCroNumber(), is(prosecutorsDefendant.getDefendantDetails().getCroNumber()));
@@ -49,7 +48,6 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
         assertThat(prosecutionCaseFileDefendant.getOrganisationName(), is(prosecutorsDefendant.getOrganisation().getOrganisationName()));
         assertThat(prosecutionCaseFileDefendant.getTelephoneNumberBusiness(), is(prosecutorsDefendant.getOrganisation().getCompanyTelephoneNumber()));
         assertThat(prosecutionCaseFileDefendant.getPncIdentifier(), is(prosecutorsDefendant.getDefendantDetails().getPncIdentifier()));
-        assertThat(prosecutionCaseFileDefendant.getNumPreviousConvictions(), is(prosecutorsDefendant.getDefendantDetails().getNumPreviousConvictions()));
 
         assertAddress(prosecutionCaseFileDefendant.getAddress(), prosecutorsDefendant.getDefendantDetails().getAddress());
         assertHearingDetails(prosecutionCaseFileDefendant.getInitialHearing(), chargeProsecutionReceived.getHearingDetails());

@@ -418,10 +418,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         base().set("A".repeat(55), INDIVIDUAL + ".occupation").build(),
                         List.of("occupation", "maxLength")),
                 Arguments.of(
-                        "individual: occupationCode 100000 exceeds maximum of 99999",
-                        base().set(100000, INDIVIDUAL + ".occupationCode").build(),
-                        List.of("occupationCode", "is not less or equal to")),
-                Arguments.of(
                         "individual: driverNumber 17 characters exceeds maxLength of 16",
                         base().set("A".repeat(17), INDIVIDUAL + ".driverNumber").build(),
                         List.of("driverNumber", "maxLength")),
@@ -441,14 +437,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         "individual: nationalInsuranceNumber 6 characters is below minLength of 9",
                         base().set("AB1234", INDIVIDUAL + ".nationalInsuranceNumber").build(),
                         List.of("nationalInsuranceNumber", "minLength")),
-                Arguments.of(
-                        "individual: bailConditions 2501 characters exceeds maxLength of 2500",
-                        base().set("A".repeat(2501), INDIVIDUAL + ".bailConditions").build(),
-                        List.of("bailConditions", "maxLength")),
-                Arguments.of(
-                        "individual: aliases empty array — minItems is 1",
-                        base().set(new JSONArray(), INDIVIDUAL + ".aliases").build(),
-                        List.of("aliases", "minimum")),
 
                 // optional name-details fields — length constraints
                 Arguments.of(
@@ -626,14 +614,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         base().set("2011-11-31", OFFENCE_DETAILS + ".laidDate").build(),
                         List.of("laidDate", "does not match pattern")),
                 Arguments.of(
-                        "offenceDetails: offenceDateCode 7 is not a valid enum value — allowed: 1 (on/in), 2 (before), 3 (after), 4 (between), 5 (on/about), 6 (on/before)",
-                        base().set(7, OFFENCE_DETAILS + ".offenceDateCode").build(),
-                        List.of("offenceDateCode", "is not a valid enum value")),
-                Arguments.of(
-                        "offenceDetails: backDuty '500' missing decimal places — money pattern requires '500.00'",
-                        base().set("500", OFFENCE_DETAILS + ".backDuty").build(),
-                        List.of("backDuty", "does not match pattern")),
-                Arguments.of(
                         "offenceDetails: prosecutorCompensation '1500' missing decimal places (expected '1500.00')",
                         base().set("1500", OFFENCE_DETAILS + ".prosecutorCompensation").build(),
                         List.of("prosecutorCompensation", "does not match pattern")),
@@ -645,14 +625,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         "offenceDetails: offenceCommittedEndDate '2011/11/02' uses slashes — ISO-8601 requires dashes",
                         base().set("2011/11/02", OFFENCE_DETAILS + ".offenceCommittedEndDate").build(),
                         List.of("offenceCommittedEndDate", "does not match pattern")),
-                Arguments.of(
-                        "offenceDetails: backDutyDateFrom '2011/11/02' uses slashes — ISO-8601 requires dashes",
-                        base().set("2011/11/02", OFFENCE_DETAILS + ".backDutyDateFrom").build(),
-                        List.of("backDutyDateFrom", "does not match pattern")),
-                Arguments.of(
-                        "offenceDetails: backDutyDateTo '2011/11/02' uses slashes — ISO-8601 requires dashes",
-                        base().set("2011/11/02", OFFENCE_DETAILS + ".backDutyDateTo").build(),
-                        List.of("backDutyDateTo", "does not match pattern")),
                 Arguments.of(
                         "offenceDetails: offenceWordingWelsh 2501 characters exceeds maxLength of 2500",
                         base().set("A".repeat(2501), OFFENCE_DETAILS + ".offenceWordingWelsh").build(),
