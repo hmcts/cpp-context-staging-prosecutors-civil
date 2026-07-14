@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.staging.civil.processor;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 
+import uk.gov.justice.services.core.accesscontrol.AccessControlViolationException;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
@@ -33,12 +34,17 @@ public class StagingProsecutorsCivilService {
 
         LOGGER.info("Submission Id {} --- ", submissionId);
 
-        final JsonEnvelope response = requester.request(enveloper.withMetadataFrom(envelope, QUERY_SUBMISSION_DETAILS).apply(requestParameter));
+        try {
+            final JsonEnvelope response = requester.request(enveloper.withMetadataFrom(envelope, QUERY_SUBMISSION_DETAILS).apply(requestParameter));
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("submissionExistsById - Response --- {}", response.toObfuscatedDebugString());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("submissionExistsById - Response --- {}", response.toObfuscatedDebugString());
+            }
+
+            return Optional.ofNullable(response.payloadAsJsonObject());
+        } catch (final Exception e) {
+            LOGGER.info("Exception while querying submission details for submissionId {} - {}", submissionId, e.getMessage());
+            return Optional.empty();
         }
-
-        return Optional.ofNullable(response.payloadAsJsonObject());
     }
 }

@@ -35,8 +35,7 @@ public class ProgressionPublicEventProcessor {
 
     @Handles("public.progression.court-document-added")
     public void caseDocumentUploaded(final JsonEnvelope courtDocumentAdded) {
-        LOGGER.info("Received public.progression.court-document-added event with metadata: {} and payload: {}",
-                courtDocumentAdded.metadata(), courtDocumentAdded.toObfuscatedDebugString());
+        LOGGER.info("Received public.progression.court-document-added event");
         final JsonObject metadataJson = courtDocumentAdded.metadata().asJsonObject();
 
         final Optional<UUID> submissionId = ofNullable(
