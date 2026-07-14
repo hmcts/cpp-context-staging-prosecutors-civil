@@ -47,7 +47,7 @@ public class ProsecutionCaseFilePublicEventProcessor {
             final Optional<JsonObject> jsonObject = stagingProsecutorsCivilService.submissionExistsById(materialRejectedEnvelope, submissionId.get().toString());
 
             if (jsonObject.isEmpty()) {
-                LOGGER.error(SUBMISSION_ID_NOT_FOUND);
+                LOGGER.info(SUBMISSION_ID_NOT_FOUND);
                 return;
             }
 
@@ -62,7 +62,7 @@ public class ProsecutionCaseFilePublicEventProcessor {
                     .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
                     .withMetadataFrom(materialRejectedEnvelope));
         } else {
-            LOGGER.error(SUBMISSION_ID_NOT_FOUND);
+            LOGGER.info(SUBMISSION_ID_NOT_FOUND);
         }
     }
 }
