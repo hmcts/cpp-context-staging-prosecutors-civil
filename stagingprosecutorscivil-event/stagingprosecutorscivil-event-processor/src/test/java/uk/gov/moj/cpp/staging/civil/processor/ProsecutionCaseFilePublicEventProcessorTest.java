@@ -19,9 +19,10 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
+import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -42,7 +43,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
     private Sender sender;
 
     @Mock
-    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
+    private SubmissionRepository submissionRepository;
 
     @InjectMocks
     private ProsecutionCaseFilePublicEventProcessor target;
@@ -112,8 +113,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
                 metadataFrom(metadataJson).build(),
                 incomingPayload);
 
-        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
-                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+        when(submissionRepository.findBy(submissionId)).thenReturn(new Submission());
 
         target.caseMaterialRejected(envelope);
 
@@ -155,8 +155,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
                 metadataFrom(metadataJson).build(),
                 Json.createObjectBuilder().build());
 
-        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
-                .thenReturn(Optional.empty());
+        when(submissionRepository.findBy(submissionId)).thenReturn(null);
 
         target.caseMaterialRejected(envelope);
 
