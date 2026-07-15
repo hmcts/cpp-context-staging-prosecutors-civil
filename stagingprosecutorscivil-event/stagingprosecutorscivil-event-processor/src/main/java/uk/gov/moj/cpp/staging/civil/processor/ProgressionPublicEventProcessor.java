@@ -30,20 +30,28 @@ public class ProgressionPublicEventProcessor {
 
     @Inject
     private Sender sender;
+    @Inject
+    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
 
     @Handles("public.progression.court-document-added")
     public void caseDocumentUploaded(final JsonEnvelope courtDocumentAdded) {
-        LOGGER.info(".......Received public.progression.court-document-added event with metadata: {} and payload: {}",
-                courtDocumentAdded.metadata(), courtDocumentAdded.toObfuscatedDebugString());
+        LOGGER.info("Received public.progression.court-document-added event");
         final JsonObject metadataJson = courtDocumentAdded.metadata().asJsonObject();
 
         final Optional<UUID> submissionId = ofNullable(
                 courtDocumentAdded.metadata().asJsonObject().getString(SUBMISSION_ID, null))
                 .map(UUID::fromString);
 
-        LOGGER.info(".........Extracted submissionId: {}", submissionId);
+        LOGGER.info("Extracted submissionId: {}", submissionId);
 
         if (submissionId.isPresent()) {
+            final Optional<JsonObject> jsonObject = stagingProsecutorsCivilService.submissionExistsById(courtDocumentAdded, submissionId.get().toString());
+
+            if (jsonObject.isEmpty()) {
+                LOGGER.info("No submission found for submissionId: {}, skipping command send", submissionId.get());
+                return;
+            }
+
             final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                     .add(SUBMISSION_ID, submissionId.get().toString());
 

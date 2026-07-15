@@ -5,6 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -20,6 +21,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
 
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -38,6 +40,9 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
 
     @Mock
     private Sender sender;
+
+    @Mock
+    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
 
     @InjectMocks
     private ProsecutionCaseFilePublicEventProcessor target;
@@ -107,6 +112,9 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
                 metadataFrom(metadataJson).build(),
                 incomingPayload);
 
+        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
+                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+
         target.caseMaterialRejected(envelope);
 
         final ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
@@ -125,6 +133,30 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         final JsonEnvelope envelope = testEnvelope(
                 "public.prosecutioncasefile.material-rejected",
                 eventCreatedTime);
+
+        target.caseMaterialRejected(envelope);
+
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldNotSendCommandWhenSubmissionDoesNotExist() {
+        final UUID submissionId = UUID.fromString("646c31e8-5ed4-4d0d-ba89-ea0f4aa95edb");
+
+        final JsonObject metadataJson = Json.createObjectBuilder()
+                .add("id", "379100ea-fbfd-4e21-953f-8e5a4d44e4b9")
+                .add("name", "prosecutioncasefile.events.material-rejected")
+                .add("createdAt", "2026-06-23T08:22:01.356Z")
+                .add("source", "prosecutioncasefile")
+                .add("submissionId", submissionId.toString())
+                .build();
+
+        final JsonEnvelope envelope = envelopeFrom(
+                metadataFrom(metadataJson).build(),
+                Json.createObjectBuilder().build());
+
+        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
+                .thenReturn(Optional.empty());
 
         target.caseMaterialRejected(envelope);
 
