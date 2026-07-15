@@ -5,6 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -40,6 +41,8 @@ public class ProgressionPublicEventProcessorTest {
 
     @InjectMocks
     private ProgressionPublicEventProcessor progressionPublicEventProcessor;
+    @Mock
+    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
 
     @Mock
     private Sender sender;
@@ -56,6 +59,9 @@ public class ProgressionPublicEventProcessorTest {
         final UUID submissionId = randomUUID();
         final JsonEnvelope envelope = buildCourtDocumentAddedEnvelopeWithSubmissionId(submissionId);
 
+        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
+                .thenReturn(java.util.Optional.of(Json.createObjectBuilder().build()));
+
         progressionPublicEventProcessor.caseDocumentUploaded(envelope);
 
         final ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
@@ -63,6 +69,19 @@ public class ProgressionPublicEventProcessorTest {
         assertThat(captor.getValue().metadata().name(), is(COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL));
         final JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldNotSendCommandWhenSubmissionDoesNotExist() {
+        final UUID submissionId = randomUUID();
+        final JsonEnvelope envelope = buildCourtDocumentAddedEnvelopeWithSubmissionId(submissionId);
+
+        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
+                .thenReturn(java.util.Optional.empty());
+
+        progressionPublicEventProcessor.caseDocumentUploaded(envelope);
+
+        verifyNoInteractions(sender);
     }
 
     @Test

@@ -1,9 +1,10 @@
 package uk.gov.moj.cpp.staging.civil.event.listener;
 
+import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -33,7 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 
@@ -164,9 +164,11 @@ public class SubmissionEventListener {
         final MaterialSubmissionSuccessful materialSubmissionSuccessful = envelope.payload();
         final Submission submission = submissionRepository.findBy(materialSubmissionSuccessful.getSubmissionId());
 
-        submission.setCompletedAt(extractCreatedAt(envelope.metadata()));
-        submission.setSubmissionStatus(SUCCESS.toString());
-        submissionRepository.save(submission);
+        if(nonNull(submission)) {
+            submission.setCompletedAt(extractCreatedAt(envelope.metadata()));
+            submission.setSubmissionStatus(SUCCESS.toString());
+            submissionRepository.save(submission);
+        }
     }
 
     private void submissionRejected(final UUID submissionId, final List<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> errors, final List<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> warnings, final ZonedDateTime timestamp) {
@@ -174,13 +176,13 @@ public class SubmissionEventListener {
         final JsonArray submissionWarnings = transformErrorsOrWarningsToJsonArray(warnings);
         final Submission submission = submissionRepository.findBy(submissionId);
 
-        LOGGER.info("stagingprosecutorscivil.event.material-submission-rejected event processed in Listener for SubmissionId {} with errors: {} and warnings: {}", submissionId, submissionErrors, submissionWarnings);
-
-        submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
-        submission.setCompletedAt(timestamp);
-        submission.setErrors(submissionErrors);
-        submission.setWarnings(submissionWarnings);
-        submissionRepository.save(submission);
+        if(nonNull(submission)) {
+            submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
+            submission.setCompletedAt(timestamp);
+            submission.setErrors(submissionErrors);
+            submission.setWarnings(submissionWarnings);
+            submissionRepository.save(submission);
+        }
     }
 
     private ZonedDateTime extractCreatedAt(final Metadata metadata) {

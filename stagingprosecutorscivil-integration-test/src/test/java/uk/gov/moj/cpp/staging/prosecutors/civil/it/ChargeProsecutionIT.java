@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.staging.prosecutors.civil.it;
 
-import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
@@ -10,6 +9,8 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.s
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.CHARGE_PROSECUTION_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -22,7 +23,6 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.util.UUID;
 
-import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
@@ -60,7 +60,7 @@ public class ChargeProsecutionIT {
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
 
-        JsonObject caseSucceededPublicEvent = Json.createObjectBuilder()
+        JsonObject caseSucceededPublicEvent = createObjectBuilder()
                 .add("groupId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .build();
@@ -88,7 +88,7 @@ public class ChargeProsecutionIT {
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(urlResponse.getSubmissionId().toString()));
 
-        JsonObject caseSucceededPublicEvent = Json.createObjectBuilder()
+        JsonObject caseSucceededPublicEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
@@ -108,7 +108,7 @@ public class ChargeProsecutionIT {
         ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/charge/stagingprosecutors.submit-charge-prosecution-all-fields.json");
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
-        JsonObject rejectedEvent = Json.createObjectBuilder()
+        JsonObject rejectedEvent = createObjectBuilder()
                 .add("groupId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
@@ -129,12 +129,12 @@ public class ChargeProsecutionIT {
         ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
-        JsonObject rejectedEvent = Json.createObjectBuilder()
+        JsonObject rejectedEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
-                .add("caseErrors", Json.createArrayBuilder().build())
-                .add("defendantErrors", Json.createArrayBuilder().build())
+                .add("caseErrors", createArrayBuilder().build())
+                .add("defendantErrors", createArrayBuilder().build())
                 .build();
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
@@ -166,7 +166,7 @@ public class ChargeProsecutionIT {
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
 
-        JsonObject caseSucceededPublicEvent = Json.createObjectBuilder()
+        JsonObject caseSucceededPublicEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
@@ -187,7 +187,7 @@ public class ChargeProsecutionIT {
         ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
-        JsonObject warningsEvent = Json.createObjectBuilder()
+        JsonObject warningsEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")

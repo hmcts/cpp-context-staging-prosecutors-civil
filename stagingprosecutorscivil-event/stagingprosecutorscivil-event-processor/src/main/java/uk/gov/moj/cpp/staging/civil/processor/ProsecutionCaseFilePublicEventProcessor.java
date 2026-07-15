@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import org.slf4j.Logger;
@@ -28,9 +29,10 @@ public class ProsecutionCaseFilePublicEventProcessor {
     private static final String SUBMISSION_ID_NOT_FOUND = "Submission ID not found. Material rejected event ignored";
     private static final String STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL = "stagingprosecutorscivil.command.reject-material";
     private static final String SUBMISSION_ID = "submissionId";
-
     @Inject
     private Sender sender;
+    @Inject
+    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
 
     @Handles("public.prosecutioncasefile.material-rejected")
     public void caseMaterialRejected(final JsonEnvelope materialRejectedEnvelope) {
@@ -41,21 +43,26 @@ public class ProsecutionCaseFilePublicEventProcessor {
 
         LOGGER.info(".......... submission id {} ", submissionId);
 
-        if (!submissionId.isPresent()) {
-            LOGGER.error(SUBMISSION_ID_NOT_FOUND);
-            return;
-        }
+        if (submissionId.isPresent()) {
+            final Optional<JsonObject> jsonObject = stagingProsecutorsCivilService.submissionExistsById(materialRejectedEnvelope, submissionId.get().toString());
 
-        final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
-                .add(SUBMISSION_ID, submissionId.get().toString());
+            if (jsonObject.isEmpty()) {
+                LOGGER.info(SUBMISSION_ID_NOT_FOUND);
+                return;
+            }
 
-        final JsonArray errors = materialRejectedEnvelope.payload().asJsonObject().getJsonArray("errors");
-        if (nonNull(errors) && !errors.isEmpty()) {
-            jsonObjectBuilder.add("errors", errors);
+            final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
+                    .add(SUBMISSION_ID, submissionId.get().toString());
+
+            final JsonArray errors = materialRejectedEnvelope.payload().asJsonObject().getJsonArray("errors");
+            if (nonNull(errors) && !errors.isEmpty()) {
+                jsonObjectBuilder.add("errors", errors);
+            }
+            sender.send(envelop(jsonObjectBuilder.build())
+                    .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
+                    .withMetadataFrom(materialRejectedEnvelope));
+        } else {
+            LOGGER.info(SUBMISSION_ID_NOT_FOUND);
         }
-        sender.send(envelop(jsonObjectBuilder.build())
-                .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
-                .withMetadataFrom(materialRejectedEnvelope));
-        LOGGER.info("...........Sent stagingprosecutorscivil.command.reject-material command for submission id {} ", submissionId);
     }
 }
