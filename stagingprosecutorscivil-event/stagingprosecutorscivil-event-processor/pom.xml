@@ -65,6 +65,12 @@
             <artifactId>test-utils-enveloper-provider</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+            <artifactId>stagingprosecutorscivil-viewstore-persistance</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -108,18 +114,6 @@
                         <groupId>uk.gov.moj.cpp.prosecution.casefile</groupId>
                         <artifactId>prosecutioncasefile-command-api</artifactId>
                         <version>${prosecutioncasefile.version}</version>
-                        <classifier>raml</classifier>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>*</groupId>
-                                <artifactId>*</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-                        <artifactId>stagingprosecutorscivil-query-api</artifactId>
-                        <version>${project.version}</version>
                         <classifier>raml</classifier>
                         <exclusions>
                             <exclusion>

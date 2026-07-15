@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -11,6 +12,8 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -30,13 +33,13 @@ public class ProgressionPublicEventProcessor {
 
     @Inject
     private Sender sender;
+
     @Inject
-    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
+    private SubmissionRepository submissionRepository;
 
     @Handles("public.progression.court-document-added")
     public void caseDocumentUploaded(final JsonEnvelope courtDocumentAdded) {
         LOGGER.info("Received public.progression.court-document-added event");
-        final JsonObject metadataJson = courtDocumentAdded.metadata().asJsonObject();
 
         final Optional<UUID> submissionId = ofNullable(
                 courtDocumentAdded.metadata().asJsonObject().getString(SUBMISSION_ID, null))
@@ -45,25 +48,18 @@ public class ProgressionPublicEventProcessor {
         LOGGER.info("Extracted submissionId: {}", submissionId);
 
         if (submissionId.isPresent()) {
-            final Optional<JsonObject> jsonObject = stagingProsecutorsCivilService.submissionExistsById(courtDocumentAdded, submissionId.get().toString());
+            final Submission submission = submissionRepository.findBy(submissionId.get());
 
-            if (jsonObject.isEmpty()) {
+            if (nonNull(submission)) {
+                final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
+                        .add(SUBMISSION_ID, submissionId.get().toString());
+
+                final Metadata metadata = Envelope.metadataFrom(courtDocumentAdded.metadata()).withName("stagingprosecutorscivil.command.receive-material-submission-successful").build();
+                sender.send(envelopeFrom(
+                        metadata,
+                        jsonObjectBuilder.build()));
+            } else {
                 LOGGER.info("No submission found for submissionId: {}, skipping command send", submissionId.get());
-                return;
-            }
-
-            final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
-                    .add(SUBMISSION_ID, submissionId.get().toString());
-
-            final Metadata metadata = Envelope.metadataFrom(courtDocumentAdded.metadata()).withName("stagingprosecutorscivil.command.receive-material-submission-successful").build();
-            sender.send(envelopeFrom(
-                    metadata,
-                    jsonObjectBuilder.build()));
-            LOGGER.info("Sent stagingprosecutorscivil.command.receive-material-submission-successful command with submissionId: {}", submissionId.get());
-        } else {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Received CourtDocumentAdded event with no submissionId[Metadata: {}], [Payload: {}]",
-                        metadataJson, courtDocumentAdded.toObfuscatedDebugString());
             }
         }
     }
