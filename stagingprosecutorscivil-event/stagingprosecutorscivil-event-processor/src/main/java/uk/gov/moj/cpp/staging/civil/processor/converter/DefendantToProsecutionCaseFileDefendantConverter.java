@@ -63,15 +63,11 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
                 .withTelephoneNumberBusiness(ofNullable(defendant.getOrganisation()).map(Organisation::getCompanyTelephoneNumber).orElse(null));
 
         ofNullable(defendant.getIndividual()).ifPresent(individual -> {
-            if (ofNullable(individual.getAliases()).isPresent()) {
-                pcfDefendantBuilder.withIndividualAliases(buildIndividualAliases(individual.getAliases()));
-            }
             pcfDefendantBuilder
                     .withLanguageRequirement(ofNullable(defendant.getIndividual()).map(Individual::getLanguageRequirement).orElse(null))
                     .withSpecificRequirements(ofNullable(defendant.getIndividual()).map(Individual::getSpecificRequirements).orElse(null))
                     .withCustodyStatus(ofNullable(defendant.getIndividual()).map(Individual::getCustodyStatus).orElse(null));
         });
-        ofNullable(defendant.getOrganisation()).ifPresent(organisation -> pcfDefendantBuilder.withAliasForCorporate(organisation.getAliasOrganisationNames()));
 
         return pcfDefendantBuilder.build();
     }

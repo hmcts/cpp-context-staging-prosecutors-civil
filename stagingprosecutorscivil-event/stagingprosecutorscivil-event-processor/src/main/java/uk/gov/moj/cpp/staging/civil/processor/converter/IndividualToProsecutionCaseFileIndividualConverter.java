@@ -61,7 +61,6 @@ public class IndividualToProsecutionCaseFileIndividualConverter implements Conve
                 .withDriverLicenceIssue(null)
                 .withDriverLicenceCode(null)
                 .withCustodyStatus(ofNullable(individual.getCustodyStatus()).map(String::toString).orElse(null))
-                .withBailConditions(ofNullable(individual.getBailConditions()).map(String::toString).orElse(null))
                 .withParentGuardianInformation(buildParentGuardianInformation(ofNullable(individual.getParentGuardian()).orElse(null)))
                 .build();
 
