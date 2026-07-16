@@ -198,7 +198,6 @@ public class Prosecutors {
 
     private static Individual.Builder prosecutorsIndividual() {
         return individual()
-                .withAliases(asList(prosecutorsNameDetails(), prosecutorsNameDetails()))
                 .withContactDetails(prosecutorsContactDetails())
                 .withDateOfBirth(LocalDate.now())
                 .withDriverNumber(("Driver Number"))
@@ -209,7 +208,6 @@ public class Prosecutors {
                 .withObservedEthnicity((BigDecimal.ONE))
                 .withOccupation(("Occupation"))
                 .withCustodyStatus(("E"))
-                .withBailConditions(("BAIL CONDITIONS"))
                 .withLanguageRequirement(("languageNeeds"))
                 .withSpecificRequirements(("specialNeeds"))
                 .withOccupationCode((1));
@@ -275,7 +273,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }
@@ -299,7 +296,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }
