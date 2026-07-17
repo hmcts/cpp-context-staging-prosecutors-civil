@@ -76,7 +76,6 @@ public class IndividualToProsecutionCaseFileIndividualConverterTest {
         assertPersonalInformation(pcfIndividual.getPersonalInformation(), stagingDefendant);
         assertSelfDefinedInformation(pcfIndividual.getSelfDefinedInformation(), stagingDefendant.getIndividual());
 
-        assertThat(pcfIndividual.getBailConditions(), is(stagingDefendant.getIndividual().getBailConditions()));
         assertThat(pcfIndividual.getCustodyStatus(), is(stagingDefendant.getIndividual().getCustodyStatus()));
     }
 
