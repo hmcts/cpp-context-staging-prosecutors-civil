@@ -19,6 +19,8 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
+import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -42,7 +44,7 @@ public class ProgressionPublicEventProcessorTest {
     @InjectMocks
     private ProgressionPublicEventProcessor progressionPublicEventProcessor;
     @Mock
-    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
+    private SubmissionRepository submissionRepository;
 
     @Mock
     private Sender sender;
@@ -59,8 +61,7 @@ public class ProgressionPublicEventProcessorTest {
         final UUID submissionId = randomUUID();
         final JsonEnvelope envelope = buildCourtDocumentAddedEnvelopeWithSubmissionId(submissionId);
 
-        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
-                .thenReturn(java.util.Optional.of(Json.createObjectBuilder().build()));
+        when(submissionRepository.findBy(submissionId)).thenReturn(new Submission());
 
         progressionPublicEventProcessor.caseDocumentUploaded(envelope);
 
@@ -76,8 +77,7 @@ public class ProgressionPublicEventProcessorTest {
         final UUID submissionId = randomUUID();
         final JsonEnvelope envelope = buildCourtDocumentAddedEnvelopeWithSubmissionId(submissionId);
 
-        when(stagingProsecutorsCivilService.submissionExistsById(envelope, submissionId.toString()))
-                .thenReturn(java.util.Optional.empty());
+        when(submissionRepository.findBy(submissionId)).thenReturn(null);
 
         progressionPublicEventProcessor.caseDocumentUploaded(envelope);
 
