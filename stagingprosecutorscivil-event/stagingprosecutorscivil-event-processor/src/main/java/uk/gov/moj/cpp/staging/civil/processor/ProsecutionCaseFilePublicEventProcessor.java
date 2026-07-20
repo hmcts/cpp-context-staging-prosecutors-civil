@@ -10,6 +10,8 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.persistence.entity.Submission;
+import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -32,37 +34,34 @@ public class ProsecutionCaseFilePublicEventProcessor {
     @Inject
     private Sender sender;
     @Inject
-    private StagingProsecutorsCivilService stagingProsecutorsCivilService;
+    private SubmissionRepository submissionRepository;
 
     @Handles("public.prosecutioncasefile.material-rejected")
     public void caseMaterialRejected(final JsonEnvelope materialRejectedEnvelope) {
         final Optional<UUID> submissionId = ofNullable(materialRejectedEnvelope.metadata().asJsonObject().getString(SUBMISSION_ID, null))
                 .map(UUID::fromString);
-        LOGGER.info("..........Received public.prosecutioncasefile.material-rejected event with metadata: {} and payload: {}",
+        LOGGER.info("Received public.prosecutioncasefile.material-rejected event with metadata: {} and payload: {}",
                 materialRejectedEnvelope.metadata(), materialRejectedEnvelope.toObfuscatedDebugString());
 
-        LOGGER.info(".......... submission id {} ", submissionId);
+        LOGGER.info("submission id {} ", submissionId);
 
         if (submissionId.isPresent()) {
-            final Optional<JsonObject> jsonObject = stagingProsecutorsCivilService.submissionExistsById(materialRejectedEnvelope, submissionId.get().toString());
+            final Submission submission = submissionRepository.findBy(submissionId.get());
 
-            if (jsonObject.isEmpty()) {
+            if (nonNull(submission)) {
+                final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
+                        .add(SUBMISSION_ID, submissionId.get().toString());
+
+                final JsonArray errors = materialRejectedEnvelope.payload().asJsonObject().getJsonArray("errors");
+                if (nonNull(errors) && !errors.isEmpty()) {
+                    jsonObjectBuilder.add("errors", errors);
+                }
+                sender.send(envelop(jsonObjectBuilder.build())
+                        .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
+                        .withMetadataFrom(materialRejectedEnvelope));
+            } else {
                 LOGGER.info(SUBMISSION_ID_NOT_FOUND);
-                return;
             }
-
-            final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
-                    .add(SUBMISSION_ID, submissionId.get().toString());
-
-            final JsonArray errors = materialRejectedEnvelope.payload().asJsonObject().getJsonArray("errors");
-            if (nonNull(errors) && !errors.isEmpty()) {
-                jsonObjectBuilder.add("errors", errors);
-            }
-            sender.send(envelop(jsonObjectBuilder.build())
-                    .withName(STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL)
-                    .withMetadataFrom(materialRejectedEnvelope));
-        } else {
-            LOGGER.info(SUBMISSION_ID_NOT_FOUND);
         }
     }
 }
