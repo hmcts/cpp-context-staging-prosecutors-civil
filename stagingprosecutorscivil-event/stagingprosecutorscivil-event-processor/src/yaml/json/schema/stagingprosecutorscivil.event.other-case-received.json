@@ -30,6 +30,11 @@
     "hearingDateRangeDetails": {
       "description": "Court Hearing date range details for enforcement cases",
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-date-range-details.json"
+    },
+    "relatedReferenceNumber": {
+      "description": "GoB account number (Libra account reference) tied to the defendant. Present for enforcement cases.",
+      "type": "string",
+      "maxLength": 13
     }
   },
   "required": [
