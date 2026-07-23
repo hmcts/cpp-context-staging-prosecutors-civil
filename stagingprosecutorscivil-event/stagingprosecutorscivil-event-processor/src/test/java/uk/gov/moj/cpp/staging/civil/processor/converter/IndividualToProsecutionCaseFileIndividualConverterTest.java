@@ -75,7 +75,6 @@ public class IndividualToProsecutionCaseFileIndividualConverterTest {
         assertPersonalInformation(pcfIndividual.getPersonalInformation(), stagingDefendant);
         assertSelfDefinedInformation(pcfIndividual.getSelfDefinedInformation(), stagingDefendant.getIndividual());
 
-        assertThat(pcfIndividual.getBailConditions(), is(stagingDefendant.getIndividual().getBailConditions()));
         assertThat(pcfIndividual.getCustodyStatus(), is(stagingDefendant.getIndividual().getCustodyStatus()));
     }
 
@@ -106,7 +105,6 @@ public class IndividualToProsecutionCaseFileIndividualConverterTest {
         assertNameDetails(personalInformation, stagingDefendant.getIndividual().getNameDetails());
         assertThat(personalInformation.getObservedEthnicity().toString(), is(stagingDefendant.getIndividual().getObservedEthnicity().toString()));
         assertThat(personalInformation.getOccupation(), is(stagingDefendant.getIndividual().getOccupation()));
-        assertThat(personalInformation.getOccupationCode(), is(stagingDefendant.getIndividual().getOccupationCode()));
     }
 
     private static void assertSelfDefinedInformation(final SelfDefinedInformation selfDefinedInformation, final uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual stagingIndividual) {

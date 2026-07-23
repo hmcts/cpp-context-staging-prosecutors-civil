@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.staging.civil.processor.converter;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -28,13 +27,9 @@ public class OffenceToProsecutionCaseFileOffenceConverterTest {
         prosecutionCaseFileOffencesList.forEach(
                 offences -> {
                     final uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence offence = prosecutorsOffenceList.get(offences.getOffenceSequenceNumber() - 1);
-                    assertThat(offences.getBackDuty(), is(BigDecimal.valueOf(Integer.parseInt(offence.getOffenceDetails().getBackDuty()))));
-                    assertThat(offences.getBackDutyDateFrom(), is(offence.getOffenceDetails().getBackDutyDateFrom()));
-                    assertThat(offences.getBackDutyDateTo(), is(offence.getOffenceDetails().getBackDutyDateTo()));
                     assertThat(offences.getOffenceCode(), is(offence.getOffenceDetails().getCjsOffenceCode()));
                     assertThat(offences.getOffenceCommittedDate(), is(offence.getOffenceDetails().getOffenceCommittedDate()));
                     assertThat(offences.getOffenceCommittedEndDate(), is(offence.getOffenceDetails().getOffenceCommittedEndDate()));
-                    assertThat(offences.getOffenceDateCode(), is(parseInt(offence.getOffenceDetails().getOffenceDateCode().toString())));
                     assertThat(offences.getOffenceLocation(), is(offence.getOffenceDetails().getOffenceLocation()));
                     assertThat(offences.getOffenceSequenceNumber(), is(offence.getOffenceDetails().getOffenceSequenceNo()));
                     assertThat(offences.getOffenceWording(), is(offence.getOffenceDetails().getOffenceWording()));

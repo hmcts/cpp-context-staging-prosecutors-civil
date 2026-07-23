@@ -9,7 +9,6 @@
         {
           "individual": {
             "custodyStatus": "B",
-            "bailConditions": "This is a free text",
             "dateOfBirth": "2011-11-07",
             "nameDetails": {
               "forename": "John",

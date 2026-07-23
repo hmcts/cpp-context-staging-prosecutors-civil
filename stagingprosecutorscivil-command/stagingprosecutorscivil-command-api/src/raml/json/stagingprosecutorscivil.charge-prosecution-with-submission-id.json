@@ -26,7 +26,6 @@
             "additionalNationality": "W2"
           },
           "occupation": "TA",
-          "occupationCode": 666,
           "driverNumber": "AS",
           "address": {
             "address1": "Line 1",
@@ -42,24 +41,17 @@
         "hearingLanguage": "E",
         "languageRequirement": "no special language needs",
         "specificRequirements": "no special needs",
-        "numPreviousConvictions": 3,
         "offences": [
           {
             "cjsOffenceCode": "CA03010",
             "offenceSequenceNo": 1,
             "offenceCommittedDate": "2018-06-20",
             "chargeDate": "2018-06-21",
-            "offenceDateCode": 1,
             "offenceLocation": "Croydon",
             "offenceWording": "Prosecution charge wording",
             "offenceWordingWelsh": "Prosecution charge wording in Welsh",
             "statementOfFacts": "Prosecution statements of facts",
-            "prosecutorCompensation": "15.30",
-            "backDuty": "+340.30",
-            "backDutyDateFrom": "2018-04-30",
-            "backDutyDateTo": "2018-05-30",
-            "vehicleMake": "Ford",
-            "vehicleRegistrationMark": "AB11 ABC"
+            "prosecutorCompensation": "15.30"
           }
         ]
       }

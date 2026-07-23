@@ -29,7 +29,6 @@
               "address5": "Address Line 5",
               "postcode": "SE1H 1XX"
             },
-            "numPreviousConvictions": 3,
             "prosecutorCosts": "20.99"
           },
           "individual": {
@@ -48,7 +47,6 @@
                 "offenceSequenceNo": 1,
                 "offenceCommittedDate": "2019-06-11",
                 "laidDate": "2019-06-11",
-                "offenceDateCode": 4,
                 "offenceWording": "Test Prosecution charge wording"
               },
               "statementOfFacts": "Test Prosecution statements of facts"

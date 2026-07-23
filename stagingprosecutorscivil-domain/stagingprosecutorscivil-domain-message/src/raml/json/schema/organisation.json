@@ -12,16 +12,6 @@
     "companyTelephoneNumber": {
       "pattern": "^[0-9+\\ \\-]{10,}$",
       "description": ""
-    },
-    "aliasOrganisationNames": {
-      "description": "Also known as company name.",
-      "type":"array",
-      "minItems": 1,
-      "pattern": "^[a-zA-Z0-9-]*$",
-      "maxLength": 80,
-      "items": {
-        "type": "string"
-      }
     }
   },
   "required": [

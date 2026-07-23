@@ -3,12 +3,10 @@ package uk.gov.moj.cpp.staging.civil.processor.converter;
 import static java.util.Optional.ofNullable;
 import static uk.gov.justice.cps.prosecutioncasefile.InitialHearing.initialHearing;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Address.address;
-import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.IndividualAlias.individualAlias;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Language.valueOf;
 
 import uk.gov.justice.cps.prosecutioncasefile.InitialHearing;
 import uk.gov.justice.services.common.converter.Converter;
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.IndividualAlias;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -16,12 +14,10 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Language;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.NameDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Organisation;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,7 +46,6 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
                 .withEmailAddress2(ofNullable(defendant.getIndividual()).map(Individual::getContactDetails).map(ContactDetails::getSecondaryEmail).orElse(null))
                 .withHearingLanguage(valueOf(ofNullable(defendant.getDefendantDetails()).map(DefendantDetails::getHearingLanguage).map(Language::name).orElse(null)))
                 .withIndividual(individualToProsecutionCaseFileIndividualConverter.convert(defendant))
-                .withNumPreviousConvictions(ofNullable(defendant.getDefendantDetails()).map(DefendantDetails::getNumPreviousConvictions).orElse(null))
                 .withOffences(offenceToProsecutionCaseFileOffenceConverter.convert(defendant.getOffences()))
                 .withOrganisationName(ofNullable(defendant.getOrganisation()).map(Organisation::getOrganisationName).orElse(null))
                 .withPncIdentifier(ofNullable(defendant.getDefendantDetails()).map(DefendantDetails::getPncIdentifier).orElse(null))
@@ -58,16 +53,12 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
                 .withAppliedProsecutorCosts(ofNullable(defendant.getDefendantDetails()).map(DefendantDetails::getProsecutorCosts).map(BigDecimal::new).orElse(null))
                 .withTelephoneNumberBusiness(ofNullable(defendant.getOrganisation()).map(Organisation::getCompanyTelephoneNumber).orElse(null));
 
-        ofNullable(defendant.getIndividual()).ifPresent(individual -> {
-            if(ofNullable(individual.getAliases()).isPresent()) {
-                pcfDefendantBuilder.withIndividualAliases(buildIndividualAliases(individual.getAliases()));
-            }
+        if (defendant.getIndividual() != null) {
             pcfDefendantBuilder
                     .withLanguageRequirement(ofNullable(defendant.getIndividual()).map(Individual::getLanguageRequirement).orElse(null))
                     .withSpecificRequirements(ofNullable(defendant.getIndividual()).map(Individual::getSpecificRequirements).orElse(null))
                     .withCustodyStatus(ofNullable(defendant.getIndividual()).map(Individual::getCustodyStatus).orElse(null));
-        });
-        ofNullable(defendant.getOrganisation()).ifPresent(organisation -> pcfDefendantBuilder.withAliasForCorporate(organisation.getAliasOrganisationNames()));
+        }
 
         return pcfDefendantBuilder.build();
     }
@@ -79,21 +70,6 @@ public class DefendantToProsecutionCaseFileDefendantConverter implements Convert
                 .withCourtHearingLocation(this.hearingDetails.getCourtHearingLocation())
                 .withDateOfHearing(this.hearingDetails.getDateOfHearing().toString())
                 .build();
-    }
-
-    private List<IndividualAlias> buildIndividualAliases(final List<NameDetails> aliases) {
-        final List<IndividualAlias> individualAliases = new ArrayList<>();
-        aliases.forEach(alias ->
-                    individualAliases.add(individualAlias()
-                            .withTitle(ofNullable(alias.getTitle()).orElse(null))
-                            .withFirstName(alias.getForename())
-                            .withGivenName2(ofNullable(alias.getForename2()).orElse(null))
-                            .withGivenName3(ofNullable(alias.getForename3()).orElse(null))
-                            .withLastName(alias.getSurname())
-                            .build())
-
-        );
-        return individualAliases;
     }
 
     private uk.gov.moj.cpp.prosecution.casefile.json.schemas.Address buildAddress(final Address address) {
