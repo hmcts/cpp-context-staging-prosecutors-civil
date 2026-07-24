@@ -62,6 +62,7 @@ public class StagingProsecutorsCivilUtils {
     private static final String READ_BASE_URI = getBaseUri()
             + "/stagingprosecutorscivil-query-api/query/api/rest/stagingprosecutors-civil";
     private static final String WRITE_BASE_URI = COMMAND_BASE_URI + "/v1";
+    public static final String CSV_CONTENT_TYPE = "text/csv";
     private static final String PROSECUTOR_DOCUMENT_UPLOAD_COMMAND_URL = WRITE_BASE_URI + "/prosecutions/%s/materials";
 
 
@@ -138,6 +139,10 @@ public class StagingProsecutorsCivilUtils {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    public static Response getComplaintsFilesTemplate() {
+        return restClient.query(READ_BASE_URI + "/complaints-files-template", CSV_CONTENT_TYPE);
     }
 
     private static RequestParams getRequestParams(final UUID submissionId) {
