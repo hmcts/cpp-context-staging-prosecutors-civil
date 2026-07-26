@@ -4,9 +4,12 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 
+import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
@@ -17,8 +20,10 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,6 +132,96 @@ public class CivilProsecutionApiTest {
         assertThat(receivedOtherCase.getRelatedReferenceNumber(), is("GOB123456789"));
         assertThat(receivedOtherCase.getProsecutionCases().get(0).getUrn(), is("urn-enforcement-1"));
         assertNotNull(urlResponse.getSubmissionId());
+    }
+
+    @Test
+    public void shouldHandleOtherCaseWithValidHearingDateRange() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now().minusDays(10), LocalDate.now().plusDays(5));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
+
+        verify(sender).send(envelopeCaptor.capture());
+        final OtherCaseWithSubmissionId receivedOtherCase =
+                (OtherCaseWithSubmissionId) envelopeCaptor.getValue().payload();
+        assertThat(receivedOtherCase.getHearingDateRangeDetails().getCourtHearingLocation(), is("B01LY01"));
+    }
+
+    @Test
+    public void shouldHandleOtherCaseWithHearingDateRangeOnBoundaryOf31DaysInThePast() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now().minusDays(31), LocalDate.now().minusDays(31));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
+
+        verify(sender).send(envelopeCaptor.capture());
+    }
+
+    @Test
+    public void shouldRejectOtherCaseWhenEndDateRangeOfHearingIsBeforeStartDateRangeOfHearing() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now(), LocalDate.now().minusDays(1));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        assertThrows(BadRequestException.class,
+                () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
+
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldHandleOtherCaseWhenStartDateRangeOfHearingIsMoreThan31DaysInThePast() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now().minusDays(32), LocalDate.now().plusDays(1));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
+
+        verify(sender).send(envelopeCaptor.capture());
+    }
+
+    private OtherCase otherCaseWithHearingDateRange(final LocalDate startDate, final LocalDate endDate) {
+        final List<ProsecutionCase> prosecutionCaseList = new ArrayList<>();
+        prosecutionCaseList.add(
+                ProsecutionCase.prosecutionCase()
+                        .withUrn("urn-enforcement-range-1")
+                        .withDefendants(new ArrayList<>())
+                        .build()
+        );
+        return OtherCase
+                .otherCase()
+                .withProsecutionCases(prosecutionCaseList)
+                .withProsecutingAuthority("GAAAA01")
+                .withRelatedReferenceNumber("GOB123456789")
+                .withHearingDateRangeDetails(
+                        HearingDateRangeDetails.hearingDateRangeDetails()
+                                .withStartDateRangeOfHearing(startDate)
+                                .withEndDateRangeOfHearing(endDate)
+                                .withCourtHearingLocation("B01LY01")
+                                .build())
+                .build();
     }
 
     @Test
