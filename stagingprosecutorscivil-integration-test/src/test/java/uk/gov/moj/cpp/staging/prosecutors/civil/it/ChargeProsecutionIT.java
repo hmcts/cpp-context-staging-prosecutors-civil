@@ -1,6 +1,11 @@
 package uk.gov.moj.cpp.staging.prosecutors.civil.it;
 
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -9,11 +14,13 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.s
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.CHARGE_PROSECUTION_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.staging.prosecutors.civil.common.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.model.Submission;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.ProsecutionCaseFileApi;
@@ -98,6 +105,122 @@ public class ChargeProsecutionIT {
 
         final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
         assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldReturnSuccessResponseWithAllRequiredFieldsForAC2() {
+        final String ouCode = "GAAAA01";
+        stubPCFCommand(randomUUID());
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(
+                "payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json",
+                CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+
+        final JsonObject caseSucceededPublicEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .build();
+        final JsonEnvelope publicEventEnvelope = envelopeFrom(
+                buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED, randomUUID().toString()),
+                caseSucceededPublicEvent);
+        messageProducerClientPublic.sendMessage(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED, publicEventEnvelope);
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS, ouCode);
+
+        assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
+        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.SUCCESS.name()));
+        assertThat(submission.getType(), is("PROSECUTION"));
+        assertThat(submission.getErrors(), is(empty()));
+        assertThat(submission.getWarnings(), is(empty()));
+        assertThat(submission.getReceivedAt(), is(notNullValue()));
+        assertThat(submission.getCompletedAt(), is(notNullValue()));
+    }
+
+    @Test
+    public void shouldReturnSuccessWithWarningsResponseWithWarningObjectsForAC3() {
+        final String ouCode = "GAAAA01";
+        stubPCFCommand(randomUUID());
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(
+                "payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json",
+                CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final JsonObject warningsEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .add("warnings", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("code", "DEFENDANT_DOB_IN_FUTURE")
+                                .add("values", createArrayBuilder()
+                                        .add(createObjectBuilder()
+                                                .add("key", "dob")
+                                                .add("value", "2050-01-01")))))
+                .build();
+        final JsonEnvelope warningsEventEnvelope = envelopeFrom(
+                buildMetadata("public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings", randomUUID().toString()),
+                warningsEvent);
+        messageProducerClientPublic.sendMessage(
+                "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
+                warningsEventEnvelope);
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS_WITH_WARNINGS, ouCode);
+
+        assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
+        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.SUCCESS_WITH_WARNINGS.name()));
+        assertThat(submission.getWarnings(), hasSize(greaterThanOrEqualTo(1)));
+        final Problem firstWarning = submission.getWarnings().get(0);
+        assertThat(firstWarning.code, is("DEFENDANT_DOB_IN_FUTURE"));
+        assertThat(firstWarning.values, hasSize(greaterThanOrEqualTo(1)));
+        assertThat(firstWarning.values.get(0).key, is("dob"));
+        assertThat(firstWarning.values.get(0).value, is("2050-01-01"));
+    }
+
+    @Test
+    public void shouldReturnRejectedResponseWithErrorCodesForAC4() {
+        final String ouCode = "GAAAA01";
+        stubPCFCommand(randomUUID());
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(
+                "payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json",
+                CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final JsonObject rejectionEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .add("caseErrors", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("code", "DEFENDANT_DOB_IN_FUTURE")
+                                .add("values", createArrayBuilder()
+                                        .add(createObjectBuilder()
+                                                .add("key", "dob")
+                                                .add("value", "2050-01-01")))))
+                .build();
+        final JsonEnvelope rejectionEventEnvelope = envelopeFrom(
+                buildMetadata("public.prosecutioncasefile.civil-prosecution-rejected", randomUUID().toString()),
+                rejectionEvent);
+        messageProducerClientPublic.sendMessage(
+                "public.prosecutioncasefile.civil-prosecution-rejected",
+                rejectionEventEnvelope);
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED, ouCode);
+
+        assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
+        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.REJECTED.name()));
+        assertThat(submission.getErrors(), hasSize(greaterThanOrEqualTo(1)));
+        final Problem firstError = submission.getErrors().get(0);
+        assertThat(firstError.code, is("DEFENDANT_DOB_IN_FUTURE"));
+        assertThat(firstError.values, hasSize(greaterThanOrEqualTo(1)));
+        assertThat(firstError.values.get(0).key, is("dob"));
     }
 
     @Test

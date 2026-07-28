@@ -119,7 +119,7 @@ public class SubmissionEventListener {
             submission.setCaseWarnings(transformErrorsToJsonArray(updatedCivilCaseReceived.getCaseWarnings()));
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
-
+        submission.setCompletedAt(extractCreatedAt(event.metadata()));
         submission.setSubmissionStatus(updatedCivilCaseReceived.getSubmissionStatus().name());
         submissionRepository.save(submission);
     }
