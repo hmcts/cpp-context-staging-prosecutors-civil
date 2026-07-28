@@ -18,7 +18,7 @@ rule "Query - Rule for getting complaints files template"
   when
     $outcome: Outcome();
     $action: Action(name == "stagingprosecutorscivil.complaints-files-template");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.getComplaintsFilesTemplateGroups()));
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getBulkCasePermission()));
   then
     $outcome.setSuccess(true);
 end

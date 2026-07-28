@@ -18,9 +18,9 @@ public class ComplaintsFilesTemplateIT {
         assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
         assertThat(response.getHeaderString("Content-Type"), containsString("text/csv"));
         assertThat(response.getHeaderString("Content-Disposition"), containsString("attachment"));
-        assertThat(response.getHeaderString("Content-Disposition"), containsString("complaints-files-template.csv"));
+        assertThat(response.getHeaderString("Content-Disposition"), containsString("summons-prosecution-template.csv"));
 
         final String csvContent = response.readEntity(String.class);
-        assertThat(csvContent, containsString("Column1"));
+        assertThat(csvContent, containsString("prosecutingAuthority"));
     }
 }

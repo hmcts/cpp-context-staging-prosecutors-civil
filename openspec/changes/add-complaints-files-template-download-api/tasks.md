@@ -7,11 +7,11 @@
 
 ## 2. Access control
 
-- [x] 2.1 Add `getComplaintsFilesTemplateGroups()` to `RuleConstants`, returning `Non CPS Prosecutors` and `System Users`
-- [x] 2.2 Add a Drools rule for `stagingprosecutorscivil.complaints-files-template` using `isMemberOfAnyOfTheSuppliedGroups`
+- [x] 2.1 Add `getBulkCasePermission()` to `RuleConstants`, mirroring `getCivilCasePermission()` but with `withObject("BULK_CASE")`
+- [x] 2.2 Add a Drools rule for `stagingprosecutorscivil.complaints-files-template` using `hasPermission`, mirroring the `submission-details` rule's shape
 - [x] 2.3 Add the rule to the existing query-api `.drl` file rather than creating a second file, keeping one `.drl` per module
 - [x] 2.4 Rename `query-charge-prosecution.drl` to `stagingprosecutorscivil-query-api.drl` to reflect it now holds all query-api access-control rules
-- [x] 2.5 Add `QueryComplaintsFilesTemplateRulesTest` verifying the rule grants access when the caller is a member of an allowed group
+- [x] 2.5 Add `QueryComplaintsFilesTemplateRulesTest` verifying the rule grants access when the caller holds the `BULK_CASE`/`GrantAccess` permission
 
 ## 3. Tests
 

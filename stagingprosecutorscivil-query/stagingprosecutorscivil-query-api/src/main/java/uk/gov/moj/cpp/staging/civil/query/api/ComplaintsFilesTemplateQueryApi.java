@@ -17,8 +17,8 @@ public class ComplaintsFilesTemplateQueryApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ComplaintsFilesTemplateQueryApi.class);
 
-    private static final String CSV_FILE_NAME = "complaints-files-template.csv";
-    static final String CSV_RESOURCE_PATH = "/" + CSV_FILE_NAME;
+    private static final String CSV_FILE_NAME = "summons-prosecution-template.csv";
+    static final String CSV_RESOURCE_PATH = "/csv/" + CSV_FILE_NAME;
     private static final String CSV_MIME_TYPE = "text/csv";
 
     public Response getComplaintsFilesTemplate() {

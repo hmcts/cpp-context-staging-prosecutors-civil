@@ -12,9 +12,6 @@ public class RuleConstants {
 
     private static final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
-    public static final String NON_CPS_PROSECUTOR_GROUP = "Non CPS Prosecutors";
-    public static final String SYSTEM_USERS = "System Users";
-
     private RuleConstants() {
         throw new IllegalAccessError("Utility class");
     }
@@ -27,7 +24,11 @@ public class RuleConstants {
         return objectMapper.writeValueAsString(expectedPermission);
     }
 
-    public static String[] getComplaintsFilesTemplateGroups() {
-        return new String[]{NON_CPS_PROSECUTOR_GROUP, SYSTEM_USERS};
+    public static String getBulkCasePermission() throws JsonProcessingException {
+        final ExpectedPermission expectedPermission = builder()
+                .withObject("BULK_CASE")
+                .withAction("GrantAccess")
+                .build();
+        return objectMapper.writeValueAsString(expectedPermission);
     }
 }

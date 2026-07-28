@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.kie.api.runtime.ExecutionResults;
 import org.mockito.Mock;
@@ -36,15 +37,15 @@ public class QueryComplaintsFilesTemplateRulesTest extends BaseDroolsAccessContr
     }
 
     @Test
-    public void shouldAllowAuthorisedUserToGetComplaintsFilesTemplate() {
+    public void shouldAllowAuthorisedUserToGetComplaintsFilesTemplate() throws JsonProcessingException {
         final Map<String, String> metadata = new HashMap<>();
         metadata.putIfAbsent("id", UUID.randomUUID().toString());
         metadata.putIfAbsent("name", "stagingprosecutorscivil.complaints-files-template");
         action = createActionFor(metadata);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RuleConstants.getComplaintsFilesTemplateGroups())).willReturn(true);
+        given(userAndGroupProvider.hasPermission(action, RuleConstants.getBulkCasePermission())).willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
         assertSuccessfulOutcome(results);
-        verify(userAndGroupProvider, times(1)).isMemberOfAnyOfTheSuppliedGroups(action, RuleConstants.getComplaintsFilesTemplateGroups());
+        verify(userAndGroupProvider, times(1)).hasPermission(action, RuleConstants.getBulkCasePermission());
     }
 }

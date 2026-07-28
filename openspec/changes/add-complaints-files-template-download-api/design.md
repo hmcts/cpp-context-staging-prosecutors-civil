@@ -20,7 +20,7 @@ Access control in this module is enforced by a Drools session (`QUERY_API` kie-s
 
 - **Serve the CSV as a classpath resource via `InputStream`, not a viewstore-backed query.** The template has no per-request variability, so there is nothing to query — reading a packaged resource is the simplest correct implementation and avoids an unnecessary DB round-trip.
 - **One `.drl` file per query-api module.** Rather than adding a second `.drl` file (`query-complaints-files-template.drl`) alongside the existing one, the new rule was added to the single existing rule file for this module (renamed to `stagingprosecutorscivil-query-api.drl` to reflect that it now holds all query-api access-control rules, not just the charge-prosecution one). This avoids proliferating one-rule-per-file `.drl` files as more query endpoints are added, and matches how the Drools session already merges all `.drl` files in the package at runtime regardless of filename.
-- **Restrict access via group membership (`isMemberOfAnyOfTheSuppliedGroups`), not the existing permission-based check (`hasPermission`/`getCivilCasePermission`).** The existing `submission-details` rule checks a `CIVIL_CASE`/`GrantAccess` permission tied to a specific case. The complaints-files template is not case-scoped — it is a general-purpose download available to any caller in the `Non CPS Prosecutors` or `System Users` groups — so a group-membership check is the correct fit rather than reusing the per-case permission check.
+- **Mirror the existing `submission-details` rule's permission-based check (`hasPermission`/`ExpectedPermission`), using `BULK_CASE` instead of `CIVIL_CASE`.** The existing rule checks a `CIVIL_CASE`/`GrantAccess` permission. The complaints-files template rule follows the exact same shape and pattern — same `hasPermission` eval, same `ExpectedPermission.builder()...withAction("GrantAccess")` construction in `RuleConstants` — but scoped to the `BULK_CASE` object, keeping the two rules structurally consistent and easy to reason about side by side.
 - **Return 404 with a plain-text body on a missing resource, rather than letting a `NullPointerException`/`IOException` propagate.** Keeps the failure mode explicit and testable (`shouldReturnNotFoundWhenResourceFileIsMissing`), rather than relying on the framework's generic error handling.
 
 ## Risks / Trade-offs
@@ -32,7 +32,7 @@ Access control in this module is enforced by a Drools session (`QUERY_API` kie-s
 
 1. Add `ComplaintsFilesTemplateQueryApi`, its generated-adapter resource, and the packaged CSV resource.
 2. Add the RAML path/mapping so the framework routes `stagingprosecutorscivil.complaints-files-template` to the new resource.
-3. Add the access-control rule and `RuleConstants.getComplaintsFilesTemplateGroups()`, appended to the existing query-api `.drl` file.
+3. Add the access-control rule and `RuleConstants.getBulkCasePermission()`, appended to the existing query-api `.drl` file.
 4. No database/viewstore migration is required — this endpoint reads no persisted state.
 5. Rollback is a straight revert of the added files/rule; nothing else depends on this endpoint yet.
 

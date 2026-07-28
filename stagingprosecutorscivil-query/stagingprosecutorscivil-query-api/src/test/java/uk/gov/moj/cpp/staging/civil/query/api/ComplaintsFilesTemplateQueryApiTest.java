@@ -25,12 +25,12 @@ public class ComplaintsFilesTemplateQueryApiTest {
         assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
         assertThat(response.getHeaderString(HttpHeaders.CONTENT_TYPE), is("text/csv"));
         assertThat(response.getHeaderString(HttpHeaders.CONTENT_DISPOSITION), containsString("attachment"));
-        assertThat(response.getHeaderString(HttpHeaders.CONTENT_DISPOSITION), containsString("complaints-files-template.csv"));
+        assertThat(response.getHeaderString(HttpHeaders.CONTENT_DISPOSITION), containsString("summons-prosecution-template.csv"));
 
         final Object entity = response.getEntity();
         assertThat(entity, notNullValue());
         final String csvContent = new String(((InputStream) entity).readAllBytes(), StandardCharsets.UTF_8);
-        assertThat(csvContent, containsString("Column1"));
+        assertThat(csvContent, containsString("prosecutingAuthority"));
     }
 
     @Test
