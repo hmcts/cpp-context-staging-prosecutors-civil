@@ -19,3 +19,18 @@ protocols: [ HTTP, HTTPS ]
             application/vnd.stagingprosecutorscivil.submission-details+json:
               example:  !include json/stagingprosecutorscivil.submission-details.json
               schema:  !include json/schema/stagingprosecutorscivil.submission-details.json
+
+/complaints-files-template:
+  get:
+    description: |
+      Retrieve the complaints files CSV template.
+      ...
+      (mapping):
+        responseType: text/csv
+        name: stagingprosecutorscivil.complaints-files-template
+      ...
+    responses:
+        200:
+          description: OK
+          body:
+            text/csv:
