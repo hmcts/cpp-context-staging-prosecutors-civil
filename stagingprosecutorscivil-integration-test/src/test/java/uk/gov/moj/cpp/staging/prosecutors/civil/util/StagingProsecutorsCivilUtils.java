@@ -44,7 +44,7 @@ public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_CONTENT_TYPE = "application/vnd.stagingcivil.summons+json";
     public static final String OTHER_CASE_CONTENT_TYPE = "application/vnd.stagingcivil.other-case+json";
-    public static final String SUBMISSION_DETAILS_MEDIA_TYPE = "application/vnd.stagingprosecutorscivil.submission-details+json";
+    public static final String SUBMISSION_DETAILS_MEDIA_TYPE = "application/vnd.stagingcivil.submission-details+json";
     public static final String CJSOUCODE_HEADER = "CJSOUCODE";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/staging-civil";
@@ -170,7 +170,6 @@ public class StagingProsecutorsCivilUtils {
 
     private static RequestParams getRequestParams(final UUID submissionId) {
         final String url = READ_BASE_URI + "/submissions/" + submissionId;
-        final String mediaType = "application/vnd.stagingcivil.submission-details+json";
 
         return requestParams(url, SUBMISSION_DETAILS_MEDIA_TYPE)
                 .withHeader(USER_ID, UUID.randomUUID())
