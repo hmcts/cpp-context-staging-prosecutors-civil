@@ -66,6 +66,30 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-json-schemas</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/schemas
+                            </outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/raml/json/schema</directory>
+                                    <includes>
+                                        <include>**/*.json</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>uk.gov.justice.generators</groupId>
                 <artifactId>pojo-generation-plugin</artifactId>
                 <executions>
@@ -124,6 +148,50 @@
                         <version>${coredomain.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
+
+                <executions>
+
+                    <execution>
+                        <id>unpack-json-schemas</id>
+
+                        <phase>process-test-resources</phase>
+
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+
+                        <configuration>
+
+                            <artifactItems>
+
+                                <artifactItem>
+                                    <groupId>uk.gov.moj.cpp.core.domain</groupId>
+                                    <artifactId>common-core-domain</artifactId>
+                                    <version>${coredomain.version}</version>
+
+                                    <!-- extract only json schemas -->
+                                    <includes>**/*.json</includes>
+
+                                    <!-- where to unpack -->
+                                    <outputDirectory>
+                                        ${project.build.outputDirectory}/schemas
+                                    </outputDirectory>
+
+                                </artifactItem>
+
+                            </artifactItems>
+
+                        </configuration>
+
+                    </execution>
+
+                </executions>
+
             </plugin>
         </plugins>
     </build>

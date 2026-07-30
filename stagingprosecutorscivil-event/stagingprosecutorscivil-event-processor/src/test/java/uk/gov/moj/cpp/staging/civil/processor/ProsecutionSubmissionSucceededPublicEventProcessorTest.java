@@ -47,9 +47,13 @@ public class ProsecutionSubmissionSucceededPublicEventProcessorTest {
     public void shouldHandleProsecutionSubmissionSucceeded() {
         final CivilProsecutionSubmissionSucceeded prosecutionSubmissionSucceeded = updateCivilProsecutionSubmissionSucceeded();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<CivilProsecutionSubmissionSucceeded> updateProsecutionSubmissionSucceededEnvelope = testEnvelope(prosecutionSubmissionSucceeded, "public.prosecutioncasefile.civil-prosecution-submission-succeeded",
-                prosecutionSubmissionSucceeded.getExternalId().toString(), eventCreatedTime);
-        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceeded(updateProsecutionSubmissionSucceededEnvelope);
+        final Envelope<CivilProsecutionSubmissionSucceeded> envelope = testEnvelope(
+                prosecutionSubmissionSucceeded,
+                "public.prosecutioncasefile.civil-prosecution-submission-succeeded",
+                eventCreatedTime);
+
+        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceeded(envelope);
+
         ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
         verify(sender).send(captor.capture());
         JsonObject payload = (JsonObject) captor.getValue().payload();
@@ -58,25 +62,76 @@ public class ProsecutionSubmissionSucceededPublicEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleProsecutionSubmissionSucceededWithWarnings() {
-        final ProsecutionSubmissionSucceededWithWarnings prosecutionSubmissionSucceededWithWarnings = ProsecutionSubmissionSucceededWithWarnings.prosecutionSubmissionSucceededWithWarnings()
-                .withExternalId(randomUUID())
-                .withChannel(Channel.CIVIL)
-                .withWarnings(new ArrayList<>())
-                .build();
+    public void shouldOmitWarningFieldsFromCommandWhenAllNull() {
+        final ProsecutionSubmissionSucceededWithWarnings event =
+                ProsecutionSubmissionSucceededWithWarnings.prosecutionSubmissionSucceededWithWarnings()
+                        .withExternalId(randomUUID())
+                        .withChannel(Channel.CIVIL)
+                        .build();
 
-        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
-        final Envelope<ProsecutionSubmissionSucceededWithWarnings> updateProsecutionSubmissionSucceededEnvelope = testEnvelope(prosecutionSubmissionSucceededWithWarnings, "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
-                prosecutionSubmissionSucceededWithWarnings.getExternalId().toString(), eventCreatedTime);
-        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceededWithWarnings(updateProsecutionSubmissionSucceededEnvelope);
+        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceededWithWarnings(
+                testEnvelope(event, "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
+                        PAST_UTC_DATE_TIME.next()));
+
         ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
         verify(sender).send(captor.capture());
         JsonObject payload = (JsonObject) captor.getValue().payload();
-        assertThat(payload.getString("submissionId"), is(prosecutionSubmissionSucceededWithWarnings.getExternalId().toString()));
+
         assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.SUCCESS_WITH_WARNINGS.name()));
+        assertThat(payload.containsKey("warnings"), is(false));
+        assertThat(payload.containsKey("caseWarnings"), is(false));
+        assertThat(payload.containsKey("defendantWarnings"), is(false));
     }
 
-    private <T> Envelope<T> testEnvelope(final T payload, final String eventName, final String submissionId, final ZonedDateTime createdAt) {
+    @Test
+    public void shouldIncludeWarningFieldsInCommandWhenNonNull() {
+        final ProsecutionSubmissionSucceededWithWarnings event =
+                ProsecutionSubmissionSucceededWithWarnings.prosecutionSubmissionSucceededWithWarnings()
+                        .withExternalId(randomUUID())
+                        .withChannel(Channel.CIVIL)
+                        .withWarnings(new ArrayList<>())
+                        .withCaseWarnings(new ArrayList<>())
+                        .withDefendantWarnings(new ArrayList<>())
+                        .build();
+
+        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceededWithWarnings(
+                testEnvelope(event, "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
+                        PAST_UTC_DATE_TIME.next()));
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.SUCCESS_WITH_WARNINGS.name()));
+        assertThat(payload.containsKey("warnings"), is(true));
+        assertThat(payload.containsKey("caseWarnings"), is(true));
+        assertThat(payload.containsKey("defendantWarnings"), is(true));
+    }
+
+    @Test
+    public void shouldIncludeOnlyNonNullWarningFieldsInCommand() {
+        final ProsecutionSubmissionSucceededWithWarnings event =
+                ProsecutionSubmissionSucceededWithWarnings.prosecutionSubmissionSucceededWithWarnings()
+                        .withExternalId(randomUUID())
+                        .withChannel(Channel.CIVIL)
+                        .withWarnings(new ArrayList<>())
+                        .build();
+
+        prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceededWithWarnings(
+                testEnvelope(event, "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
+                        PAST_UTC_DATE_TIME.next()));
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.SUCCESS_WITH_WARNINGS.name()));
+        assertThat(payload.containsKey("warnings"), is(true));
+        assertThat(payload.containsKey("caseWarnings"), is(false));
+        assertThat(payload.containsKey("defendantWarnings"), is(false));
+    }
+
+    private <T> Envelope<T> testEnvelope(final T payload, final String eventName, final ZonedDateTime createdAt) {
         final MetadataBuilder metadataBuilder = metadataBuilder()
                 .withId(randomUUID())
                 .withName(eventName)

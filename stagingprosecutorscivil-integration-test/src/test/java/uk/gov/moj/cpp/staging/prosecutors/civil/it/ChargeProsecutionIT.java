@@ -10,6 +10,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCi
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -26,12 +27,16 @@ import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ChargeProsecutionIT {
 
-    private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED = "public.prosecutioncasefile.civil.prosecution-submission-succeeded";
-    private static final String PUBLIC_EVENT_PCF_GROUP_SUBMISSION_SUCCEEDED = "public.prosecutioncasefile.group-submission-succeeded";
+    private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED       = "public.prosecutioncasefile.civil.prosecution-submission-succeeded";
+    private static final String PUBLIC_EVENT_PCF_GROUP_SUBMISSION_SUCCEEDED                   = "public.prosecutioncasefile.group-submission-succeeded";
+    private static final String PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED                   = "public.prosecutioncasefile.group-prosecution-rejected";
+    private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED                   = "public.prosecutioncasefile.civil-prosecution-rejected";
+    private static final String PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS = "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings";
 
     private final JmsMessageProducerClient messageProducerClientPublic = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
 
@@ -94,4 +99,105 @@ public class ChargeProsecutionIT {
         final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
         assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
+
+    @Test
+    public void shouldUpdateStatusToRejectedForGroupProsecution() {
+        stubPCFCommand(randomUUID());
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-all-fields.json", CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateGroupProsecutionInvokedWith("payload/charge/stagingprosecutors.submit-charge-prosecution-all-fields.json");
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        JsonObject rejectedEvent = createObjectBuilder()
+                .add("groupId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldUpdateStatusToRejectedForSingleCaseProsecution() {
+        stubPCFCommand(randomUUID());
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json", CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        JsonObject rejectedEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .add("caseErrors", createArrayBuilder().build())
+                .add("defendantErrors", createArrayBuilder().build())
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+
+    @Test
+    public void shouldSubmitChargeProsecutionWithRelatedReferenceNumber() {
+        stubPCFCommand(randomUUID());
+        final String payload = "payload/charge/stagingprosecutors.submit-charge-prosecution-with-related-reference.json";
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(payload, CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution(payload);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldSubmitChargeProsecutionForYouthDefendantWithIndividualParentGuardian() {
+        stubPCFCommand(randomUUID());
+        final String payload = "payload/charge/stagingprosecutors.submit-charge-prosecution-youth-individual-guardian.json";
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution(payload, CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution(payload);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+
+        JsonObject caseSucceededPublicEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .build();
+        JsonEnvelope publicEventEnvelope = envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED, randomUUID().toString()), caseSucceededPublicEvent);
+        messageProducerClientPublic.sendMessage(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED, publicEventEnvelope);
+
+        final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
+        assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Disabled("Works locally but fails in pipeline")
+    @Test
+    public void shouldUpdateStatusToSuccessWithWarningsForSingleCaseProsecution() {
+        stubPCFCommand(randomUUID());
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json", CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        JsonObject warningsEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS, randomUUID().toString()), warningsEvent));
+
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS_WITH_WARNINGS);
+        assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
 }

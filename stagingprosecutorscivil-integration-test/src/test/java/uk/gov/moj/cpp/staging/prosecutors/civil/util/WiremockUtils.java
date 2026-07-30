@@ -2,13 +2,18 @@ package uk.gov.moj.cpp.staging.prosecutors.civil.util;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static java.lang.ClassLoader.getSystemResourceAsStream;
 import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
@@ -131,6 +136,35 @@ public class WiremockUtils {
             fail("Error consuming file from location " + path);
             throw new UncheckedIOException(e);
         }
+    }
+
+    public WiremockUtils stubIdMapperReturningExistingAssociation(final UUID associationId) {
+        stubFor(get(urlPathMatching(SYSTEM_ID_MAPPER_URL))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody(systemIdMappingResponseTemplate(associationId))));
+        return this;
+    }
+
+    private String systemIdMappingResponseTemplate(final UUID associationId) {
+
+        return "{\n" +
+                "  \"mappingId\": \"166c0ae9-e276-4d29-b669-cb32013228b3\",\n" +
+                "  \"sourceId\": \"ID01\",\n" +
+                "  \"sourceType\": \"SystemACaseId\",\n" +
+                "  \"targetId\": \"" + associationId + "\",\n" +
+                "  \"targetType\": \"caseId\",\n" +
+                "  \"createdAt\": \"2016-09-07T14:30:53.294Z\"\n" +
+                "}";
+    }
+
+    public void verifyMaterialUpload(final String url, final String materialType, final String prosecutionAuthority) {
+        verify(postRequestedFor(urlEqualTo(url))
+                .withHeader("Content-Type", equalTo("application/vnd.prosecutioncasefile.add-material+json"))
+                .withRequestBody(containing(materialType))
+                .withRequestBody(containing(prosecutionAuthority))
+                .withRequestBody(containing("fileStoreId"))// Auto generated, so can't verify the value
+        );
     }
 
 }
