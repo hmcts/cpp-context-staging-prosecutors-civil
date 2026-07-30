@@ -139,7 +139,7 @@ public class ProsecutionChargedEventProcessorTest {
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         caseRefToCaseId.put(prosecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        when(systemIdMapperService.getCppCaseIdMapFor(any())).thenReturn(caseRefToCaseId);
+        when(systemIdMapperService.getCppCaseIdMapFor(any(), any())).thenReturn(caseRefToCaseId);
 
         target.processProsecutionCharged(prosecutionReceivedEnvelope);
 
@@ -165,7 +165,7 @@ public class ProsecutionChargedEventProcessorTest {
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         caseRefToCaseId.put(prosecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        when(systemIdMapperService.getCppCaseIdMapFor(any())).thenReturn(caseRefToCaseId);
+        when(systemIdMapperService.getCppCaseIdMapFor(any(), any())).thenReturn(caseRefToCaseId);
         target.processProsecutionSummons(prosecutionReceivedEnvelope);
 
         ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);

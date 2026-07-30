@@ -4,7 +4,6 @@ import static java.lang.Integer.parseInt;
 import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.prosecutorsAddress;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.prosecutorsIndividualWithParentGuardianIndividual;
@@ -111,11 +110,11 @@ public class IndividualToProsecutionCaseFileIndividualConverterTest {
     }
 
     private static void assertSelfDefinedInformation(final SelfDefinedInformation selfDefinedInformation, final uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual stagingIndividual) {
-        assertThat(selfDefinedInformation.getAdditionalNationality(), is(isEmptyOrNullString()));
+        assertThat(selfDefinedInformation.getAdditionalNationality(), is(stagingIndividual.getAdditionalNationality()));
         assertThat(selfDefinedInformation.getDateOfBirth(), is(stagingIndividual.getDateOfBirth()));
         assertThat(selfDefinedInformation.getEthnicity(), is(stagingIndividual.getEthnicity()));
         assertThat(selfDefinedInformation.getGender(), is(integerGenderToProsecutionCaseFileGenderConverter.convert(parseInt(stagingIndividual.getGender().toString()))));
-        assertThat(selfDefinedInformation.getNationality(), is(isEmptyOrNullString()));
+        assertThat(selfDefinedInformation.getNationality(), is(stagingIndividual.getNationality()));
     }
 
     private static void assertAddress(final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Address pcfAddress, final uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address stagingAddress) {

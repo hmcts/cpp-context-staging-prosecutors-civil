@@ -16,9 +16,12 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.ChargeProsecutio
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
+import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.json.JsonValue;
 
 import org.slf4j.Logger;
 
@@ -68,5 +71,4 @@ public class CivilProsecutionHandler {
                 update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings());
         appendEventsToStream(envelope, eventStream, events);
     }
-
 }

@@ -60,10 +60,16 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
         if (nonNull(submissionId) && CIVIL.equals(payload.getChannel())) {
             final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                     .add("submissionId", submissionId)
-                    .add("submissionStatus", SubmissionStatus.SUCCESS_WITH_WARNINGS.name())
-                    .add("warnings", JSONArray.toJSONString(payload.getWarnings()))
-                    .add("caseWarnings", JSONArray.toJSONString(payload.getCaseWarnings()))
-                    .add("defendantWarnings", JSONArray.toJSONString(payload.getDefendantWarnings()));
+                    .add("submissionStatus", SubmissionStatus.SUCCESS_WITH_WARNINGS.name());
+            if (payload.getWarnings() != null) {
+                jsonObjectBuilder.add("warnings", JSONArray.toJSONString(payload.getWarnings()));
+            }
+            if (payload.getCaseWarnings() != null) {
+                jsonObjectBuilder.add("caseWarnings", JSONArray.toJSONString(payload.getCaseWarnings()));
+            }
+            if (payload.getDefendantWarnings() != null) {
+                jsonObjectBuilder.add("defendantWarnings", JSONArray.toJSONString(payload.getDefendantWarnings()));
+            }
             sender.send(envelop(jsonObjectBuilder.build())
                     .withName("stagingprosecutorscivil.command.update-civil-case")
                     .withMetadataFrom(prosecutionSubmissionSucceededWithWarningsEnvelope));
