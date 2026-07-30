@@ -102,7 +102,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -146,7 +146,7 @@ public class SummonsProsecutionCsvToJsonConverter {
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(convertToObject(csvReader));
     }
 
-    public SummonsProsecution convertToObject(final Reader csvReader) throws IOException {
+    public Summons convertToObject(final Reader csvReader) throws IOException {
         try (CSVParser parser = CSV_FORMAT.parse(csvReader)) {
             final Map<String, CaseAccumulator> caseAccumulators = new LinkedHashMap<>();
             HearingDetails hearingDetails = null;
@@ -191,7 +191,7 @@ public class SummonsProsecutionCsvToJsonConverter {
                 prosecutionCases.add(caseAccumulator.caseBuilder.withDefendants(defendants).build());
             }
 
-            return SummonsProsecution.summonsProsecution()
+            return Summons.summons()
                     .withHearingDetails(hearingDetails)
                     .withProsecutingAuthority(prosecutingAuthority)
                     .withProsecutionCases(prosecutionCases)

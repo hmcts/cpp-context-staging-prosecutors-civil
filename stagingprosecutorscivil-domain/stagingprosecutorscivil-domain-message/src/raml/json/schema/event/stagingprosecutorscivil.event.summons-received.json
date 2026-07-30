@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/charge-prosecution-received.json",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/summons-received.json",
   "type": "object",
   "properties": {
     "submissionId": {
@@ -13,7 +13,7 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/prosecution-case.json"
+        "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-prosecution-case.json"
       }
     },
     "prosecutingAuthority": {

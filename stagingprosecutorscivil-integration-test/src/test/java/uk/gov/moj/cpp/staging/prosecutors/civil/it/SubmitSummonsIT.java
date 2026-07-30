@@ -8,7 +8,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.SUMMONS_PROSECUTION_CONTENT_TYPE;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.SUMMONS_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.submitSummonsProsecutionStatus;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-public class SubmitSummonsProsecutionIT {
+public class SubmitSummonsIT {
 
     private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED         = "public.prosecutioncasefile.civil.prosecution-submission-succeeded";
     private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED                     = "public.prosecutioncasefile.civil-prosecution-rejected";
@@ -55,7 +55,7 @@ public class SubmitSummonsProsecutionIT {
     @Test
     public void shouldSubmitSummonsProsecution() {
         final String payload = "payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json";
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution(payload, SUMMONS_PROSECUTION_CONTENT_TYPE);
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummons(payload, SUMMONS_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         ProsecutionCaseFileApi.expectInitiateSummonsProsecution(payload);
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
@@ -75,7 +75,7 @@ public class SubmitSummonsProsecutionIT {
 
     @Test
     public void shouldUpdateStatusToRejectedForSummonsProsecution() {
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution("payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_PROSECUTION_CONTENT_TYPE);
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummons("payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
@@ -97,7 +97,7 @@ public class SubmitSummonsProsecutionIT {
     @Test
     public void shouldSubmitSummonsProsecutionWithRelatedReferenceNumber() {
         final String payload = "payload/summons/stagingprosecutors.submit-summons-prosecution-with-related-reference.json";
-        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution(payload, SUMMONS_PROSECUTION_CONTENT_TYPE);
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummons(payload, SUMMONS_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         ProsecutionCaseFileApi.expectInitiateSummonsProsecution(payload);
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
@@ -107,7 +107,7 @@ public class SubmitSummonsProsecutionIT {
     @Test
     public void shouldSubmitSummonsProsecutionForYouthDefendantWithIndividualParentGuardian() {
         final String payload = "payload/summons/stagingprosecutors.submit-summons-prosecution-youth-individual-guardian.json";
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution(payload, SUMMONS_PROSECUTION_CONTENT_TYPE);
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummons(payload, SUMMONS_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
@@ -128,14 +128,14 @@ public class SubmitSummonsProsecutionIT {
     public void shouldRejectSummonsProsecutionWhenSummonsCodeAbsent() {
         int status = submitSummonsProsecutionStatus(
                 "payload/summons/stagingprosecutors.submit-summons-prosecution-missing-summons-code.json",
-                SUMMONS_PROSECUTION_CONTENT_TYPE);
+                SUMMONS_CONTENT_TYPE);
         assertThat(status, Matchers.is(400));
     }
 
     @Disabled("Works locally but fails in pipeline")
     @Test
     public void shouldUpdateStatusToSuccessWithWarningsForSummonsProsecution() {
-        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution("payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_PROSECUTION_CONTENT_TYPE);
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummons("payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 

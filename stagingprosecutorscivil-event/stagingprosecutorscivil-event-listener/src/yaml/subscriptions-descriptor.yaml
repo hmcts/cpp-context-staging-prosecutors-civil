@@ -5,12 +5,12 @@ subscriptions_descriptor:
   subscriptions:
     - name: event listener subscription
       events:
-        - name: stagingprosecutorscivil.event.charge-prosecution-received
-          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/charge-prosecution-received.json
-        - name: stagingprosecutorscivil.event.summons-prosecution-received
-          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/summons-prosecution-received.json
+        - name: stagingprosecutorscivil.event.other-case-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/other-case-received.json
+        - name: stagingprosecutorscivil.event.summons-received
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/summons-received.json
         - name: stagingprosecutorscivil.event.update-civil-case-received
-          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/update-civil-case-received.json
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.update-civil-case-received.json
         - name: stagingprosecutorscivil.event.material-submitted
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/event/material-submitted.json
         - name: stagingprosecutorscivil.event.material-submission-rejected

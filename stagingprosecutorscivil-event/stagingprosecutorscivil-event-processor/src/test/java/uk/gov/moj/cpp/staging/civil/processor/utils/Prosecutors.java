@@ -10,6 +10,7 @@ import static java.util.stream.IntStream.rangeClosed;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address.address;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails.contactDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails.defendantDetails;
+import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails.hearingDateRangeDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails.hearingDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual.individual;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.NameDetails.nameDetails;
@@ -25,8 +26,8 @@ import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInforma
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -37,6 +38,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.NameDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Organisation;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardian;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation;
@@ -66,6 +68,10 @@ public class Prosecutors {
     public static final String PNC_IDENTIFIER = "PnCidentifier";
     public static final String ORGANISATION_NAME = "Organisation Name";
     public static final String COMPANY_TELEPHONE_NUMBER = "12323453456";
+    public static final String ENFORCEMENT_RELATED_REFERENCE_NUMBER = "GOB123456789";
+    public static final LocalDate START_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 12);
+    public static final LocalDate END_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 14);
+    public static final String ENFORCEMENT_COURT_HEARING_LOCATION = "B01LY01";
 
     public static List<Offence> prosecutorsOffenceList(final int numberElements) {
         return rangeClosed(1, numberElements)
@@ -289,10 +295,10 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ChargeProsecutionReceived ccChargeProsecutionReceived() {
-        return ChargeProsecutionReceived.chargeProsecutionReceived()
+    public static OtherCaseReceived ccOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(chargeProsecutionCaseDetail(), chargeProsecutionCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
@@ -300,22 +306,10 @@ public class Prosecutors {
                         .build())
                 .build();
     }
-    public static ChargeProsecutionReceived groupChargeProsecutionReceived() {
-        return ChargeProsecutionReceived.chargeProsecutionReceived()
+    public static OtherCaseReceived groupOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(chargeProsecutionCaseDetail(), chargeProsecutionCaseDetail()))
-                .withHearingDetails(hearingDetails()
-                        .withDateOfHearing(LocalDate.now())
-                        .withTimeOfHearing(TIME_OF_HEARING)
-                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
-                        .build())
-                .build();
-    }
-
-    public static SummonsProsecutionReceived groupSummonsProsecutionReceived() {
-        return SummonsProsecutionReceived.summonsProsecutionReceived()
-                .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(summonsProsecutionCaseDetail(), summonsProsecutionCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
@@ -324,10 +318,23 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ChargeProsecutionReceived chargeProsecutionReceived() {
-        return ChargeProsecutionReceived.chargeProsecutionReceived()
+    public static OtherCaseReceived enforcementOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(chargeProsecutionCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
+                .withHearingDateRangeDetails(hearingDateRangeDetails()
+                        .withStartDateRangeOfHearing(START_DATE_RANGE_OF_HEARING)
+                        .withEndDateRangeOfHearing(END_DATE_RANGE_OF_HEARING)
+                        .withCourtHearingLocation(ENFORCEMENT_COURT_HEARING_LOCATION)
+                        .build())
+                .withRelatedReferenceNumber(ENFORCEMENT_RELATED_REFERENCE_NUMBER)
+                .build();
+    }
+
+    public static SummonsReceived groupSummonsReceived() {
+        return SummonsReceived.summonsReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(summonsCaseDetail(), summonsCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
@@ -336,10 +343,10 @@ public class Prosecutors {
                 .build();
     }
 
-    public static SummonsProsecutionReceived summonsProsecutionReceived() {
-        return SummonsProsecutionReceived.summonsProsecutionReceived()
+    public static OtherCaseReceived otherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(summonsProsecutionCaseDetail()))
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail()))
                 .withHearingDetails(hearingDetails()
                         .withDateOfHearing(LocalDate.now())
                         .withTimeOfHearing(TIME_OF_HEARING)
@@ -348,7 +355,19 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ProsecutionCase chargeProsecutionCaseDetail() {
+    public static SummonsReceived summonsReceived() {
+        return SummonsReceived.summonsReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(summonsCaseDetail()))
+                .withHearingDetails(hearingDetails()
+                        .withDateOfHearing(LocalDate.now())
+                        .withTimeOfHearing(TIME_OF_HEARING)
+                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .build())
+                .build();
+    }
+
+    public static ProsecutionCase otherCaseCaseDetail() {
         return prosecutionCase()
                 .withUrn(URN)
                 .withInformant(INFORMANT)
@@ -359,7 +378,7 @@ public class Prosecutors {
                 .build();
     }
 
-    public static SummonsProsecutionCase summonsProsecutionCaseDetail() {
+    public static SummonsProsecutionCase summonsCaseDetail() {
         return summonsProsecutionCase()
                 .withUrn(URN)
                 .withInformant(INFORMANT)
@@ -371,8 +390,8 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ChargeProsecutionReceived prosecutorsProsecutionReceivedWithMultipleDefendent() {
-        return ChargeProsecutionReceived.chargeProsecutionReceived()
+    public static OtherCaseReceived prosecutorsProsecutionReceivedWithMultipleDefendent() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
                 .withProsecutionCases(singletonList(prosecutionCaseDetailWithMultipleDefendant()))
                 .withHearingDetails(hearingDetails()
@@ -383,8 +402,8 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ChargeProsecutionReceived prosecutorsProsecutionReceivedWithDefendentHavingDifferentOffences() {
-        return ChargeProsecutionReceived.chargeProsecutionReceived()
+    public static OtherCaseReceived prosecutorsProsecutionReceivedWithDefendentHavingDifferentOffences() {
+        return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
                 .withProsecutionCases(singletonList(prosecutionCaseDetailWithDefendantAndMultipleOffences()))
                 .withHearingDetails(hearingDetails()

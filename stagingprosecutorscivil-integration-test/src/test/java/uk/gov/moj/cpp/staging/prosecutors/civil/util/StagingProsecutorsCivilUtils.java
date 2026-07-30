@@ -52,25 +52,24 @@ import org.hamcrest.Matcher;
 
 public class StagingProsecutorsCivilUtils {
 
-    public static final String SUMMONS_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.summons-prosecution+json";
-    public static final String CHARGE_PROSECUTION_CONTENT_TYPE = "application/vnd.stagingprosecutorscivil.charge-prosecution+json";
+    public static final String SUMMONS_CONTENT_TYPE = "application/vnd.stagingcivil.summons+json";
+    public static final String OTHER_CASE_CONTENT_TYPE = "application/vnd.stagingcivil.other-case+json";
     public static final String SUBMISSION_DETAILS_MEDIA_TYPE = "application/vnd.stagingprosecutorscivil.submission-details+json";
     public static final String CJSOUCODE_HEADER = "CJSOUCODE";
     private static final RestClient restClient = new RestClient();
-    private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil";
+    private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/staging-civil";
     private static final String TOPIC_NAME = "jms.topic.stagingprosecutorscivil.event";
     private static ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     private static JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter(objectMapper);
     private static final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
     private static final String READ_BASE_URI = getBaseUri()
-            + "/stagingprosecutorscivil-query-api/query/api/rest/stagingprosecutors-civil";
+            + "/stagingprosecutorscivil-query-api/query/api/rest/staging-civil";
     private static final String WRITE_BASE_URI = COMMAND_BASE_URI + "/v1";
     private static final String PROSECUTOR_DOCUMENT_UPLOAD_COMMAND_URL = WRITE_BASE_URI + "/prosecutions/%s/materials";
 
+    public static UrlResponse submitSummons(final String inputFileName, final String contentType) {
 
-    public static UrlResponse submitSummonsProsecution(final String inputFileName, final String contentType) {
-
-       return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.summons-prosecution-received");
+       return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.summons-received");
 
     }
 
@@ -78,9 +77,9 @@ public class StagingProsecutorsCivilUtils {
         return postCommand(inputFileName, contentType).getStatus();
     }
 
-    public static UrlResponse submitChargeProsecution(final String inputFileName, final String contentType) {
+    public static UrlResponse submitOtherCase(final String inputFileName, final String contentType) {
 
-        return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.charge-prosecution-received");
+        return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.other-case-received");
 
     }
 
@@ -114,7 +113,7 @@ public class StagingProsecutorsCivilUtils {
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
         headers.putSingle(USER_ID, UUID.randomUUID());
 
-        return restClient.postCommand(COMMAND_BASE_URI + "/prosecutions/",
+        return restClient.postCommand(COMMAND_BASE_URI + "/cases/",
                 contentType,
                 ResourcesUtils.readResource(resourceName), headers
         );

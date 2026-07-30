@@ -57,7 +57,7 @@ public class CivilProsecutionQueryView {
                 .orElse(null);
 
         return envelopeFrom(metadataFrom(envelope.metadata())
-                .withName("stagingprosecutorscivil.query.submission-details"), payload);
+                .withName("stagingcivil.query.submission-details"), payload);
 
     }
 }

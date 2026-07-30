@@ -49,7 +49,7 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
                     .add("submissionId", submissionId)
                     .add("submissionStatus", SubmissionStatus.SUCCESS.name());
             sender.send(envelop(jsonObjectBuilder.build())
-                    .withName("stagingprosecutorscivil.command.update-civil-case")
+                    .withName("stagingcivil.command.update-civil-case")
                     .withMetadataFrom(envelope));
         } else {
             LOGGER.info("Message unrelated to CIVIL channel.  Not processing");
@@ -72,7 +72,7 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
                     .add("caseWarnings", problemsToJsonArray(payload.getCaseWarnings()))
                     .add("defendantWarnings", defendantProblemsToJsonArray(payload.getDefendantWarnings()));
             sender.send(envelop(jsonObjectBuilder.build())
-                    .withName("stagingprosecutorscivil.command.update-civil-case")
+                    .withName("stagingcivil.command.update-civil-case")
                     .withMetadataFrom(prosecutionSubmissionSucceededWithWarningsEnvelope));
         } else {
             LOGGER.info("Message unrelated to CIVIL channel.  Not processing");
