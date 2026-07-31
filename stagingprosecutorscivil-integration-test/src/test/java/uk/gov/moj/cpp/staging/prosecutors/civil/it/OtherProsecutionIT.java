@@ -30,6 +30,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 import java.util.UUID;
 
 import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -216,5 +217,15 @@ public class OtherProsecutionIT {
         assertThat(firstError.code, is("DEFENDANT_DOB_IN_FUTURE"));
         assertThat(firstError.values, hasSize(greaterThanOrEqualTo(1)));
         assertThat(firstError.values.get(0).key, is("dob"));
+    }
+
+    @Test
+    public void shouldRejectOtherCaseWithMalformedHearingDateRangeDate() {
+        // AC9 (CIMD-3539): startDateRangeOfHearing/endDateRangeOfHearing not in YYYY-MM-DD format
+        // must be rejected with a 400 at the schema-validation layer, before ever reaching PCF.
+        final Response response = StagingProsecutorsCivilUtils.submitOtherCaseExpectingRejection(
+                "payload/other/stagingcivil.submit-other-prosecution-invalid-date-format.json", OTHER_CASE_CONTENT_TYPE);
+
+        assertThat(response.getStatus(), Matchers.is(Response.Status.BAD_REQUEST.getStatusCode()));
     }
 }

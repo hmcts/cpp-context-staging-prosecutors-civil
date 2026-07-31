@@ -1,8 +1,10 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api;
 
+import static java.lang.String.format;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 
+import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.configuration.Value;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -12,7 +14,9 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCaseWithSubmissionId;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -42,6 +46,8 @@ public class CivilProsecutionApi {
     public Envelope<UrlResponse> otherCase(final Envelope<OtherCase> envelope) {
         final UUID submissionId = UUID.randomUUID();
         final OtherCase otherCase = envelope.payload();
+
+        validateHearingDateRangeDetails(otherCase.getHearingDateRangeDetails());
 
         final OtherCaseWithSubmissionId otherCaseWithSubmissionId
                 = OtherCaseWithSubmissionId.otherCaseWithSubmissionId()
@@ -91,6 +97,22 @@ public class CivilProsecutionApi {
 
     private String getBaseResponseURLWithVersion() {
         return this.baseResponseURL.replace(RESPONSE_URL_VERSION_PLACEHOLDER, VERSION_NO);
+    }
+
+    @SuppressWarnings("squid:S1166")
+    private void validateHearingDateRangeDetails(final HearingDateRangeDetails hearingDateRangeDetails) {
+        if (hearingDateRangeDetails == null) {
+            return;
+        }
+
+        final LocalDate startDateRangeOfHearing = hearingDateRangeDetails.getStartDateRangeOfHearing();
+        final LocalDate endDateRangeOfHearing = hearingDateRangeDetails.getEndDateRangeOfHearing();
+
+        if (endDateRangeOfHearing.isBefore(startDateRangeOfHearing)) {
+            throw new BadRequestException(format(
+                    "endDateRangeOfHearing %s must not be before startDateRangeOfHearing %s",
+                    endDateRangeOfHearing, startDateRangeOfHearing));
+        }
     }
 
 }

@@ -29,5 +29,13 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
                   application/json:
                     schema: !include json/schema/stagingcivil.url-response.json
                     example: !include json/stagingcivil.url-response.json
+            400:
+                description: |
+                  Bad Request - the submission failed validation, for example:
+                  - hearingDateRangeDetails.endDateRangeOfHearing is before startDateRangeOfHearing
+                body:
+                  application/json:
+                    example: |
+                      { "error": "endDateRangeOfHearing 2026-01-01 must not be before startDateRangeOfHearing 2026-02-01" }
             500:
                 description: Internal Server Error

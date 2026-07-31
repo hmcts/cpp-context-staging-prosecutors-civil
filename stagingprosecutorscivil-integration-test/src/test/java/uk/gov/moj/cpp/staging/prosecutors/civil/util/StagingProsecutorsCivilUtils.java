@@ -67,6 +67,17 @@ public class StagingProsecutorsCivilUtils {
 
     }
 
+    /**
+     * For negative-path tests expecting the command API to reject the submission (e.g. schema
+     * validation failures) - returns the raw response rather than asserting 202 Accepted and
+     * parsing a submissionId.
+     */
+    public static Response submitOtherCaseExpectingRejection(final String inputFileName, final String contentType) {
+
+        return postCommand(inputFileName, contentType);
+
+    }
+
     private static UrlResponse submitProsecution(final String inputFileName, final String contentType, final String eventName) {
 
         try (final MessageConsumerClient messageConsumerClient = new MessageConsumerClient()) {
