@@ -2,7 +2,8 @@ package uk.gov.moj.cpp.staging.civil.query;
 
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -37,8 +38,13 @@ public class CivilProsecutionQueryView {
                             final JsonObjectBuilder result = createObjectBuilder()
                                     .add("id", submission.getSubmissionId().toString())
                                     .add("status", submission.getSubmissionStatus())
-                                    .add("warnings", submission.getWarnings())
-                                    .add("errors", submission.getErrors());
+                                    .add("type", "PROSECUTION")
+                                    .add("warnings", nonNull(submission.getWarnings()) ? submission.getWarnings() : createArrayBuilder().build())
+                                    .add("errors", nonNull(submission.getErrors()) ? submission.getErrors() : createArrayBuilder().build())
+                                    .add("receivedAt", submission.getReceivedAt().toString());
+                            if (nonNull(submission.getCompletedAt())) {
+                                result.add("completedAt", submission.getCompletedAt().toString());
+                            }
                             if (nonNull(submission.getGroupCaseErrors())) {
                                 result.add("caseErrors", submission.getGroupCaseErrors());
                             }

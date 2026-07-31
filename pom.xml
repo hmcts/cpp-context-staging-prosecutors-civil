@@ -5,12 +5,12 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>17.103.5</version>
+        <version>17.104.1</version>
     </parent>
 
     <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
     <artifactId>stagingprosecutorscivil</artifactId>
-    <version>17.103.13-cct1222-SNAPSHOT</version>
+    <version>17.103.14-cct1222-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>stagingprosecutorscivil</name>
 
@@ -21,9 +21,9 @@
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <postgresql.version>42.1.4</postgresql.version>
-        <prosecutioncasefile.version>17.0.71</prosecutioncasefile.version>
+        <prosecutioncasefile.version>17.0.95</prosecutioncasefile.version>
         <referencedata.version>17.104.137</referencedata.version>
-        <coredomain.version>17.103.12</coredomain.version>
+        <coredomain.version>17.104.3</coredomain.version>
         <liquibase.core.version>3.6.1</liquibase.core.version>
         <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
     </properties>
