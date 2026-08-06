@@ -47,6 +47,16 @@
                 <artifactId>common-core-domain</artifactId>
                 <version>${coredomain.version}</version>
             </dependency>
+            <!-- service-parent-pom manages commons-csv at 1.4, which predates CSVFormat.builder();
+                 the complaints-files CSV converter needs 1.10.0. Overridden here (not just in
+                 stagingprosecutorscivil-command-api's own <dependency>) so every module in this
+                 reactor - including stagingprosecutorscivil-service, the actually-deployed WAR
+                 that pulls in command-api's classes transitively - resolves the same version. -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-csv</artifactId>
+                <version>1.10.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

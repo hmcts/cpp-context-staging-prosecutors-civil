@@ -32,6 +32,36 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
             500:
                 description: Internal Server Error
 
+/complaints-files:
+  post:
+    description: |
+      Upload a complaints (summons prosecution) CSV file. The file is converted to a
+      summons-prosecution submission, schema-validated, and submitted as if posted directly
+      to /prosecutions.
+      ...
+      (mapping):
+        requestType: multipart/form-data
+        name: stagingprosecutorscivil.summons-prosecution-csv
+      ...
+    body:
+      multipart/form-data:
+        formParameters:
+          file:
+            description: The complaints CSV file to upload
+            type: file
+
+    responses:
+      202:
+        description: Accepted
+        body:
+          application/json:
+            schema: !include json/schema/stagingprosecutorscivil.url-response.json
+            example: !include json/stagingprosecutorscivil.url-response.json
+      400:
+        description: Bad Request
+      500:
+        description: Internal Server Error
+
 /v1/prosecutions/{caseUrn}/materials:
   post:
     description: |

@@ -64,6 +64,7 @@ public class StagingProsecutorsCivilUtils {
     private static final String WRITE_BASE_URI = COMMAND_BASE_URI + "/v1";
     public static final String CSV_CONTENT_TYPE = "text/csv";
     private static final String PROSECUTOR_DOCUMENT_UPLOAD_COMMAND_URL = WRITE_BASE_URI + "/prosecutions/%s/materials";
+    private static final String COMPLAINTS_FILES_UPLOAD_COMMAND_URL = COMMAND_BASE_URI + "/complaints-files";
 
 
     public static UrlResponse submitSummonsProsecution(final String inputFileName, final String contentType) {
@@ -186,6 +187,44 @@ public class StagingProsecutorsCivilUtils {
         request.setEntity(multipartEntityBuilder.build());
         request.setHeader(HeaderConstants.USER_ID, randomUUID().toString());
 
+
+        return HttpClients.createDefault().execute(request);
+    }
+
+    public static HttpResponse sendComplaintsFileUploadRequest(final File file, final String userId) throws IOException {
+        final HttpPost request = new HttpPost(COMPLAINTS_FILES_UPLOAD_COMMAND_URL);
+
+        final MultipartEntityBuilder multipartEntityBuilder = create()
+                .setMode(BROWSER_COMPATIBLE)
+                .addBinaryBody("file", file, MULTIPART_FORM_DATA, file.getName());
+
+        request.setEntity(multipartEntityBuilder.build());
+        request.setHeader(HeaderConstants.USER_ID, userId);
+
+        return HttpClients.createDefault().execute(request);
+    }
+
+    public static HttpResponse sendComplaintsFileUploadRequestWithoutFilePart(final String userId) throws IOException {
+        final HttpPost request = new HttpPost(COMPLAINTS_FILES_UPLOAD_COMMAND_URL);
+
+        final MultipartEntityBuilder multipartEntityBuilder = create()
+                .setMode(BROWSER_COMPATIBLE)
+                .addTextBody("notFile", "irrelevant");
+
+        request.setEntity(multipartEntityBuilder.build());
+        request.setHeader(HeaderConstants.USER_ID, userId);
+
+        return HttpClients.createDefault().execute(request);
+    }
+
+    public static HttpResponse sendComplaintsFileUploadRequestWithoutUserIdHeader(final File file) throws IOException {
+        final HttpPost request = new HttpPost(COMPLAINTS_FILES_UPLOAD_COMMAND_URL);
+
+        final MultipartEntityBuilder multipartEntityBuilder = create()
+                .setMode(BROWSER_COMPATIBLE)
+                .addBinaryBody("file", file, MULTIPART_FORM_DATA, file.getName());
+
+        request.setEntity(multipartEntityBuilder.build());
 
         return HttpClients.createDefault().execute(request);
     }
