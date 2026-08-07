@@ -3,17 +3,23 @@ package uk.gov.moj.cpp.staging.civil.handler.command.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.jupiter.api.Test;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -241,6 +247,137 @@ class SummonsProsecutionCsvToJsonConverterTest {
         assertEquals("500.00", organisationOffence.getOffenceDetails().getProsecutorCompensation());
     }
 
+    @Test
+    void throwsWhenCsvFileContainsNoDataRows() {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n";
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("CSV file contains no data rows", exception.getMessage());
+    }
+
+    @Test
+    void throwsWhenDefendantTypeIsInvalid() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.DEFENDANT_TYPE, "UNKNOWN"));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.DEFENDANT_TYPE));
+        assertTrue(exception.getMessage().contains("UNKNOWN"));
+    }
+
+    @Test
+    void throwsWhenParentGuardianTypeIsInvalid() {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.PARENT_GUARDIAN_TYPE, "UNKNOWN",
+                SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_1, "1 Guardian Street"));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.PARENT_GUARDIAN_TYPE));
+        assertTrue(exception.getMessage().contains("UNKNOWN"));
+    }
+
+    @Test
+    void throwsWhenRequiredColumnIsBlank() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.CASE_INFORMANT, ""));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.CASE_INFORMANT));
+        assertTrue(exception.getMessage().contains("is blank"));
+    }
+
+    @Test
+    void throwsWhenGenderValueIsInvalid() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER, "5"));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER));
+        assertTrue(exception.getMessage().contains("invalid gender value"));
+    }
+
+    @Test
+    void throwsWhenLanguageValueIsInvalid() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.DEFENDANT_DOCUMENTATION_LANGUAGE, "X"));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.DEFENDANT_DOCUMENTATION_LANGUAGE));
+        assertTrue(exception.getMessage().contains("invalid language value"));
+    }
+
+    @Test
+    void contactDetailsIsNullWhenWorkHomeMobilePhoneAndBothEmailsAreAllBlank() throws IOException {
+        final String csv = buildCsv(Map.of());
+
+        final Defendant defendant = firstDefendantFrom(csv);
+
+        assertNull(defendant.getIndividual().getContactDetails());
+    }
+
+    @Test
+    void contactDetailsIsPresentWhenOnlyWorkPhoneIsSet() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_WORK_PHONE, "0111 111 1111"));
+
+        final Defendant defendant = firstDefendantFrom(csv);
+
+        assertEquals("0111 111 1111", defendant.getIndividual().getContactDetails().getWorkTelephoneNumber());
+        assertNull(defendant.getIndividual().getContactDetails().getHomeTelephoneNumber());
+    }
+
+    @Test
+    void contactDetailsIsPresentWhenOnlyHomePhoneIsSet() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_HOME_PHONE, "0222 222 2222"));
+
+        final Defendant defendant = firstDefendantFrom(csv);
+
+        assertEquals("0222 222 2222", defendant.getIndividual().getContactDetails().getHomeTelephoneNumber());
+        assertNull(defendant.getIndividual().getContactDetails().getWorkTelephoneNumber());
+    }
+
+    @Test
+    void contactDetailsIsPresentWhenOnlyMobilePhoneIsSet() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_MOBILE_PHONE, "07700 900000"));
+
+        final Defendant defendant = firstDefendantFrom(csv);
+
+        assertEquals("07700 900000", defendant.getIndividual().getContactDetails().getMobileTelephoneNumber());
+        assertNull(defendant.getIndividual().getContactDetails().getWorkTelephoneNumber());
+    }
+
+    @Test
+    void contactDetailsIsPresentWhenOnlyPrimaryEmailIsSet() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_PRIMARY_EMAIL, "primary@example.com"));
+
+        final Defendant defendant = firstDefendantFrom(csv);
+
+        assertEquals("primary@example.com", defendant.getIndividual().getContactDetails().getPrimaryEmail());
+        assertNull(defendant.getIndividual().getContactDetails().getSecondaryEmail());
+    }
+
+    @Test
+    void contactDetailsIsPresentWhenOnlySecondaryEmailIsSet() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_SECONDARY_EMAIL, "secondary@example.com"));
+
+        final Defendant defendant = firstDefendantFrom(csv);
+
+        assertEquals("secondary@example.com", defendant.getIndividual().getContactDetails().getSecondaryEmail());
+        assertNull(defendant.getIndividual().getContactDetails().getPrimaryEmail());
+    }
+
+    private Defendant firstDefendantFrom(final String csv) throws IOException {
+        return converter.convertToObject(new StringReader(csv))
+                .getProsecutionCases().get(0).getDefendants().get(0);
+    }
+
     private String convertTemplateToJson() throws IOException {
         return convertToJson(TEMPLATE_CSV);
     }
@@ -263,5 +400,53 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
     private Reader resourceReader(final String resourcePath) {
         return new InputStreamReader(getClass().getResourceAsStream("/" + resourcePath), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Builds a single-row CSV (header + one data row) that satisfies every {@code requireXxx}
+     * check in the converter for an INDIVIDUAL defendant with no parent/guardian, then applies
+     * the given overrides on top - letting each edge-case test blank out or corrupt exactly the
+     * one column it wants to exercise.
+     */
+    private static String buildCsv(final Map<String, String> overrides) {
+        final Map<String, String> values = new LinkedHashMap<>(defaultValidValues());
+        values.putAll(overrides);
+
+        final StringBuilder header = new StringBuilder();
+        final StringBuilder row = new StringBuilder();
+        for (int i = 0; i < SummonsProsecutionCsvColumns.HEADERS.length; i++) {
+            if (i > 0) {
+                header.append(',');
+                row.append(',');
+            }
+            final String column = SummonsProsecutionCsvColumns.HEADERS[i];
+            header.append(column);
+            row.append(values.getOrDefault(column, ""));
+        }
+        return header + "\n" + row + "\n";
+    }
+
+    private static Map<String, String> defaultValidValues() {
+        final Map<String, String> values = new LinkedHashMap<>();
+        values.put(SummonsProsecutionCsvColumns.PROSECUTING_AUTHORITY, "GAAAA01");
+        values.put(SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, "B01LY01");
+        values.put(SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "2022-02-04");
+        values.put(SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, "09:05:00");
+        values.put(SummonsProsecutionCsvColumns.CASE_URN, "SCIV00001");
+        values.put(SummonsProsecutionCsvColumns.CASE_INFORMANT, "Jane Smith");
+        values.put(SummonsProsecutionCsvColumns.CASE_SUMMONS_CODE, "A");
+        values.put(SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "DEF00001");
+        values.put(SummonsProsecutionCsvColumns.DEFENDANT_DOCUMENTATION_LANGUAGE, "E");
+        values.put(SummonsProsecutionCsvColumns.DEFENDANT_HEARING_LANGUAGE, "E");
+        values.put(SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_1, "1 High Street");
+        values.put(SummonsProsecutionCsvColumns.DEFENDANT_TYPE, SummonsProsecutionCsvColumns.DEFENDANT_TYPE_INDIVIDUAL);
+        values.put(SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_FORENAME, "Jane");
+        values.put(SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, "Smith");
+        values.put(SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER, "2");
+        values.put(SummonsProsecutionCsvColumns.OFFENCE_CJS_OFFENCE_CODE, "CA03010");
+        values.put(SummonsProsecutionCsvColumns.OFFENCE_SEQUENCE_NO, "1");
+        values.put(SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, "2022-01-10");
+        values.put(SummonsProsecutionCsvColumns.OFFENCE_WORDING, "Failure to comply");
+        return values;
     }
 }

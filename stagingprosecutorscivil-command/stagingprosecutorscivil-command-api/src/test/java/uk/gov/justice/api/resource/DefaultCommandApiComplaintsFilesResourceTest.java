@@ -4,6 +4,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,17 +18,22 @@ import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.http.HeaderConstants;
 import uk.gov.justice.services.core.accesscontrol.AccessControlService;
+import uk.gov.justice.services.core.accesscontrol.AccessControlViolation;
 import uk.gov.justice.services.core.json.JsonSchemaValidationException;
 import uk.gov.justice.services.core.json.JsonSchemaValidator;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.core.audit.AuditService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.json.Json;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -132,6 +139,25 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     }
 
     @Test
+    void shouldThrowBadRequestWhenFilePartsListIsEmpty() {
+        final Map<String, List<InputPart>> formDataMap = new HashMap<>();
+        formDataMap.put("file", List.of());
+        when(multipartFormDataInput.getFormDataMap()).thenReturn(formDataMap);
+
+        assertThrows(BadRequestException.class,
+                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+    }
+
+    @Test
+    void shouldThrowBadRequestWhenReadingFilePartThrowsIOException() throws Exception {
+        when(filePart.getBody(eq(InputStream.class), isNull())).thenThrow(new IOException("stream unavailable"));
+        formDataMapWithFilePart();
+
+        assertThrows(BadRequestException.class,
+                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+    }
+
+    @Test
     void shouldThrowBadRequestWhenCsvCannotBeParsed() throws Exception {
         when(filePart.getBody(eq(InputStream.class), isNull()))
                 .thenReturn(new ByteArrayInputStream("not,a,valid,complaints,csv".getBytes(StandardCharsets.UTF_8)));
@@ -151,6 +177,32 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     }
 
     @Test
+    void shouldThrowBadRequestWhenUserIdHeaderIsBlank() throws Exception {
+        when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
+        formDataMapWithFilePart();
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn("   ");
+
+        assertThrows(BadRequestException.class,
+                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+    }
+
+    @Test
+    void shouldReturnForbiddenWhenAccessControlViolationPresent() throws Exception {
+        when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
+        formDataMapWithFilePart();
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        when(accessControlService.checkAccessControl(any(), any()))
+                .thenReturn(Optional.of(new AccessControlViolation("user not permitted")));
+
+        final Response response = resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+
+        assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+        assertThat(response.getEntity().toString(), org.hamcrest.Matchers.containsString("user not permitted"));
+        assertThat(response.getEntity().toString(),
+                org.hamcrest.Matchers.containsString("stagingprosecutorscivil.summons-prosecution"));
+    }
+
+    @Test
     void shouldThrowBadRequestWhenSchemaValidationFails() throws Exception {
         when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
         formDataMapWithFilePart();
@@ -167,23 +219,82 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(multipartFormDataInput.getFormDataMap()).thenReturn(formDataMap);
     }
 
-    // Only used by the disabled shouldThrowBadRequestWhenCallingUserOrganisationDoesNotMatchCsvProsecutingAuthority test above.
-    // private void stubCallingUserOrganisation(final String prosecutingAuthority) {
-    //     when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
-    //     final JsonEnvelope groupsResponse = JsonEnvelope.envelopeFrom(
-    //             metadataBuilder().withId(randomUUID()).withName("usersgroups.get-groups-by-user").build(),
-    //             Json.createObjectBuilder()
-    //                     .add("groups", Json.createArrayBuilder()
-    //                             .add(Json.createObjectBuilder()
-    //                                     .add("groupId", randomUUID().toString())
-    //                                     .add("groupName", "Charging Lawyers")
-    //                                     .add("prosecutingAuthority", prosecutingAuthority))
-    //                             .build())
-    //                     .build());
-    //     when(requester.request(any())).thenReturn(groupsResponse);
-    // }
-
     private InputStream csvStream(final String resourcePath) {
         return getClass().getResourceAsStream("/" + resourcePath);
+    }
+
+    /**
+     * {@code validateCallingUserBelongsToProsecutingAuthority} has no production call site - its
+     * invocation is commented out in {@link DefaultCommandApiComplaintsFilesResource} alongside
+     * the disabled test above - so it can only be exercised directly, via reflection, without
+     * re-enabling that call and changing production behaviour.
+     */
+    @Test
+    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenUserIdHeaderMissing() {
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(null);
+
+        assertThrows(BadRequestException.class,
+                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
+    }
+
+    @Test
+    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenUserIdHeaderIsBlank() {
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn("   ");
+
+        assertThrows(BadRequestException.class,
+                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
+    }
+
+    @Test
+    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenGroupsAreAbsentFromResponse() {
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        when(requester.request(any())).thenReturn(JsonEnvelope.envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-groups").build(),
+                Json.createObjectBuilder().build()));
+
+        assertThrows(BadRequestException.class,
+                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
+    }
+
+    @Test
+    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenAuthorityDoesNotMatch() {
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        stubCallingUserOrganisation("TFL");
+
+        assertThrows(BadRequestException.class,
+                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
+    }
+
+    @Test
+    void validateCallingUserBelongsToProsecutingAuthorityPassesWhenAuthorityMatchesCaseInsensitively() {
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        stubCallingUserOrganisation("gaaaa01");
+
+        assertDoesNotThrow(() -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
+    }
+
+    private void stubCallingUserOrganisation(final String prosecutingAuthority) {
+        final JsonEnvelope groupsResponse = JsonEnvelope.envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-groups").build(),
+                Json.createObjectBuilder()
+                        .add("groups", Json.createArrayBuilder()
+                                .add(Json.createObjectBuilder()
+                                        .add("groupId", randomUUID().toString())
+                                        .add("groupName", "Charging Lawyers")
+                                        .add("prosecutingAuthority", prosecutingAuthority))
+                                .build())
+                        .build());
+        when(requester.request(any())).thenReturn(groupsResponse);
+    }
+
+    private void invokeValidateCallingUserBelongsToProsecutingAuthority(final String csvProsecutingAuthority) throws Throwable {
+        final Method method = DefaultCommandApiComplaintsFilesResource.class
+                .getDeclaredMethod("validateCallingUserBelongsToProsecutingAuthority", String.class);
+        method.setAccessible(true);
+        try {
+            method.invoke(resource, csvProsecutingAuthority);
+        } catch (final InvocationTargetException e) {
+            throw e.getCause();
+        }
     }
 }
