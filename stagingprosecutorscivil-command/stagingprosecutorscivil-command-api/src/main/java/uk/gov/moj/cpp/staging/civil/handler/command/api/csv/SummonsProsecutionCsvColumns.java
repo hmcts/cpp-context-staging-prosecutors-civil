@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api.csv;
 
 /**
- * Column names for the flattened summons-prosecution CSV (pipe-delimited).
+ * Column names for the flattened summons-prosecution CSV (comma-delimited).
  * One row represents one (prosecutionCase, defendant, offence) combination; case- and
  * defendant-level columns repeat across rows that share the same {@link #CASE_URN} /
  * {@link #DEFENDANT_PROSECUTOR_DEFENDANT_ID}. Order here matches
@@ -9,7 +9,7 @@ package uk.gov.moj.cpp.staging.civil.handler.command.api.csv;
  */
 public final class SummonsProsecutionCsvColumns {
 
-    public static final char DELIMITER = '|';
+    public static final char DELIMITER = ',';
 
     // Submission-level (same value on every row of the file)
     public static final String PROSECUTING_AUTHORITY = "prosecutingAuthority";

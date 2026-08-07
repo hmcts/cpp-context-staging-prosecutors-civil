@@ -43,8 +43,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 
 public class WiremockUtils {
-    private static final String USER_DETAILS_MEDIA_TYPE = "application/vnd.usersgroups.logged-in-user-details+json";
-    private static final String USER_DETAILS_URL = "/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user";
+
     private static final int HTTP_STATUS_OK = 200;
 
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
@@ -104,6 +103,16 @@ public class WiremockUtils {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .withBody(readResource("stub-data/usersgroups.get-groups-by-user.json"))));
+    }
+
+    public WiremockUtils stubUserGroupsWithProsecutingAuthority(final String prosecutingAuthority) {
+        stubFor(get(urlMatching(USER_GROUPS_USERS_QUERY_URL))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .withBody("{\"groups\":[{\"groupId\":\"" + randomUUID() + "\",\"groupName\":\"Charging Lawyers\","
+                                + "\"prosecutingAuthority\":\"" + prosecutingAuthority + "\"}]}")));
+        return this;
     }
 
     public static void setupLoggedInUsersPermissionQueryStub(final String userId) {

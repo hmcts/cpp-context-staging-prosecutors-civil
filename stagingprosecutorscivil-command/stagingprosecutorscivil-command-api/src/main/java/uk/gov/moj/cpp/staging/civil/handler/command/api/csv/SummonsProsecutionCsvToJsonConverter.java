@@ -122,7 +122,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardianOrganisatio
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 /**
- * Reconstructs a {@code summons-prosecution} JSON request from the flattened, pipe-delimited
+ * Reconstructs a {@code summons-prosecution} JSON request from the flattened, comma-delimited
  * CSV produced by {@code summons-prosecution-template.csv}.
  * <p>
  * The whole CSV file is treated as a single submission: {@code prosecutingAuthority} and
@@ -336,7 +336,10 @@ public class SummonsProsecutionCsvToJsonConverter {
         final String primaryEmail = nullIfBlank(record.get(primaryEmailColumn));
         final String secondaryEmail = nullIfBlank(record.get(secondaryEmailColumn));
 
-        if (workPhone == null && homePhone == null && mobilePhone == null && primaryEmail == null && secondaryEmail == null) {
+        final boolean isPhoneValuesNull = workPhone == null && homePhone == null && mobilePhone == null;
+        final boolean isEmailValuesNull = primaryEmail == null && secondaryEmail == null;
+
+        if (isEmailValuesNull && isPhoneValuesNull) {
             return null;
         }
 
