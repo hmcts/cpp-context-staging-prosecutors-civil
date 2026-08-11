@@ -31,3 +31,12 @@ rule "Command - Rule for Submit Material"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Command - Rule for Bulk Upload"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "stagingprosecutorscivil.summons-prosecution-csv");
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getBulkUploadPermission()));
+  then
+    $outcome.setSuccess(true);
+end
