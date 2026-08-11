@@ -67,6 +67,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
 
     private static final String FILE_PART_NAME = "file";
     private static final String SUMMONS_PROSECUTION_SCHEMA_NAME = "stagingprosecutorscivil.summons-prosecution";
+    private static final String SUMMONS_PROSECUTION_CSV_ACTION_NAME = "stagingprosecutorscivil.summons-prosecution-csv";
     private static final String USERSGROUPS_GET_LOGGED_IN_USER_GROUPS = "usersgroups.get-logged-in-user-groups";
     private static final String GROUPS_FIELD = "groups";
     private static final String USER_ID_FIELD = "userId";
@@ -113,15 +114,23 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
                 .withUserId(userId)
                 .build();
 
-        final JsonEnvelope commandEnvelope = JsonEnvelope.envelopeFrom(metadata, summonsProsecutionAsJsonObject(summonsProsecution));
+        final JsonObject payload = summonsProsecutionAsJsonObject(summonsProsecution);
+        final JsonEnvelope commandEnvelope = JsonEnvelope.envelopeFrom(metadata, payload);
 
         auditService.audit(commandEnvelope, Component.COMMAND_API);
 
+        final Metadata accessControlMetadata = metadataBuilder()
+                .withId(randomUUID())
+                .withName(SUMMONS_PROSECUTION_CSV_ACTION_NAME)
+                .withUserId(userId)
+                .build();
+        final JsonEnvelope accessControlEnvelope = JsonEnvelope.envelopeFrom(accessControlMetadata, payload);
+
         final Optional<AccessControlViolation> violation =
-                accessControlService.checkAccessControl(Component.COMMAND_API, commandEnvelope);
+                accessControlService.checkAccessControl(Component.COMMAND_API, accessControlEnvelope);
         if (violation.isPresent()) {
             final JsonObject responseErrorMsg = Json.createObjectBuilder()
-                    .add("error", errorMessageFrom(commandEnvelope, violation.get()))
+                    .add("error", errorMessageFrom(accessControlEnvelope, violation.get()))
                     .build();
             return Response.status(Response.Status.FORBIDDEN).entity(responseErrorMsg.toString()).build();
         }
