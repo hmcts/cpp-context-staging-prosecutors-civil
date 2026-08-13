@@ -22,6 +22,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase.pr
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase.summonsProsecutionCase;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation.selfDefinedInformation;
 
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
@@ -138,8 +139,12 @@ public class Prosecutors {
         return PublicGroupProsecutionRejected.publicGroupProsecutionRejected()
                 .withExternalId(SUBMISSION_ID)
                 .withCaseErrors(asList(
-                        Problem.problem()
-                                .withCode("ERR01")
+                        CaseProblem.caseProblem()
+                                .withProsecutorCaseReference("URN01")
+                                .withProblems(asList(
+                                        Problem.problem()
+                                                .withCode("ERR01")
+                                                .build()))
                                 .build()))
                 .withDefendantErrors(asList(
                         DefendantProblem.defendantProblem()
@@ -149,8 +154,12 @@ public class Prosecutors {
                                                 .build()))
                                 .build()))
                 .withGroupCaseErrors(asList(
-                        Problem.problem()
-                                .withCode("ERR03")
+                        CaseProblem.caseProblem()
+                                .withProsecutorCaseReference(null)
+                                .withProblems(asList(
+                                        Problem.problem()
+                                                .withCode("ERR03")
+                                                .build()))
                                 .build()))
                 .build();
     }
@@ -159,8 +168,12 @@ public class Prosecutors {
         return PublicCivilProsecutionRejected.publicCivilProsecutionRejected()
                 .withExternalId(SUBMISSION_ID)
                 .withCaseErrors(asList(
-                        Problem.problem()
-                                .withCode("ERR01")
+                        CaseProblem.caseProblem()
+                                .withProsecutorCaseReference("URN01")
+                                .withProblems(asList(
+                                        Problem.problem()
+                                                .withCode("ERR01")
+                                                .build()))
                                 .build()))
                 .withDefendantErrors(asList(
                         DefendantProblem.defendantProblem()

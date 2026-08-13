@@ -14,6 +14,18 @@
     },
     "errors": {
       "type": "array"
+    },
+    "caseErrors": {
+      "type": "array",
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
+      }
+    },
+    "defendantErrors": {
+      "type": "array",
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
+      }
     }
   }
 }

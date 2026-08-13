@@ -23,6 +23,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForCharge;
@@ -227,6 +228,17 @@ public class ProsecutionChargedEventProcessor {
         return arrayBuilder.build();
     }
 
+    private JsonArray transformCaseProblemsToJsonArray(final Collection<CaseProblem> caseErrors) {
+        if (caseErrors == null) {
+            return null;
+        }
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        caseErrors.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
+        return arrayBuilder.build();
+    }
+
 
     private void updateCivilStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status) {
 
@@ -236,8 +248,11 @@ public class ProsecutionChargedEventProcessor {
 
         if (status == REJECTED) {
             final PublicCivilProsecutionRejected prosecutionRejected = (PublicCivilProsecutionRejected) event.payload();
-            jsonObjectBuilder.add("caseErrors", transformErrorsToJsonArray(prosecutionRejected.getCaseErrors()));
-            jsonObjectBuilder.add("defendantErrors", transformDefendantProblemsToJsonArray(prosecutionRejected.getDefendantErrors()));
+            final JsonArray caseErrors = transformCaseProblemsToJsonArray(prosecutionRejected.getCaseErrors());
+            final JsonArray defendantErrors = transformDefendantProblemsToJsonArray(prosecutionRejected.getDefendantErrors());
+
+            ofNullable(caseErrors).ifPresent(e -> jsonObjectBuilder.add("caseErrors", e));
+            ofNullable(defendantErrors).ifPresent(e -> jsonObjectBuilder.add("defendantErrors", e));
         }
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Calling stagingprosecutorscivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
@@ -259,8 +274,8 @@ public class ProsecutionChargedEventProcessor {
 
         if (status == REJECTED) {
             final PublicGroupProsecutionRejected prosecutionRejected = (PublicGroupProsecutionRejected) event.payload();
-            final JsonArray caseErrors = transformErrorsToJsonArray(prosecutionRejected.getCaseErrors());
-            final JsonArray groupCaseErrors = transformErrorsToJsonArray(prosecutionRejected.getGroupCaseErrors());
+            final JsonArray caseErrors = transformCaseProblemsToJsonArray(prosecutionRejected.getCaseErrors());
+            final JsonArray groupCaseErrors = transformCaseProblemsToJsonArray(prosecutionRejected.getGroupCaseErrors());
             final JsonArray defendantErrors = transformDefendantProblemsToJsonArray(prosecutionRejected.getDefendantErrors());
 
             ofNullable(caseErrors).ifPresent(e -> jsonObjectBuilder.add("caseErrors", e));

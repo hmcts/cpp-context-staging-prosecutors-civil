@@ -124,7 +124,27 @@ public class StagingProsecutorsCivilUtils {
     }
 
     public static Submission getSubmission(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
-        final String payload = poll(getRequestParams(submissionId))
+        final String payload = pollForSubmissionPayload(submissionId, matcher);
+
+        try {
+            return mapper.readValue(payload, Submission.class);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static JsonObject pollForSubmissionAsJson(final UUID submissionId, final SubmissionStatus expectedSubmissionStatus) {
+        return getSubmissionAsJson(submissionId, withJsonPath("status", is(expectedSubmissionStatus.name())));
+    }
+
+    public static JsonObject getSubmissionAsJson(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
+        final String payload = pollForSubmissionPayload(submissionId, matcher);
+
+        return createReader(new ByteArrayInputStream(payload.getBytes())).readObject();
+    }
+
+    private static String pollForSubmissionPayload(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
+        return poll(getRequestParams(submissionId))
                 .pollDelay(0, MILLISECONDS)
                 .pollInterval(100, MILLISECONDS)
                 .timeout(10, SECONDS)
@@ -133,13 +153,6 @@ public class StagingProsecutorsCivilUtils {
                         payload().isJson(matcher)
                 )
                 .getPayload();
-
-        try {
-            return mapper.readValue(payload, Submission.class);
-        } catch (final IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
     }
 
     public static Response getComplaintsFilesTemplate() {

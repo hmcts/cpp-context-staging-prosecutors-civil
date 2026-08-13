@@ -16,6 +16,7 @@ import uk.gov.moj.cpp.persistence.entity.CaseDetail;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
@@ -27,6 +28,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -111,8 +113,8 @@ public class SubmissionEventListener {
         final Submission submission = submissionRepository.findBy(updatedCivilCaseReceived.getSubmissionId());
 
         if (SubmissionStatus.REJECTED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
-            submission.setErrors(transformErrorsToJsonArray(updatedCivilCaseReceived.getCaseErrors()));
-            submission.setGroupCaseErrors(transformErrorsToJsonArray(updatedCivilCaseReceived.getGroupCaseErrors()));
+            submission.setGroupCaseErrors(transformCaseProblemsToJsonArray(
+                    mergeCaseProblems(updatedCivilCaseReceived.getCaseErrors(), updatedCivilCaseReceived.getGroupCaseErrors())));
             submission.setDefendantErrors(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantErrors()));
         } else if (SubmissionStatus.SUCCESS_WITH_WARNINGS.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
             submission.setWarnings(transformErrorsToJsonArray(updatedCivilCaseReceived.getWarnings()));
@@ -206,6 +208,28 @@ public class SubmissionEventListener {
         }
         final JsonArrayBuilder arrayBuilder = createArrayBuilder();
         errors.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
+        return arrayBuilder.build();
+    }
+
+    private List<CaseProblem> mergeCaseProblems(final List<CaseProblem> caseErrors, final List<CaseProblem> groupCaseErrors) {
+        final List<CaseProblem> merged = new ArrayList<>();
+        if (caseErrors != null) {
+            merged.addAll(caseErrors);
+        }
+        if (groupCaseErrors != null) {
+            merged.addAll(groupCaseErrors);
+        }
+        return merged;
+    }
+
+    private JsonArray transformCaseProblemsToJsonArray(final Collection<CaseProblem> caseErrors) {
+        if (caseErrors == null) {
+            return null;
+        }
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        caseErrors.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
         return arrayBuilder.build();
