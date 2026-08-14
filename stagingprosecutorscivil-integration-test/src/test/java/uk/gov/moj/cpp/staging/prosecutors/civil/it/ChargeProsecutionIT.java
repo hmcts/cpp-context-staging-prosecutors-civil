@@ -94,6 +94,9 @@ public class ChargeProsecutionIT {
         ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(urlResponse.getSubmissionId().toString()));
+        assertThat(submission.getType(), Matchers.is("PROSECUTION"));
+        assertThat(submission.getReceivedAt(), Matchers.notNullValue());
+        assertThat(submission.getCompletedAt(), Matchers.nullValue());
 
         JsonObject caseSucceededPublicEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
@@ -105,6 +108,7 @@ public class ChargeProsecutionIT {
 
         final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
         assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+        assertThat(submission2.getCompletedAt(), Matchers.notNullValue());
     }
 
     @Test

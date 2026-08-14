@@ -62,4 +62,12 @@ public class Submission {
     public UUID getSubmissionId() {
         return submissionId;
     }
+
+    public ZonedDateTime getReceivedAt() {
+        return receivedAt;
+    }
+
+    public ZonedDateTime getCompletedAt() {
+        return completedAt;
+    }
 }

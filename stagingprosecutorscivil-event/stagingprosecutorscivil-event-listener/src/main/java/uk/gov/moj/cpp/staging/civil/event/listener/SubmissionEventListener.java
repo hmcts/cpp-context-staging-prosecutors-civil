@@ -8,6 +8,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
@@ -51,6 +52,9 @@ public class SubmissionEventListener {
 
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Inject
+    private UtcClock utcClock;
 
     @Handles("stagingprosecutorscivil.event.charge-prosecution-received")
     public void chargeProsecutionReceived(final Envelope<ChargeProsecutionReceived> event) {
@@ -100,6 +104,7 @@ public class SubmissionEventListener {
                 .withCaseDetail(caseDetails)
                 .withErrors(null)
                 .withWarnings(null)
+                .withType(SubmissionType.PROSECUTION)
                 .build();
 
         submissionRepository.save(submission);
@@ -122,8 +127,20 @@ public class SubmissionEventListener {
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
 
+        if (isTerminalStatus(updatedCivilCaseReceived.getSubmissionStatus())) {
+            // Wall-clock time, not the event's metadata createdAt: this listener's viewstore is
+            // derived state, but completedAt is intentionally allowed to differ on replay/rebuild
+            // (it reflects when this projection observed completion, not the original event time).
+            submission.setCompletedAt(utcClock.now());
+        }
         submission.setSubmissionStatus(updatedCivilCaseReceived.getSubmissionStatus().name());
         submissionRepository.save(submission);
+    }
+
+    private boolean isTerminalStatus(final SubmissionStatus submissionStatus) {
+        return SubmissionStatus.SUCCESS.equals(submissionStatus)
+                || SubmissionStatus.REJECTED.equals(submissionStatus)
+                || SubmissionStatus.SUCCESS_WITH_WARNINGS.equals(submissionStatus);
     }
 
     @Handles("stagingprosecutorscivil.event.material-submitted")

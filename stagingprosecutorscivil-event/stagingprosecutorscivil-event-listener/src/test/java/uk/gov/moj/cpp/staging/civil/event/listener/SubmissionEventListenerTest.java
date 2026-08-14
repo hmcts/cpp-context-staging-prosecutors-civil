@@ -18,6 +18,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SU
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS_WITH_WARNINGS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.entity.SubmissionType;
@@ -55,6 +56,9 @@ public class SubmissionEventListenerTest {
 
     @Mock
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Mock
+    private UtcClock utcClock;
 
     @InjectMocks
     private SubmissionEventListener submissionEventListener;
@@ -114,6 +118,7 @@ public class SubmissionEventListenerTest {
         assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
         assertThat(submission.getOuCode(), is(prosecutingAuthority));
         assertThat(submission.getCaseDetail().stream().findFirst().get().getCaseUrn(), is(urn));
+        assertThat(submission.getType(), is(SubmissionType.PROSECUTION));
     }
 
     @Test
@@ -169,6 +174,7 @@ public class SubmissionEventListenerTest {
         final javax.json.JsonObject groupCaseErrorJson = Json.createObjectBuilder().add("problems", Json.createArrayBuilder()).build();
         when(objectToJsonObjectConverter.convert(caseError)).thenReturn(caseErrorJson);
         when(objectToJsonObjectConverter.convert(groupCaseError)).thenReturn(groupCaseErrorJson);
+        when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
 
         final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
@@ -179,6 +185,7 @@ public class SubmissionEventListenerTest {
         assertThat(submission.getSubmissionStatus(), is(REJECTED.name()));
         assertThat(submission.getErrors(), is(nullValue()));
         assertThat(submission.getGroupCaseErrors(), contains(caseErrorJson, groupCaseErrorJson));
+        assertThat(submission.getCompletedAt(), is(notNullValue()));
     }
 
     @Test
@@ -257,11 +264,37 @@ public class SubmissionEventListenerTest {
 
         final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());
         final Submission submission = argumentCaptor.getValue();
         assertThat(submission.getSubmissionId(), is(submissionId));
         assertThat(submission.getSubmissionStatus(), is(SUCCESS_WITH_WARNINGS.name()));
+        assertThat(submission.getCompletedAt(), is(notNullValue()));
+    }
+
+    @Test
+    void shouldUpdateCaseFileForSuccessStatus() {
+        final UUID submissionId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(SUCCESS)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionId(), is(submissionId));
+        assertThat(submission.getSubmissionStatus(), is(SUCCESS.name()));
+        assertThat(submission.getCompletedAt(), is(notNullValue()));
     }
 
     @Test

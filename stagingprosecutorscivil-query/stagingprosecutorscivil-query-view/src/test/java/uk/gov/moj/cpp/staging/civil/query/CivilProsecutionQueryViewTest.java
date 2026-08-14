@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 
+import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
@@ -91,7 +92,79 @@ public class CivilProsecutionQueryViewTest {
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("status"), Is.is("PENDING"));
         assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("errors"), Is.is(errors));
         assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("warnings"), Is.is(warnings));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("type"), Is.is(SubmissionType.PROSECUTION.name()));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("receivedAt"), Is.is(ZonedDateTimes.toString(receivedAt)));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("completedAt"), Is.is(ZonedDateTimes.toString(completedAt)));
 
+    }
+
+    @Test
+    public void shouldOmitCompletedAtAndTypeWhenNotPresent() {
+
+        final ZonedDateTime receivedAt = ZonedDateTime.now();
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonArray errors = createArrayBuilder().build();
+        final JsonArray warnings = createArrayBuilder().build();
+
+        final Submission submission = new Submission(
+                submissionId,
+                "PENDING",
+                "ouCode",
+                errors,
+                warnings,
+                null,
+                null,
+                receivedAt,
+                null,
+                new HashSet<>(),
+                null);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonObject payload = createObjectBuilder()
+                .add("submissionId", submissionId.toString())
+                .build();
+        final JsonEnvelope requestEnvelope = createEnvelope("stagingprosecutorscivil.query.submission-details", payload);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmission(requestEnvelope);
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("receivedAt"), Is.is(ZonedDateTimes.toString(receivedAt)));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("completedAt"), Is.is(false));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("type"), Is.is(false));
+    }
+
+    @Test
+    public void shouldOmitReceivedAtWhenNotPresent() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonArray errors = createArrayBuilder().build();
+        final JsonArray warnings = createArrayBuilder().build();
+
+        final Submission submission = new Submission(
+                submissionId,
+                "PENDING",
+                "ouCode",
+                errors,
+                warnings,
+                null,
+                null,
+                null,
+                null,
+                new HashSet<>(),
+                null);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonObject payload = createObjectBuilder()
+                .add("submissionId", submissionId.toString())
+                .build();
+        final JsonEnvelope requestEnvelope = createEnvelope("stagingprosecutorscivil.query.submission-details", payload);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmission(requestEnvelope);
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("receivedAt"), Is.is(false));
     }
 
     @Test
