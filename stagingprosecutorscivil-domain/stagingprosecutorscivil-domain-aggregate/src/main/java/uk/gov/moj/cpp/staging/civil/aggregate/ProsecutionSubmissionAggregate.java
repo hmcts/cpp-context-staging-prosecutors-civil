@@ -5,6 +5,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
@@ -69,8 +70,8 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
         );
     }
 
-    public Stream<Object> receiveCivilCaseUpdate(final UUID submissionId, final String submissionStatus, final List<Problem> caseErrors,
-                                                 final List<DefendantProblem> defendantErrors, final List<Problem> groupCaseErrors,
+    public Stream<Object> receiveCivilCaseUpdate(final UUID submissionId, final String submissionStatus, final List<CaseProblem> caseErrors,
+                                                 final List<DefendantProblem> defendantErrors, final List<CaseProblem> groupCaseErrors,
                                                  final List<Problem> warnings, final List<Problem> caseWarnings, final List<DefendantProblem> defendantWarnings) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.update-civil-case-received for submission id {} and status {}", submissionId, submissionStatus);
         return apply(

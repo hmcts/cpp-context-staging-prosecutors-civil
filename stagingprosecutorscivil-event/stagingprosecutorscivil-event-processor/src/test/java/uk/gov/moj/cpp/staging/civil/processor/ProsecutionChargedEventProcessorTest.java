@@ -114,6 +114,11 @@ public class ProsecutionChargedEventProcessorTest {
         JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(updateCivilCaseRejected.getExternalId().toString()));
         assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.REJECTED.name()));
+
+        assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getString("prosecutorCaseReference"), is("URN01"));
+        assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getJsonArray("problems").getJsonObject(0).getString("code"), is("ERR01"));
+        assertThat(payload.getJsonArray("groupCaseErrors").getJsonObject(0).containsKey("prosecutorCaseReference"), is(false));
+        assertThat(payload.getJsonArray("groupCaseErrors").getJsonObject(0).getJsonArray("problems").getJsonObject(0).getString("code"), is("ERR03"));
     }
 
     @Test
@@ -128,6 +133,9 @@ public class ProsecutionChargedEventProcessorTest {
         JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(updateCivilProsecutionCaseRejected.getExternalId().toString()));
         assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.REJECTED.name()));
+
+        assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getString("prosecutorCaseReference"), is("URN01"));
+        assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getJsonArray("problems").getJsonObject(0).getString("code"), is("ERR01"));
     }
 
     @Test
