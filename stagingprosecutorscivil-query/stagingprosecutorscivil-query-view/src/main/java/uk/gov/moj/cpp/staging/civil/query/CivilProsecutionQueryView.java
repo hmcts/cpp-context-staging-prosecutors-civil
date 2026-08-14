@@ -7,6 +7,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
+import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
@@ -39,6 +40,15 @@ public class CivilProsecutionQueryView {
                                     .add("status", submission.getSubmissionStatus())
                                     .add("warnings", submission.getWarnings())
                                     .add("errors", submission.getErrors());
+                            if (nonNull(submission.getType())) {
+                                result.add("type", submission.getType().name());
+                            }
+                            if (nonNull(submission.getReceivedAt())) {
+                                result.add("receivedAt", ZonedDateTimes.toString(submission.getReceivedAt()));
+                            }
+                            if (nonNull(submission.getCompletedAt())) {
+                                result.add("completedAt", ZonedDateTimes.toString(submission.getCompletedAt()));
+                            }
                             if (nonNull(submission.getGroupCaseErrors())) {
                                 result.add("caseErrors", submission.getGroupCaseErrors());
                             }
