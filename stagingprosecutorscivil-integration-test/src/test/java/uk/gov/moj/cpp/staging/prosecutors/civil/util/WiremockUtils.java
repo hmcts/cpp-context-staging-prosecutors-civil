@@ -106,11 +106,15 @@ public class WiremockUtils {
     }
 
     public WiremockUtils stubUserGroupsWithProsecutingAuthority(final String prosecutingAuthority) {
+        return stubUserGroupsForGroup(randomUUID().toString(), prosecutingAuthority);
+    }
+
+    public WiremockUtils stubUserGroupsForGroup(final String groupId, final String prosecutingAuthority) {
         stubFor(get(urlMatching(USER_GROUPS_USERS_QUERY_URL))
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .withBody("{\"groups\":[{\"groupId\":\"" + randomUUID() + "\",\"groupName\":\"Charging Lawyers\","
+                        .withBody("{\"groups\":[{\"groupId\":\"" + groupId + "\",\"groupName\":\"Charging Lawyers\","
                                 + "\"prosecutingAuthority\":\"" + prosecutingAuthority + "\"}]}")));
         return this;
     }

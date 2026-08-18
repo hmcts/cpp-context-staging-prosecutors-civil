@@ -42,6 +42,7 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV_MISSING_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-missing-summons-code.csv";
     private static final String COMPLAINTS_CSV_INVALID_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-invalid-summons-code.csv";
     private static final String CSV_PROSECUTING_AUTHORITY = "GAAAA01";
+    private static final String LEGAL_ADVISERS_GROUP_ID = "63cae459-0e51-4d60-bcf8-c5324be50ba4";
 
     private final WiremockUtils wiremockUtils = new WiremockUtils();
 
@@ -100,17 +101,26 @@ public class ComplaintsFilesUploadIT {
         assertThat(extractErrorMessage(response), containsString("Complaints CSV file failed schema validation"));
     }
 
-    // Disabled per request, alongside the production check it exercised: verification of the
-    // calling user's organisation against the CSV's prosecuting authority is currently commented
-    // out in DefaultCommandApiComplaintsFilesResource, so this scenario no longer applies.
-    // @Test
-    // public void shouldRejectUploadWhenCallingUserOrganisationDoesNotMatchCsvProsecutingAuthority() throws IOException {
-    //     wiremockUtils.stubUserGroupsWithProsecutingAuthority("TFL");
-    //
-    //     final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
-    //
-    //     assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
-    // }
+    @Test
+    public void shouldRejectUploadWhenCallingUserOrganisationDoesNotMatchCsvProsecutingAuthority() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority("TFL");
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
+
+        assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
+    }
+
+    @Test
+    public void shouldAcceptUploadFromLegalAdvisersGroupRegardlessOfCsvProsecutingAuthority() throws IOException {
+        wiremockUtils.stubUserGroupsForGroup(LEGAL_ADVISERS_GROUP_ID, "TFL");
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
+
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmission(submissionId, SubmissionStatus.PENDING);
+    }
 
     private File getFileFrom(final String filePath) {
         return new File(getResource(filePath).getFile());
