@@ -106,8 +106,6 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         final JsonObject payload = summonsProsecutionAsJsonObject(summonsProsecution);
         final JsonEnvelope commandEnvelope = JsonEnvelope.envelopeFrom(metadata, payload);
 
-        // Audited before the prosecuting-authority check (CAD-1613) so a rejected upload still
-        // leaves a record of the attempt.
         auditService.audit(commandEnvelope, Component.COMMAND_API);
 
         prosecutingAuthorityValidationService.validateCallingUserBelongsToProsecutingAuthority(

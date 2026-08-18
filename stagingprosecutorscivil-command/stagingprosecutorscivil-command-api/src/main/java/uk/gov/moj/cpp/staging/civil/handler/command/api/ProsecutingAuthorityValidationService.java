@@ -21,15 +21,6 @@ import javax.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * CAD-1613: deliberately NOT an {@code @Adapter} class. A {@code Requester} injected from an
- * {@code @Adapter} class always resolves to the LOCAL dispatcher
- * ({@code ServiceComponentLocation.componentLocationFrom(InjectionPoint)} keys on the declaring
- * class carrying {@code @Adapter}/{@code @CustomAdapter}/{@code @DirectAdapter}), but the
- * generated {@code usersgroups} REST client is registered under REMOTE (it carries
- * {@code @Remote}). Only a plain, non-adapter class's {@code Requester} resolves to REMOTE and can
- * actually reach it — mirrors {@code cpp-context-progression}'s {@code UserGroupQueryService}.
- */
 public class ProsecutingAuthorityValidationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProsecutingAuthorityValidationService.class);
