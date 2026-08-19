@@ -41,8 +41,8 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV = "payload/complaints/complaints-summons-prosecution.csv";
     private static final String COMPLAINTS_CSV_MISSING_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-missing-summons-code.csv";
     private static final String COMPLAINTS_CSV_INVALID_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-invalid-summons-code.csv";
-    private static final String CSV_PROSECUTING_AUTHORITY = "GAAAA01";
-    private static final String LEGAL_ADVISERS_GROUP_ID = "63cae459-0e51-4d60-bcf8-c5324be50ba4";
+    private static final String CSV_OUCODE = "GAAAA01";
+    private static final String LEGAL_ADVISERS_GROUP_NAME = "Legal Advisers";
 
     private final WiremockUtils wiremockUtils = new WiremockUtils();
 
@@ -60,7 +60,8 @@ public class ComplaintsFilesUploadIT {
 
     @Test
     public void shouldUploadComplaintsCsvAndSubmitAsSummonsProsecution() throws IOException {
-        wiremockUtils.stubUserGroupsWithProsecutingAuthority(CSV_PROSECUTING_AUTHORITY);
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(CSV_OUCODE);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(CSV_OUCODE);
 
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
 
@@ -104,6 +105,7 @@ public class ComplaintsFilesUploadIT {
     @Test
     public void shouldRejectUploadWhenCallingUserOrganisationDoesNotMatchCsvProsecutingAuthority() throws IOException {
         wiremockUtils.stubUserGroupsWithProsecutingAuthority("TFL");
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(CSV_OUCODE);
 
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
 
@@ -112,7 +114,7 @@ public class ComplaintsFilesUploadIT {
 
     @Test
     public void shouldAcceptUploadFromLegalAdvisersGroupRegardlessOfCsvProsecutingAuthority() throws IOException {
-        wiremockUtils.stubUserGroupsForGroup(LEGAL_ADVISERS_GROUP_ID, "TFL");
+        wiremockUtils.stubUserGroupsForGroupName(LEGAL_ADVISERS_GROUP_NAME, "TFL");
 
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
 

@@ -11,12 +11,15 @@ import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,14 +31,18 @@ public class ProsecutingAuthorityValidationService {
     private static final String USERSGROUPS_GET_LOGGED_IN_USER_GROUPS = "usersgroups.get-logged-in-user-groups";
     private static final String GROUPS_FIELD = "groups";
     private static final String USER_ID_FIELD = "userId";
-    private static final String GROUP_ID_FIELD = "groupId";
+    private static final String GROUP_NAME_FIELD = "groupName";
     private static final String PROSECUTING_AUTHORITY_FIELD = "prosecutingAuthority";
 
-    private static final String LEGAL_ADVISERS_GROUP_ID = "63cae459-0e51-4d60-bcf8-c5324be50ba4";
-    private static final String COURT_ADMIN_GROUP_ID = "53292fc8-d164-4a6c-8722-cdbc795cf83a";
-    private static final String COURT_ASSOCIATE_GROUP_ID = "ebcfdd9c-9605-4fbf-b9f3-85f8cfdd11bb";
-    private static final Set<String> PROSECUTING_AUTHORITY_CHECK_EXEMPT_GROUP_IDS =
-            Set.of(LEGAL_ADVISERS_GROUP_ID, COURT_ADMIN_GROUP_ID, COURT_ASSOCIATE_GROUP_ID);
+    private static final String REFERENCEDATA_GET_PROSECUTOR_BY_OUCODE = "referencedata.query.get.prosecutor.by.oucode";
+    private static final String OUCODE_FIELD = "oucode";
+    private static final String SHORT_NAME_FIELD = "shortName";
+
+    private static final String LEGAL_ADVISERS_GROUP_NAME = "Legal Advisers";
+    private static final String COURT_ADMINISTRATORS_GROUP_NAME = "Court Administrators";
+    private static final String COURT_ASSOCIATE_GROUP_NAME = "Court Associate";
+    private static final Set<String> PROSECUTING_AUTHORITY_CHECK_EXEMPT_GROUP_NAMES =
+            Set.of(LEGAL_ADVISERS_GROUP_NAME, COURT_ADMINISTRATORS_GROUP_NAME, COURT_ASSOCIATE_GROUP_NAME);
 
     @Inject
     @ServiceComponent(Component.COMMAND_API)
@@ -44,12 +51,17 @@ public class ProsecutingAuthorityValidationService {
     /**
      * CAD-1525 AC1 validation #3, extended by CAD-1613: the prosecuting authority on the uploaded
      * CSV must match the calling user's own organisation, unless the caller belongs to one of the
-     * hardcoded HMCTS groups exempted from this check (Legal Advisers, Court Admin, Court
-     * Associate). Only the caller's first returned group is consulted, for both the exemption
-     * check and the prosecuting-authority comparison. {@code callingUserId} must already be a
-     * validated, non-blank user id (the caller's responsibility).
+     * hardcoded HMCTS groups exempted from this check (Legal Advisers, Court Administrators,
+     * Court Associate — matched by group name). A caller can belong to multiple groups: the
+     * exemption is granted if ANY group's name matches. If the caller is not exempt and none of
+     * their groups carry a prosecuting authority at all, the request is rejected outright. If at
+     * least one group does, the CSV's own ou code (read from its first row) is resolved to a
+     * prosecutor short name via {@code referencedata.query.get.prosecutor.by.oucode}, and that
+     * short name must match ANY one of the caller's groups' prosecuting authorities.
+     * {@code callingUserId} must already be a validated, non-blank user id (the caller's
+     * responsibility).
      */
-    public void validateCallingUserBelongsToProsecutingAuthority(final String callingUserId, final String csvProsecutingAuthority) {
+    public void validateCallingUserBelongsToProsecutingAuthority(final String callingUserId, final String csvOuCode) {
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())
                 .withName(USERSGROUPS_GET_LOGGED_IN_USER_GROUPS)
@@ -60,33 +72,56 @@ public class ProsecutingAuthorityValidationService {
 
         final JsonEnvelope response = requester.request(envelopeFrom(metadata, queryPayload));
         final JsonArray groups = response.payloadAsJsonObject().getJsonArray(GROUPS_FIELD);
+        final List<JsonObject> callingUserGroups = groups == null
+                ? List.of()
+                : groups.stream().map(JsonValue::asJsonObject).toList();
 
-        if (groups == null || groups.isEmpty()) {
-            rejectProsecutingAuthorityMismatch(csvProsecutingAuthority, callingUserId, null);
+        final boolean callerIsExempt = callingUserGroups.stream()
+                .map(group -> group.getString(GROUP_NAME_FIELD, null))
+                .anyMatch(PROSECUTING_AUTHORITY_CHECK_EXEMPT_GROUP_NAMES::contains);
+
+        if (callerIsExempt) {
             return;
         }
 
-        final JsonObject callingUserFirstGroup = groups.getJsonObject(0);
-        final String callingUserGroupId = callingUserFirstGroup.getString(GROUP_ID_FIELD, null);
+        final List<String> callingUserProsecutingAuthorities = callingUserGroups.stream()
+                .map(group -> group.getString(PROSECUTING_AUTHORITY_FIELD, null))
+                .filter(Objects::nonNull)
+                .toList();
 
-        if (PROSECUTING_AUTHORITY_CHECK_EXEMPT_GROUP_IDS.contains(callingUserGroupId)) {
+        if (callingUserProsecutingAuthorities.isEmpty()) {
+            rejectProsecutingAuthorityMismatch(csvOuCode, callingUserId, null);
             return;
         }
 
-        final String callingUserProsecutingAuthority =
-                callingUserFirstGroup.getString(PROSECUTING_AUTHORITY_FIELD, null);
+        final String prosecutorShortName = resolveProsecutorShortName(csvOuCode);
 
-        if (callingUserProsecutingAuthority == null
-                || !callingUserProsecutingAuthority.equalsIgnoreCase(csvProsecutingAuthority)) {
-            rejectProsecutingAuthorityMismatch(csvProsecutingAuthority, callingUserId, callingUserProsecutingAuthority);
+        final boolean authorityMatches = callingUserProsecutingAuthorities.stream()
+                .anyMatch(authority -> authority.equalsIgnoreCase(prosecutorShortName));
+
+        if (!authorityMatches) {
+            rejectProsecutingAuthorityMismatch(csvOuCode, callingUserId, callingUserProsecutingAuthorities.get(0));
         }
     }
 
-    private void rejectProsecutingAuthorityMismatch(final String csvProsecutingAuthority, final String callingUserId,
+    private String resolveProsecutorShortName(final String ouCode) {
+        final Metadata metadata = metadataBuilder()
+                .withId(randomUUID())
+                .withName(REFERENCEDATA_GET_PROSECUTOR_BY_OUCODE)
+                .build();
+        final JsonObject queryPayload = Json.createObjectBuilder()
+                .add(OUCODE_FIELD, ouCode)
+                .build();
+
+        final JsonEnvelope response = requester.request(envelopeFrom(metadata, queryPayload));
+        return response.payloadAsJsonObject().getString(SHORT_NAME_FIELD, null);
+    }
+
+    private void rejectProsecutingAuthorityMismatch(final String csvOuCode, final String callingUserId,
             final String callingUserProsecutingAuthority) {
-        LOGGER.warn("Complaints CSV prosecuting authority '{}' does not match calling user {}'s organisation '{}'",
-                csvProsecutingAuthority, callingUserId, callingUserProsecutingAuthority);
+        LOGGER.warn("Complaints CSV ou code '{}' does not match calling user {}'s organisation '{}'",
+                csvOuCode, callingUserId, callingUserProsecutingAuthority);
         throw new BadRequestException("The uploaded complaints file's prosecuting authority ('"
-                + csvProsecutingAuthority + "') does not match the calling user's organisation");
+                + csvOuCode + "') does not match the calling user's organisation");
     }
 }
