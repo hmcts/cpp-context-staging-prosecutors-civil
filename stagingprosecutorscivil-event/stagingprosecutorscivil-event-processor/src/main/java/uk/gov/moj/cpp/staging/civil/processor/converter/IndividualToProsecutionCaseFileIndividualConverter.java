@@ -184,6 +184,8 @@ public class IndividualToProsecutionCaseFileIndividualConverter implements Conve
                 .withEthnicity(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getEthnicity).orElse(null))
                 .withGender(getGender(defendant))
                 .withDateOfBirth(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getDateOfBirth).orElse(null))
+                .withNationality(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getNationality).orElse(null))
+                .withAdditionalNationality(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getAdditionalNationality).orElse(null))
                 .build();
     }
 

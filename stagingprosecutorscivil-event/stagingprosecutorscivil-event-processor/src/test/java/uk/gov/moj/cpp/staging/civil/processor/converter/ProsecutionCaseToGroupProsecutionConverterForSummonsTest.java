@@ -71,6 +71,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummonsTest {
                 .withMarkerTypeCode(prosecutionCase.getCaseMarker())
                 .build())));
         assertThat(pcfCaseDetails.getProsecutorCaseReference(), is(prosecutionCase.getUrn()));
+        assertThat(pcfCaseDetails.getRelatedUrn(), is(prosecutionCase.getRelatedReferenceNumber()));
         assertThat(pcfCaseDetails.getSummonsCode(), is(prosecutionCase.getSummonsCode()));
 
         assertThat(pcfCaseDetails.getOtherPartyOfficerInCase(), is(nullValue()));

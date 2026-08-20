@@ -1,10 +1,14 @@
 package uk.gov.moj.cpp.staging.prosecutors.civil.util;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.apache.http.entity.ContentType.MULTIPART_FORM_DATA;
+import static org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE;
+import static org.apache.http.entity.mime.MultipartEntityBuilder.create;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -18,6 +22,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.common.http.HeaderConstants;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.test.utils.core.http.RequestParams;
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
@@ -26,6 +31,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.model.Submission;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -37,6 +43,10 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.hamcrest.Matcher;
 
 public class StagingProsecutorsCivilUtils {
@@ -51,6 +61,8 @@ public class StagingProsecutorsCivilUtils {
     private static final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
     private static final String READ_BASE_URI = getBaseUri()
             + "/stagingprosecutorscivil-query-api/query/api/rest/staging-civil";
+    private static final String WRITE_BASE_URI = COMMAND_BASE_URI + "/v1";
+    private static final String PROSECUTOR_DOCUMENT_UPLOAD_COMMAND_URL = WRITE_BASE_URI + "/prosecutions/%s/materials";
 
     public static UrlResponse submitSummons(final String inputFileName, final String contentType) {
 
@@ -138,6 +150,34 @@ public class StagingProsecutorsCivilUtils {
                 .withName(eventName)
                 .withUserId(userId)
                 .build();
+    }
+
+    public static HttpResponse sendFileUploadRequest(final String caseUrn,
+                                                     final File file,
+                                                     final String materialType,
+                                                     final String prosecutingAuthority) throws IOException {
+        final String commandUrl = format(PROSECUTOR_DOCUMENT_UPLOAD_COMMAND_URL, caseUrn);
+        final HttpPost request = new HttpPost(commandUrl);
+
+        return sendSubmitMaterialRequest(request, caseUrn, file, prosecutingAuthority, materialType);
+    }
+
+    private static HttpResponse sendSubmitMaterialRequest(final HttpPost request, final String caseUrn, final File file, final String prosecutingAuthority, final String materialType) throws IOException {
+        final MultipartEntityBuilder multipartEntityBuilder = create()
+                .setMode(BROWSER_COMPATIBLE)
+                .addBinaryBody("material", file, MULTIPART_FORM_DATA, file.getName())
+                .addTextBody("prosecutingAuthority", prosecutingAuthority)
+                .addTextBody("caseUrn", caseUrn);
+
+        if (materialType != null) {
+            multipartEntityBuilder.addTextBody("materialType", materialType);
+        }
+
+        request.setEntity(multipartEntityBuilder.build());
+        request.setHeader(HeaderConstants.USER_ID, randomUUID().toString());
+
+
+        return HttpClients.createDefault().execute(request);
     }
 
 }
