@@ -19,19 +19,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-/**
- * Reusable cross-context client for {@code usersgroups.get-logged-in-user-groups} - mirrors
- * {@code cpp-context-progression}'s {@code UserGroupQueryService} and
- * {@code cpp-context-results}' {@code ReferenceDataService} conventions: build the request via
- * {@code JsonEnvelope.envelopeFrom} (not {@code Envelope.envelopeFrom} - the latter's runtime
- * type does not implement {@code JsonEnvelope}) and read the typed response via the
- * {@code Requester.request(envelope, Class)} overload. Deliberately not an {@code @Adapter}
- * class - a {@code Requester} injected from an {@code @Adapter} always resolves to the
- * framework's LOCAL dispatcher regardless of {@code @ServiceComponent} qualifier, while the
- * generated cross-context REST client is registered under REMOTE (CAD-1613 - see the KB
- * workspace's ADR-002 for the full framework-bytecode evidence). Not "AsAdmin": this query is
- * inherently scoped to the calling user's own identity, unlike a general reference-data lookup.
- */
 public class UserGroupsClient {
 
     private static final String USERSGROUPS_GET_LOGGED_IN_USER_GROUPS = "usersgroups.get-logged-in-user-groups";
