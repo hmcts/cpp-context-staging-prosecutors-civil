@@ -4,7 +4,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,23 +16,21 @@ import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.http.HeaderConstants;
+import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.accesscontrol.AccessControlService;
 import uk.gov.justice.services.core.accesscontrol.AccessControlViolation;
 import uk.gov.justice.services.core.json.JsonSchemaValidationException;
 import uk.gov.justice.services.core.json.JsonSchemaValidator;
-import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.core.audit.AuditService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +38,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -81,9 +77,6 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     private InputPart filePart;
 
     @Mock
-    private Requester requester;
-
-    @Mock
     private HttpHeaders headers;
 
     @Mock
@@ -91,6 +84,9 @@ class DefaultCommandApiComplaintsFilesResourceTest {
 
     @Mock
     private AccessControlService accessControlService;
+
+    @Mock
+    private ProsecutingAuthorityValidationService prosecutingAuthorityValidationService;
 
     @Captor
     private ArgumentCaptor<Envelope<SummonsProsecution>> envelopeCaptor;
@@ -117,18 +113,21 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         assertThat(submitted.getProsecutionCases().size(), is(3));
     }
 
-    // Disabled per request, alongside the production check it exercised: verification of the
-    // calling user's organisation against the CSV's prosecuting authority is currently commented
-    // out in DefaultCommandApiComplaintsFilesResource, so this scenario no longer applies.
-    // @Test
-    // void shouldThrowBadRequestWhenCallingUserOrganisationDoesNotMatchCsvProsecutingAuthority() throws Exception {
-    //     when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
-    //     formDataMapWithFilePart();
-    //     stubCallingUserOrganisation("TFL");
-    //
-    //     assertThrows(BadRequestException.class,
-    //             () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
-    // }
+    @Test
+    void shouldThrowBadRequestWhenCallingUserOrganisationDoesNotMatchCsvProsecutingAuthority() throws Exception {
+        when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
+        formDataMapWithFilePart();
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        doThrow(new BadRequestException("prosecuting authority mismatch"))
+                .when(prosecutingAuthorityValidationService).validateCallingUserBelongsToProsecutingAuthority(any(), any());
+
+        assertThrows(BadRequestException.class,
+                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+
+        // CAD-1613: the audit call is ordered before this check, so a rejected upload still leaves
+        // an audit record of the attempt.
+        verify(auditService).audit(any(), eq(Component.COMMAND_API));
+    }
 
     @Test
     void shouldThrowBadRequestWhenFilePartMissing() {
@@ -221,80 +220,5 @@ class DefaultCommandApiComplaintsFilesResourceTest {
 
     private InputStream csvStream(final String resourcePath) {
         return getClass().getResourceAsStream("/" + resourcePath);
-    }
-
-    /**
-     * {@code validateCallingUserBelongsToProsecutingAuthority} has no production call site - its
-     * invocation is commented out in {@link DefaultCommandApiComplaintsFilesResource} alongside
-     * the disabled test above - so it can only be exercised directly, via reflection, without
-     * re-enabling that call and changing production behaviour.
-     */
-    @Test
-    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenUserIdHeaderMissing() {
-        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(null);
-
-        assertThrows(BadRequestException.class,
-                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
-    }
-
-    @Test
-    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenUserIdHeaderIsBlank() {
-        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn("   ");
-
-        assertThrows(BadRequestException.class,
-                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
-    }
-
-    @Test
-    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenGroupsAreAbsentFromResponse() {
-        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
-        when(requester.request(any())).thenReturn(JsonEnvelope.envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-groups").build(),
-                Json.createObjectBuilder().build()));
-
-        assertThrows(BadRequestException.class,
-                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
-    }
-
-    @Test
-    void validateCallingUserBelongsToProsecutingAuthorityThrowsWhenAuthorityDoesNotMatch() {
-        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
-        stubCallingUserOrganisation("TFL");
-
-        assertThrows(BadRequestException.class,
-                () -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
-    }
-
-    @Test
-    void validateCallingUserBelongsToProsecutingAuthorityPassesWhenAuthorityMatchesCaseInsensitively() {
-        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
-        stubCallingUserOrganisation("gaaaa01");
-
-        assertDoesNotThrow(() -> invokeValidateCallingUserBelongsToProsecutingAuthority("GAAAA01"));
-    }
-
-    private void stubCallingUserOrganisation(final String prosecutingAuthority) {
-        final JsonEnvelope groupsResponse = JsonEnvelope.envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-groups").build(),
-                Json.createObjectBuilder()
-                        .add("groups", Json.createArrayBuilder()
-                                .add(Json.createObjectBuilder()
-                                        .add("groupId", randomUUID().toString())
-                                        .add("groupName", "Charging Lawyers")
-                                        .add("prosecutingAuthority", prosecutingAuthority))
-                                .build())
-                        .build());
-        when(requester.request(any())).thenReturn(groupsResponse);
-    }
-
-    private void invokeValidateCallingUserBelongsToProsecutingAuthority(final String csvProsecutingAuthority) throws Throwable {
-        final Method method = DefaultCommandApiComplaintsFilesResource.class
-                .getDeclaredMethod("validateCallingUserBelongsToProsecutingAuthority", String.class);
-        method.setAccessible(true);
-        try {
-            method.invoke(resource, csvProsecutingAuthority);
-        } catch (final InvocationTargetException e) {
-            throw e.getCause();
-        }
     }
 }

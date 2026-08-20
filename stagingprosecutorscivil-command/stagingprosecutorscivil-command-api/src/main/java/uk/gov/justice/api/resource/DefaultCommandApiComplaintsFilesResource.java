@@ -10,14 +10,13 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.common.http.HeaderConstants;
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
-import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.json.JsonSchemaValidationException;
 import uk.gov.justice.services.core.json.JsonSchemaValidator;
-import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 
@@ -32,15 +31,12 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import javax.inject.Inject;
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import javax.json.JsonValue;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -68,10 +64,6 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
     private static final String FILE_PART_NAME = "file";
     private static final String SUMMONS_PROSECUTION_SCHEMA_NAME = "stagingprosecutorscivil.summons-prosecution";
     private static final String SUMMONS_PROSECUTION_CSV_ACTION_NAME = "stagingprosecutorscivil.summons-prosecution-csv";
-    private static final String USERSGROUPS_GET_LOGGED_IN_USER_GROUPS = "usersgroups.get-logged-in-user-groups";
-    private static final String GROUPS_FIELD = "groups";
-    private static final String USER_ID_FIELD = "userId";
-    private static final String PROSECUTING_AUTHORITY_FIELD = "prosecutingAuthority";
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
@@ -91,8 +83,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
     private AccessControlService accessControlService;
 
     @Inject
-    @ServiceComponent(Component.QUERY_API)
-    private Requester requester;
+    private ProsecutingAuthorityValidationService prosecutingAuthorityValidationService;
 
     @Context
     private HttpHeaders headers;
@@ -103,8 +94,6 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
 
         final SummonsProsecution summonsProsecution = convertCsvToSummonsProsecution(multipartFormDataInput);
         validateAgainstSummonsProsecutionSchema(summonsProsecution);
-        // Disabled per request: verification of calling user against the CSV's prosecuting authority
-        // validateCallingUserBelongsToProsecutingAuthority(summonsProsecution.getProsecutingAuthority());
 
         final String userId = requireUserIdHeader();
 
@@ -118,6 +107,9 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         final JsonEnvelope commandEnvelope = JsonEnvelope.envelopeFrom(metadata, payload);
 
         auditService.audit(commandEnvelope, Component.COMMAND_API);
+
+        prosecutingAuthorityValidationService.validateCallingUserBelongsToProsecutingAuthority(
+                userId, summonsProsecution.getProsecutingAuthority());
 
         final Metadata accessControlMetadata = metadataBuilder()
                 .withId(randomUUID())
@@ -163,49 +155,6 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         } catch (IOException | IllegalArgumentException e) {
             LOGGER.warn("Failed to parse complaints CSV file", e);
             throw new BadRequestException("Unable to parse complaints CSV file: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * CAD-1525 AC1 validation #3: the prosecuting authority on the (first row of the) uploaded
-     * CSV must match the calling user's own organisation. Follows the same {@code Requester}
-     * (qualified {@code @ServiceComponent(QUERY_API)}) / {@code usersgroups.get-logged-in-user-groups}
-     * synchronous cross-context query pattern that {@code cpp-context-progression}'s
-     * {@code UserGroupQueryService} already uses for this exact "does this user belong to
-     * prosecuting authority X" check — an unqualified {@code Requester} only dispatches to
-     * handlers registered in this deployment and throws {@code MissingHandlerException} for a
-     * cross-context action name like this one.
-     */
-    private void validateCallingUserBelongsToProsecutingAuthority(final String csvProsecutingAuthority) {
-        final String callingUserId = headers.getHeaderString(HeaderConstants.USER_ID);
-        if (callingUserId == null || callingUserId.isBlank()) {
-            throw new BadRequestException("Missing " + HeaderConstants.USER_ID + " header");
-        }
-
-        final Metadata metadata = metadataBuilder()
-                .withId(randomUUID())
-                .withName(USERSGROUPS_GET_LOGGED_IN_USER_GROUPS)
-                .build();
-        final JsonObject queryPayload = Json.createObjectBuilder()
-                .add(USER_ID_FIELD, callingUserId)
-                .build();
-
-        final JsonEnvelope response = requester.request(envelopeFrom(metadata, queryPayload));
-        final JsonArray groups = response.payloadAsJsonObject().getJsonArray(GROUPS_FIELD);
-
-        final String callingUserProsecutingAuthority = groups == null ? null : groups.stream()
-                .map(JsonValue::asJsonObject)
-                .map(group -> group.getString(PROSECUTING_AUTHORITY_FIELD, null))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-
-        if (callingUserProsecutingAuthority == null
-                || !callingUserProsecutingAuthority.equalsIgnoreCase(csvProsecutingAuthority)) {
-            LOGGER.warn("Complaints CSV prosecuting authority '{}' does not match calling user {}'s organisation '{}'",
-                    csvProsecutingAuthority, callingUserId, callingUserProsecutingAuthority);
-            throw new BadRequestException("The uploaded complaints file's prosecuting authority ('"
-                    + csvProsecutingAuthority + "') does not match the calling user's organisation");
         }
     }
 

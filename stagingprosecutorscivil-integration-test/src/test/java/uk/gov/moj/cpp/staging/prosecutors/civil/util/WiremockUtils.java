@@ -52,6 +52,8 @@ public class WiremockUtils {
     private static final String SYSTEM_ID_MAPPER_URL = "/system-id-mapper-api/rest/systemid/mappings/*";
     private static final String USER_GROUPS_USERS_QUERY_URL = "/usersgroups-service/query/api/rest/usersgroups/users/.*/groups";
     private static final String CONTENT_TYPE_QUERY_PERMISSION = "application/vnd.usersgroups.get-logged-in-user-permissions+json";
+    private static final String REFERENCEDATA_PROSECUTORS_URL = "/referencedata-service/query/api/rest/referencedata/prosecutors.*";
+    private static final String CONTENT_TYPE_GET_PROSECUTOR = "application/vnd.referencedata.query.get.prosecutor+json";
 
     public WiremockUtils() {
         configureFor(HOST, PORT);
@@ -106,12 +108,27 @@ public class WiremockUtils {
     }
 
     public WiremockUtils stubUserGroupsWithProsecutingAuthority(final String prosecutingAuthority) {
+        return stubUserGroupsForGroupName("Charging Lawyers", prosecutingAuthority);
+    }
+
+    public WiremockUtils stubUserGroupsForGroupName(final String groupName, final String prosecutingAuthority) {
         stubFor(get(urlMatching(USER_GROUPS_USERS_QUERY_URL))
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .withBody("{\"groups\":[{\"groupId\":\"" + randomUUID() + "\",\"groupName\":\"Charging Lawyers\","
+                        .withBody("{\"groups\":[{\"groupId\":\"" + randomUUID() + "\",\"groupName\":\"" + groupName + "\","
                                 + "\"prosecutingAuthority\":\"" + prosecutingAuthority + "\"}]}")));
+        return this;
+    }
+
+    public WiremockUtils stubReferenceDataProsecutorByOuCode(final String shortName) {
+        stubPingFor("referencedata-service");
+        stubFor(get(urlMatching(REFERENCEDATA_PROSECUTORS_URL))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, CONTENT_TYPE_GET_PROSECUTOR)
+                        .withBody("{\"id\":\"" + randomUUID() + "\",\"fullName\":\"" + shortName
+                                + "\",\"shortName\":\"" + shortName + "\"}")));
         return this;
     }
 
