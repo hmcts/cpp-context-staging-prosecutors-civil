@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
-import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ProsecutorReferenceDataClient;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
 
 import java.util.List;
@@ -33,7 +33,7 @@ class ProsecutingAuthorityValidationServiceTest {
     private UserGroupsClient userGroupsClient;
 
     @Mock
-    private ProsecutorReferenceDataClient prosecutorReferenceDataClient;
+    private ReferenceDataClient referenceDataClient;
 
     @Test
     void throwsWhenGroupsListIsEmpty() {
@@ -58,7 +58,7 @@ class ProsecutingAuthorityValidationServiceTest {
     void throwsWhenAuthorityDoesNotMatchResolvedShortName() {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
                 .thenReturn(List.of(groupJson("Charging Lawyers", "TFL")));
-        when(prosecutorReferenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
+        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
 
         assertThrows(BadRequestException.class,
                 () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
@@ -68,7 +68,7 @@ class ProsecutingAuthorityValidationServiceTest {
     void passesWhenAuthorityMatchesResolvedShortNameCaseInsensitively() {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
                 .thenReturn(List.of(groupJson("Charging Lawyers", "gaaaa01")));
-        when(prosecutorReferenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
+        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
 
         assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
     }
@@ -114,7 +114,7 @@ class ProsecutingAuthorityValidationServiceTest {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID)).thenReturn(List.of(
                 groupJson("Charging Lawyers", "TFL"),
                 groupJson("Charging Lawyers", "GAAAA01")));
-        when(prosecutorReferenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
+        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
 
         assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
     }
@@ -124,7 +124,7 @@ class ProsecutingAuthorityValidationServiceTest {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID)).thenReturn(List.of(
                 groupJson("Charging Lawyers", "TFL"),
                 groupJson("Charging Lawyers", "OTHER")));
-        when(prosecutorReferenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
+        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
 
         assertThrows(BadRequestException.class,
                 () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));

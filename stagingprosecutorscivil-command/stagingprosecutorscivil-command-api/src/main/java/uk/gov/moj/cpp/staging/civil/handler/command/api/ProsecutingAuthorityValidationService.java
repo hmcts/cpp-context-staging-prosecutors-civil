@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
-import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ProsecutorReferenceDataClient;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
 
 import java.util.List;
@@ -31,7 +31,7 @@ public class ProsecutingAuthorityValidationService {
     private UserGroupsClient userGroupsClient;
 
     @Inject
-    private ProsecutorReferenceDataClient prosecutorReferenceDataClient;
+    private ReferenceDataClient referenceDataClient;
 
     /**
      * CAD-1525 AC1 validation #3, extended by CAD-1613: the prosecuting authority on the uploaded
@@ -41,7 +41,7 @@ public class ProsecutingAuthorityValidationService {
      * exemption is granted if ANY group's name matches. If the caller is not exempt and none of
      * their groups carry a prosecuting authority at all, the request is rejected outright. If at
      * least one group does, the CSV's own ou code (read from its first row) is resolved to a
-     * prosecutor short name via {@link ProsecutorReferenceDataClient}, and that short name must
+     * prosecutor short name via {@link ReferenceDataClient}, and that short name must
      * match ANY one of the caller's groups' prosecuting authorities. {@code callingUserId} must
      * already be a validated, non-blank user id (the caller's responsibility).
      */
@@ -66,7 +66,7 @@ public class ProsecutingAuthorityValidationService {
             return;
         }
 
-        final String prosecutorShortName = prosecutorReferenceDataClient.getProsecutorShortNameForOuCode(csvOuCode);
+        final String prosecutorShortName = referenceDataClient.getProsecutorShortNameForOuCode(csvOuCode);
 
         final boolean authorityMatches = callingUserProsecutingAuthorities.stream()
                 .anyMatch(authority -> authority.equalsIgnoreCase(prosecutorShortName));

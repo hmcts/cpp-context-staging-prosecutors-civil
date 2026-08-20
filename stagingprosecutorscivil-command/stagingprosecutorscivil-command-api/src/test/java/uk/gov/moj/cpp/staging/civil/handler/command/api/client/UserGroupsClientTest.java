@@ -6,11 +6,12 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 
 import uk.gov.justice.services.core.requester.Requester;
-import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.List;
 
@@ -36,7 +37,7 @@ class UserGroupsClientTest {
 
     @Test
     void returnsEmptyListWhenGroupsFieldAbsent() {
-        when(requester.request(any())).thenReturn(JsonEnvelope.envelopeFrom(
+        when(requester.request(any(), eq(JsonObject.class))).thenReturn(envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-groups").build(),
                 Json.createObjectBuilder().build()));
 
@@ -50,7 +51,7 @@ class UserGroupsClientTest {
                 .add("groupName", "Charging Lawyers")
                 .add("prosecutingAuthority", "GAAAA01")
                 .build();
-        when(requester.request(any())).thenReturn(JsonEnvelope.envelopeFrom(
+        when(requester.request(any(), eq(JsonObject.class))).thenReturn(envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-groups").build(),
                 Json.createObjectBuilder().add("groups", Json.createArrayBuilder().add(group)).build()));
 
