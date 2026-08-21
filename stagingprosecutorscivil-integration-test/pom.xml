@@ -3,7 +3,7 @@
     <parent>
         <artifactId>stagingprosecutorscivil</artifactId>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-        <version>17.104.13-rename-apis-SNAPSHOT</version>
+        <version>17.104.14-rename-apis-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -68,6 +68,11 @@
             <groupId>uk.gov.justice.utils</groupId>
             <artifactId>integration-test-utils-jms</artifactId>
             <version>${framework.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -10,7 +10,7 @@
     {
       "informant": "Adam",
       "caseMarker": "Case mark",
-      "urn": "case_urn_value_1",
+      "urn": "case-urn-value-1",
       "defendants": [
         {
           "defendantDetails": {
@@ -124,7 +124,7 @@
       ]
     },
     {
-      "urn": "case_urn_value_1",
+      "urn": "case-urn-value-10",
       "informant": "jones",
       "defendants": [
         {

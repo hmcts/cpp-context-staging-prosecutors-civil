@@ -15,6 +15,8 @@ import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
@@ -69,6 +71,10 @@ public class Submission implements Serializable {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "submission", orphanRemoval = true)
     private Set<CaseDetail> caseDetail = new HashSet<>();
 
+    @Column(name = "type")
+    @Enumerated(EnumType.STRING)
+    private SubmissionType type;
+
     public Submission() {
     }
 
@@ -81,7 +87,8 @@ public class Submission implements Serializable {
                       final JsonArray defendantWarnings,
                       final ZonedDateTime receivedAt,
                       final ZonedDateTime completedAt,
-                      final Set<CaseDetail> caseDetail) {
+                      final Set<CaseDetail> caseDetail,
+                      final SubmissionType type) {
         this.submissionId = submissionId;
         this.submissionStatus = submissionStatus;
         this.ouCode = ouCode;
@@ -93,6 +100,7 @@ public class Submission implements Serializable {
         this.completedAt = completedAt;
         this.caseDetail = caseDetail;
         this.setCaseDetail(caseDetail);
+        this.type = type;
     }
 
     public UUID getSubmissionId() {
@@ -196,6 +204,14 @@ public class Submission implements Serializable {
         this.defendantErrors = defendantErrors;
     }
 
+    public SubmissionType getType() {
+        return type;
+    }
+
+    public void setType(final SubmissionType type) {
+        this.type = type;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -211,6 +227,7 @@ public class Submission implements Serializable {
         private ZonedDateTime receivedAt;
         private ZonedDateTime completedAt;
         private Set<CaseDetail> caseDetail = new HashSet<>();
+        private SubmissionType type;
 
         public static Builder aSubmission() {
             return new Builder();
@@ -270,8 +287,13 @@ public class Submission implements Serializable {
             return this;
         }
 
+        public Builder withType(SubmissionType type) {
+            this.type = type;
+            return this;
+        }
+
         public Submission build() {
-            return new Submission(submissionId, submissionStatus, ouCode, errors, warnings, caseWarnings, defendantWarnings, receivedAt, completedAt, caseDetail);
+            return new Submission(submissionId, submissionStatus, ouCode, errors, warnings, caseWarnings, defendantWarnings, receivedAt, completedAt, caseDetail, type);
         }
     }
 }

@@ -1,0 +1,5 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public.progression.court-document-added.json",
+  "ref": "http://justice.gov.uk/core/courts/courts-document-added.json"
+}

@@ -1,7 +1,9 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReference;
 
 import uk.gov.justice.services.core.accesscontrol.AccessControlViolationException;
 import uk.gov.justice.services.core.dispatcher.SystemUserProvider;
@@ -42,8 +44,7 @@ public class SystemIdMapperService {
     @Inject
     private SystemIdMapperClient systemIdMapperClient;
 
-    public UUID getCppCaseIdFor(final String prosecutorCaseReference) {
-        LOGGER.info("SystemIdMapperService : calling system-id-mapper with prosecutorCaseReference {} ", prosecutorCaseReference);
+    public UUID getCppCaseIdFor(final String prosecutorCaseReference, final String prosecutingAuthority) {
         final Optional<SystemIdMapping> mapping = getSystemIdMappingFor(prosecutorCaseReference);
         if (mapping.isPresent()) {
             return mapping.get().getTargetId();
@@ -52,6 +53,12 @@ public class SystemIdMapperService {
         final Optional<SystemIdMapping> mappingForPtiUrn = getSystemIdMappingForSpiCase(prosecutorCaseReference);
         if (mappingForPtiUrn.isPresent()) {
             return mappingForPtiUrn.get().getTargetId();
+        } else {
+            final String caseReference = getProsecutorCaseReference(prosecutingAuthority, prosecutorCaseReference);
+            final Optional<SystemIdMapping> mapping1 = getSystemIdMappingFor(caseReference);
+            if (mapping1.isPresent()) {
+                return mapping1.get().getTargetId();
+            }
         }
 
         final UUID newCaseId = randomUUID();
@@ -89,13 +96,24 @@ public class SystemIdMapperService {
         return systemIdMapperClient.add(systemIdMap, contextSystemUserId);
     }
 
-    public Map<String, UUID> getCppCaseIdMapFor(List<String> prosecutorCaseReferences) {
-        LOGGER.info("SystemIdMapperService : calling bulk system-ids-mapper for {} prosecutorCaseReference's", prosecutorCaseReferences.size());
+    public Map<String, UUID> getCppCaseIdMapFor(List<String> prosecutorCaseReferences, final String prosecutingAuthority) {
         final UUID contextSystemUserId = systemUserProvider.getContextSystemUserId().orElseThrow(() -> new AccessControlViolationException("System user not found"));
-        final List<SystemIdMap> systemIdMapList = prosecutorCaseReferences.stream().map(prosecutorCaseReference -> new SystemIdMap(prosecutorCaseReference, SOURCE_TYPE, randomUUID(), TARGET_TYPE)).collect(Collectors.toList());
-        final AdditionResponses additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapList), contextSystemUserId);
 
-        LOGGER.info("SystemIdMapperService : checking AdditionResponses for bulk system-id-mapper");
+        final Map<String, UUID> caseRefToNewUuid = prosecutorCaseReferences.stream().collect(Collectors.toMap(
+                ref -> ref,
+                ref -> {
+                    final Optional<SystemIdMapping> existingMapping = getSystemIdMappingFor(ref);
+                    return existingMapping.isPresent() ? existingMapping.get().getTargetId() : randomUUID();
+                }));
+
+        final List<SystemIdMap> systemIdMapList = prosecutorCaseReferences.stream().map(ref -> new SystemIdMap(ref, SOURCE_TYPE, caseRefToNewUuid.get(ref), TARGET_TYPE)).collect(Collectors.toList());
+        AdditionResponses additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapList), contextSystemUserId);
+
+        if(nonNull(prosecutingAuthority)) {
+            final List<SystemIdMap> systemIdMapListUpdated = prosecutorCaseReferences.stream().map(ref -> new SystemIdMap(getProsecutorCaseReference(prosecutingAuthority, ref), SOURCE_TYPE, caseRefToNewUuid.get(ref), TARGET_TYPE)).collect(Collectors.toList());
+            additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapListUpdated), contextSystemUserId);
+        }
+
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         additionResponses.getSystemIdMappings().forEach(systemIdMappings -> {
             if(isNull(systemIdMappings.getError())) {

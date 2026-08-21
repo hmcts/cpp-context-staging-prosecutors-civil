@@ -3,7 +3,7 @@
     <parent>
         <artifactId>stagingprosecutorscivil-event</artifactId>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-        <version>17.104.13-rename-apis-SNAPSHOT</version>
+        <version>17.104.14-rename-apis-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -64,6 +64,12 @@
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>test-utils-enveloper-provider</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+            <artifactId>stagingprosecutorscivil-viewstore-persistance</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
