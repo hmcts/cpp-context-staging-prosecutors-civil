@@ -21,7 +21,7 @@
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <postgresql.version>42.1.4</postgresql.version>
-        <prosecutioncasefile.version>17.0.97-CIVIL-T3-SNAPSHOT</prosecutioncasefile.version>
+        <prosecutioncasefile.version>17.0.99-CIVIL-T3-SNAPSHOT</prosecutioncasefile.version>
         <referencedata.version>17.104.137</referencedata.version>
         <usersgroups.version>17.104.50</usersgroups.version>
         <coredomain.version>17.104.3</coredomain.version>

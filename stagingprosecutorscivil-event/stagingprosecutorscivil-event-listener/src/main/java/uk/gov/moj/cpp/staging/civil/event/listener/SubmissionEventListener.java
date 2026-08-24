@@ -122,8 +122,7 @@ public class SubmissionEventListener {
                     mergeCaseProblems(updatedCivilCaseReceived.getCaseErrors(), updatedCivilCaseReceived.getGroupCaseErrors())));
             submission.setDefendantErrors(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantErrors()));
         } else if (SubmissionStatus.SUCCESS_WITH_WARNINGS.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
-            submission.setWarnings(transformErrorsToJsonArray(updatedCivilCaseReceived.getWarnings()));
-            submission.setCaseWarnings(transformErrorsToJsonArray(updatedCivilCaseReceived.getCaseWarnings()));
+            submission.setCaseWarnings(transformCaseProblemsToJsonArray(updatedCivilCaseReceived.getCaseWarnings()));
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
 

@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.staging.civil.query;
 
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
@@ -16,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -35,25 +37,29 @@ public class CivilProsecutionQueryView {
 
         final JsonObject payload = submissionOptional
                 .map(submission -> {
+                            // every array attribute is always present: consumers can rely on the key
+                            // existing, with an empty array standing in for "no data"
                             final JsonObjectBuilder result = createObjectBuilder()
                                     .add("id", submission.getSubmissionId().toString())
                                     .add("status", submission.getSubmissionStatus())
-                                    .add("warnings", submission.getWarnings())
-                                    .add("errors", submission.getErrors());
+                                    .add("materialWarnings", orEmptyArray(submission.getWarnings()))
+                                    .add("materialErrors", orEmptyArray(submission.getErrors()))
+                                    .add("caseErrors", orEmptyArray(submission.getGroupCaseErrors()))
+                                    .add("defendantErrors", orEmptyArray(submission.getDefendantErrors()))
+                                    .add("caseWarnings", orEmptyArray(submission.getCaseWarnings()))
+                                    .add("defendantWarnings", orEmptyArray(submission.getDefendantWarnings()));
+                            // type and received_at carry no NOT NULL constraint in the viewstore, so a
+                            // legacy row could still hold null; guard rather than fail the whole query
                             if (nonNull(submission.getType())) {
                                 result.add("type", submission.getType().name());
                             }
                             if (nonNull(submission.getReceivedAt())) {
                                 result.add("receivedAt", ZonedDateTimes.toString(submission.getReceivedAt()));
                             }
+                            // completedAt is the sole genuinely optional attribute: absent until the
+                            // submission reaches a terminal status
                             if (nonNull(submission.getCompletedAt())) {
                                 result.add("completedAt", ZonedDateTimes.toString(submission.getCompletedAt()));
-                            }
-                            if (nonNull(submission.getGroupCaseErrors())) {
-                                result.add("caseErrors", submission.getGroupCaseErrors());
-                            }
-                            if (nonNull(submission.getDefendantErrors())) {
-                                result.add("defendantErrors", submission.getDefendantErrors());
                             }
                             return result.build();
                         }
@@ -63,5 +69,9 @@ public class CivilProsecutionQueryView {
         return envelopeFrom(metadataFrom(envelope.metadata())
                 .withName("stagingprosecutorscivil.query.submission-details"), payload);
 
+    }
+
+    private static JsonArray orEmptyArray(final JsonArray value) {
+        return nonNull(value) ? value : createArrayBuilder().build();
     }
 }

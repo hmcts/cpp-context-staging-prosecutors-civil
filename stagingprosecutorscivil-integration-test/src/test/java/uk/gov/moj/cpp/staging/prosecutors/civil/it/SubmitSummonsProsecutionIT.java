@@ -29,7 +29,6 @@ import javax.json.JsonObject;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class SubmitSummonsProsecutionIT {
@@ -136,7 +135,6 @@ public class SubmitSummonsProsecutionIT {
         assertThat(status, Matchers.is(400));
     }
 
-    @Disabled("Works locally but fails in pipeline")
     @Test
     public void shouldUpdateStatusToSuccessWithWarningsForSummonsProsecution() {
         UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution("payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_PROSECUTION_CONTENT_TYPE);
