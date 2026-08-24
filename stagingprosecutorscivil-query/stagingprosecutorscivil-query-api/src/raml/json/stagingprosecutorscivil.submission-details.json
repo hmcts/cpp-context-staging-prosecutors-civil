@@ -1,9 +1,43 @@
 {
     "id": "cedb215e-9297-4799-9a4d-5c608eaa4131",
-    "status": "SUCCESS",
+    "status": "SUCCESS_WITH_WARNINGS",
     "type": "PROSECUTION",
     "receivedAt": "2026-08-14T10:15:30.000Z",
     "completedAt": "2026-08-14T10:16:45.000Z",
-    "warnings": [],
-    "errors": []
+    "materialWarnings": [],
+    "materialErrors": [],
+    "caseErrors": [],
+    "defendantErrors": [],
+    "caseWarnings": [
+        {
+            "prosecutorCaseReference": "SCIV12345",
+            "problems": [
+                {
+                    "code": "CASE_HEARING_DATE_IN_PAST",
+                    "values": [
+                        {
+                            "key": "hearingDate",
+                            "value": "2020-01-01"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "defendantWarnings": [
+        {
+            "prosecutorDefendantReference": "SCIV12345-D1",
+            "problems": [
+                {
+                    "code": "DEFENDANT_DOB_IN_FUTURE",
+                    "values": [
+                        {
+                            "key": "dateOfBirth",
+                            "value": "2050-01-01"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

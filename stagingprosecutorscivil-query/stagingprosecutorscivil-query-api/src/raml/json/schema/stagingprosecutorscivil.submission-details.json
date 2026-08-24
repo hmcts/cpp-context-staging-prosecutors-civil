@@ -18,23 +18,59 @@
     "completedAt": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date-time"
     },
-    "warnings": {
-      "type": "array"
+    "materialWarnings": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/problem.json"
+      }
     },
-    "errors": {
-      "type": "array"
+    "materialErrors": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/problem.json"
+      }
     },
     "caseErrors": {
       "type": "array",
+      "minItems": 0,
       "items": {
         "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
       }
     },
     "defendantErrors": {
       "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
+      }
+    },
+    "caseWarnings": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
+      }
+    },
+    "defendantWarnings": {
+      "type": "array",
+      "minItems": 0,
       "items": {
         "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
       }
     }
-  }
+  },
+  "required": [
+    "id",
+    "status",
+    "type",
+    "receivedAt",
+    "materialErrors",
+    "materialWarnings",
+    "caseErrors",
+    "defendantErrors",
+    "caseWarnings",
+    "defendantWarnings"
+  ]
 }
