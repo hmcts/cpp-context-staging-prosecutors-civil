@@ -33,6 +33,7 @@ public class UserGroupsClient {
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())
                 .withName(USERSGROUPS_GET_LOGGED_IN_USER_GROUPS)
+                .withUserId(userId)
                 .build();
         final JsonObject queryPayload = Json.createObjectBuilder()
                 .add(USER_ID_FIELD, userId)
