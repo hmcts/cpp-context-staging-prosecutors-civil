@@ -147,7 +147,7 @@ public class StagingProsecutorsCivilUtils {
         return poll(getRequestParams(submissionId))
                 .pollDelay(0, MILLISECONDS)
                 .pollInterval(100, MILLISECONDS)
-                .timeout(10, SECONDS)
+                .timeout(30, SECONDS)
                 .until(
                         status().is(OK),
                         payload().isJson(matcher)

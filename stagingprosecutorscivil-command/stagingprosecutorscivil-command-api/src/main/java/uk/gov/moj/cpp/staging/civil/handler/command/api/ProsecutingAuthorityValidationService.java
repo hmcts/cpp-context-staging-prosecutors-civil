@@ -46,13 +46,18 @@ public class ProsecutingAuthorityValidationService {
      * already be a validated, non-blank user id (the caller's responsibility).
      */
     public void validateCallingUserBelongsToProsecutingAuthority(final String callingUserId, final String csvOuCode) {
+        LOGGER.debug("Validating prosecuting authority for user {} against CSV ou code '{}'", callingUserId, csvOuCode);
+
         final List<JsonObject> callingUserGroups = userGroupsClient.getGroupsForUser(callingUserId);
+        LOGGER.debug("User {} belongs to {} group(s): {}", callingUserId, callingUserGroups.size(),
+                callingUserGroups.stream().map(group -> group.getString(GROUP_NAME_FIELD, null)).toList());
 
         final boolean callerIsExempt = callingUserGroups.stream()
                 .map(group -> group.getString(GROUP_NAME_FIELD, null))
                 .anyMatch(PROSECUTING_AUTHORITY_CHECK_EXEMPT_GROUP_NAMES::contains);
 
         if (callerIsExempt) {
+            LOGGER.debug("User {} is exempt from the prosecuting authority check via group membership", callingUserId);
             return;
         }
 
@@ -60,6 +65,7 @@ public class ProsecutingAuthorityValidationService {
                 .map(group -> group.getString(PROSECUTING_AUTHORITY_FIELD, null))
                 .filter(Objects::nonNull)
                 .toList();
+        LOGGER.debug("User {} has prosecuting authorities {}", callingUserId, callingUserProsecutingAuthorities);
 
         if (callingUserProsecutingAuthorities.isEmpty()) {
             rejectProsecutingAuthorityMismatch(csvOuCode, callingUserId, null);
@@ -67,13 +73,17 @@ public class ProsecutingAuthorityValidationService {
         }
 
         final String prosecutorShortName = referenceDataClient.getProsecutorShortNameForOuCode(csvOuCode);
+        LOGGER.debug("Resolved CSV ou code '{}' to prosecutor short name '{}'", csvOuCode, prosecutorShortName);
 
         final boolean authorityMatches = callingUserProsecutingAuthorities.stream()
                 .anyMatch(authority -> authority.equalsIgnoreCase(prosecutorShortName));
 
         if (!authorityMatches) {
             rejectProsecutingAuthorityMismatch(csvOuCode, callingUserId, callingUserProsecutingAuthorities.get(0));
+            return;
         }
+
+        LOGGER.debug("Prosecuting authority check passed for user {} against CSV ou code '{}'", callingUserId, csvOuCode);
     }
 
     private void rejectProsecutingAuthorityMismatch(final String csvOuCode, final String callingUserId,
@@ -84,3 +94,4 @@ public class ProsecutingAuthorityValidationService {
                 + csvOuCode + "') does not match the calling user's organisation");
     }
 }
+

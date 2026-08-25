@@ -28,7 +28,6 @@ import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ChargeProsecutionIT {
@@ -40,6 +39,7 @@ public class ChargeProsecutionIT {
     private static final String PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS = "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings";
 
     private static final String PROSECUTOR_CASE_REFERENCE = "URN-CIVIL-CASE-PROBLEM-1";
+    private static final String PROSECUTOR_DEFENDANT_REFERENCE = "URN-CIVIL-CASE-PROBLEM-1-D1";
     private static final String CASE_PROBLEM_CODE = "CASE_URN_ALREADY_EXISTS";
     private static final String CASE_PROBLEM_VALUE_KEY = "urn";
     private static final String CASE_PROBLEM_VALUE = "URN-CIVIL-CASE-PROBLEM-1";
@@ -297,7 +297,6 @@ public class ChargeProsecutionIT {
         assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
-    @Disabled("Works locally but fails in pipeline")
     @Test
     public void shouldUpdateStatusToSuccessWithWarningsForSingleCaseProsecution() {
         stubPCFCommand(randomUUID());
@@ -317,6 +316,69 @@ public class ChargeProsecutionIT {
 
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS_WITH_WARNINGS);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+    }
+
+    @Test
+    public void shouldReturnCaseProblemShapedWarningsForSuccessWithWarningsSingleCaseProsecution() {
+        stubPCFCommand(randomUUID());
+        UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitChargeProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json", CHARGE_PROSECUTION_CONTENT_TYPE);
+        final UUID submissionId = urlResponse.getSubmissionId();
+        ProsecutionCaseFileApi.expectInitiateSingleProsecution("payload/charge/stagingprosecutors.submit-charge-prosecution-single-case.json");
+        StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        // civilCaseWarnings is the CaseProblem[]-shaped source for the response's caseWarnings;
+        // the event's legacy flat caseWarnings is never populated and must be ignored
+        JsonObject warningsEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .add("warnings", problems())
+                .add("civilCaseWarnings", caseProblems())
+                .add("defendantWarnings", defendantProblems())
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS, randomUUID().toString()), warningsEvent));
+
+        final JsonObject submission = StagingProsecutorsCivilUtils.pollForSubmissionAsJson(submissionId, SubmissionStatus.SUCCESS_WITH_WARNINGS);
+        assertThat(submission.getString("id"), Matchers.is(submissionId.toString()));
+
+        assertCaseProblemsPersisted(submission.getJsonArray("caseWarnings"));
+
+        final JsonArray materialWarnings = submission.getJsonArray("materialWarnings");
+        assertThat(materialWarnings.size(), Matchers.is(0));
+
+        final JsonArray defendantWarnings = submission.getJsonArray("defendantWarnings");
+        assertThat(defendantWarnings.size(), Matchers.is(1));
+        assertThat(defendantWarnings.getJsonObject(0).getString("prosecutorDefendantReference"), Matchers.is(PROSECUTOR_DEFENDANT_REFERENCE));
+
+        // every array attribute is always present, empty when there is nothing to report
+        assertThat(submission.getJsonArray("materialErrors").isEmpty(), Matchers.is(true));
+        assertThat(submission.getJsonArray("caseErrors").isEmpty(), Matchers.is(true));
+        assertThat(submission.getJsonArray("defendantErrors").isEmpty(), Matchers.is(true));
+
+        // the pre-rename key names are gone from the response
+        assertThat(submission.containsKey("errors"), Matchers.is(false));
+        assertThat(submission.containsKey("warnings"), Matchers.is(false));
+    }
+
+    private JsonArray problems() {
+        return createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("code", CASE_PROBLEM_CODE)
+                        .add("values", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("key", CASE_PROBLEM_VALUE_KEY)
+                                        .add("value", CASE_PROBLEM_VALUE))))
+                .build();
+    }
+
+    private JsonArray defendantProblems() {
+        return createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorDefendantReference", PROSECUTOR_DEFENDANT_REFERENCE)
+                        .add("problems", problems()))
+                .build();
     }
 
 }

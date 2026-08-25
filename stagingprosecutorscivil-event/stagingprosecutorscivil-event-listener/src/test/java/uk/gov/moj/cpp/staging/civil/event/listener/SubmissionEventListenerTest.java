@@ -40,6 +40,7 @@ import java.util.UUID;
 
 import javax.json.Json;
 
+import liquibase.repackaged.net.sf.jsqlparser.expression.NullValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -249,11 +250,17 @@ public class SubmissionEventListenerTest {
     @Test
     void shouldUpdateCaseFileForSuccessWithWarningsStatus() {
         final UUID submissionId = randomUUID();
+        final CaseProblem caseWarning = CaseProblem.caseProblem()
+                .withProsecutorCaseReference("URN01")
+                .withProblems(Collections.singletonList(
+                        uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem.problem().withCode("CASE_WARN").build()))
+                .build();
+
         final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(SUCCESS_WITH_WARNINGS)
                 .withWarnings(Collections.EMPTY_LIST)
-                .withCaseWarnings(Collections.EMPTY_LIST)
+                .withCaseWarnings(Collections.singletonList(caseWarning))
                 .withDefendantWarnings(Collections.EMPTY_LIST)
                 .build();
 
@@ -261,6 +268,10 @@ public class SubmissionEventListenerTest {
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(SUCCESS_WITH_WARNINGS.name())
                 .build();
+
+        // caseWarnings is CaseProblem-shaped, exactly like caseErrors/groupCaseErrors
+        final javax.json.JsonObject caseWarningJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
+        when(objectToJsonObjectConverter.convert(caseWarning)).thenReturn(caseWarningJson);
 
         final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
@@ -271,6 +282,10 @@ public class SubmissionEventListenerTest {
         assertThat(submission.getSubmissionId(), is(submissionId));
         assertThat(submission.getSubmissionStatus(), is(SUCCESS_WITH_WARNINGS.name()));
         assertThat(submission.getCompletedAt(), is(notNullValue()));
+        assertThat(submission.getCaseWarnings(), contains(caseWarningJson));
+        assertThat(submission.getWarnings(), is(nullValue()));
+        assertThat(submission.getDefendantWarnings(), is(notNullValue()));
+        assertThat(submission.getDefendantWarnings().isEmpty(), is(true));
     }
 
     @Test

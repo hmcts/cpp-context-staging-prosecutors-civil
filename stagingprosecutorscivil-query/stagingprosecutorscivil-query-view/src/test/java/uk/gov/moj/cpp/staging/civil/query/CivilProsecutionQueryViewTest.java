@@ -90,12 +90,94 @@ public class CivilProsecutionQueryViewTest {
 
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("id"), Is.is(submissionId.toString()));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("status"), Is.is("PENDING"));
-        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("errors"), Is.is(errors));
-        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("warnings"), Is.is(warnings));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("materialErrors"), Is.is(errors));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("materialWarnings"), Is.is(warnings));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("caseWarnings"), Is.is(caseWarnings));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("defendantWarnings"), Is.is(defendantWarnings));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("type"), Is.is(SubmissionType.PROSECUTION.name()));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("receivedAt"), Is.is(ZonedDateTimes.toString(receivedAt)));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("completedAt"), Is.is(ZonedDateTimes.toString(completedAt)));
 
+        // the pre-rename key names must no longer appear on the response
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("errors"), Is.is(false));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("warnings"), Is.is(false));
+    }
+
+    @Test
+    public void shouldReturnCaseErrorsAndDefendantErrorsFromTheViewstore() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonArray caseErrors = createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorCaseReference", "URN01")
+                        .add("problems", createArrayBuilder().add(createObjectBuilder().add("code", "CASE_ERR"))))
+                .build();
+        final JsonArray defendantErrors = createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorDefendantReference", "URN01-D1")
+                        .add("problems", createArrayBuilder().add(createObjectBuilder().add("code", "DEF_ERR"))))
+                .build();
+
+        final Submission submission = new Submission(
+                submissionId,
+                "REJECTED",
+                "ouCode",
+                null,
+                null,
+                null,
+                null,
+                ZonedDateTime.now(),
+                ZonedDateTime.now(),
+                new HashSet<>(),
+                SubmissionType.PROSECUTION);
+        submission.setGroupCaseErrors(caseErrors);
+        submission.setDefendantErrors(defendantErrors);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmission(
+                createEnvelope("stagingprosecutorscivil.query.submission-details",
+                        createObjectBuilder().add("submissionId", submissionId.toString()).build()));
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("caseErrors"), Is.is(caseErrors));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("defendantErrors"), Is.is(defendantErrors));
+    }
+
+    @Test
+    public void shouldReturnEmptyArraysForEveryProblemAttributeWhenTheViewstoreHoldsNone() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final Submission submission = new Submission(
+                submissionId,
+                "PENDING",
+                "ouCode",
+                null,
+                null,
+                null,
+                null,
+                ZonedDateTime.now(),
+                null,
+                new HashSet<>(),
+                SubmissionType.PROSECUTION);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmission(
+                createEnvelope("stagingprosecutorscivil.query.submission-details",
+                        createObjectBuilder().add("submissionId", submissionId.toString()).build()));
+
+        final JsonObject response = jsonEnvelope.payloadAsJsonObject();
+        final JsonArray empty = createArrayBuilder().build();
+
+        // required-with-empty-array semantics: the key is always present so consumers never
+        // have to distinguish "absent" from "nothing to report"
+        for (final String attribute : new String[]{"materialErrors", "materialWarnings", "caseErrors",
+                "defendantErrors", "caseWarnings", "defendantWarnings"}) {
+            assertThat(response.containsKey(attribute), Is.is(true));
+            assertThat(response.getJsonArray(attribute), Is.is(empty));
+        }
     }
 
     @Test

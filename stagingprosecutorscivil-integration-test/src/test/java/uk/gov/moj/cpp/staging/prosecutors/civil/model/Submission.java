@@ -18,9 +18,9 @@ public class Submission {
 
     private final String submissionStatus;
 
-    private final List<Problem> errors;
+    private final List<Problem> materialErrors;
 
-    private final List<Problem> warnings;
+    private final List<Problem> materialWarnings;
 
     private final String type;
 
@@ -32,16 +32,16 @@ public class Submission {
     public Submission(
             @JsonProperty("id") UUID submissionId,
             @JsonProperty("status") String submissionStatus,
-            @JsonProperty("errors") List<Problem> errors,
-            @JsonProperty("warnings") List<Problem> warnings,
+            @JsonProperty("materialErrors") List<Problem> materialErrors,
+            @JsonProperty("materialWarnings") List<Problem> materialWarnings,
             @JsonProperty("type") String type,
             @JsonProperty("receivedAt") ZonedDateTime receivedAt,
             @JsonProperty("completedAt") ZonedDateTime completedAt) {
 
         this.submissionId = submissionId;
         this.submissionStatus = submissionStatus;
-        this.errors = errors;
-        this.warnings = warnings;
+        this.materialErrors = materialErrors;
+        this.materialWarnings = materialWarnings;
         this.type = type;
         this.receivedAt = receivedAt;
         this.completedAt = completedAt;
@@ -69,5 +69,13 @@ public class Submission {
 
     public ZonedDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public List<Problem> getMaterialErrors() {
+        return materialErrors;
+    }
+
+    public List<Problem> getMaterialWarnings() {
+        return materialWarnings;
     }
 }
