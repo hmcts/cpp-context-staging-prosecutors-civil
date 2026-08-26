@@ -17,6 +17,8 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserDetailsClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 
@@ -32,6 +34,8 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 import javax.json.Json;
@@ -64,6 +68,8 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
     private static final String FILE_PART_NAME = "file";
     private static final String SUMMONS_PROSECUTION_SCHEMA_NAME = "stagingprosecutorscivil.summons-prosecution";
     private static final String SUMMONS_PROSECUTION_CSV_ACTION_NAME = "stagingprosecutorscivil.summons-prosecution-csv";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    private static final Pattern FILENAME_PATTERN = Pattern.compile("filename=\"?([^\";]+)\"?");
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
@@ -84,6 +90,12 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
 
     @Inject
     private ProsecutingAuthorityValidationService prosecutingAuthorityValidationService;
+
+    @Inject
+    private UserDetailsClient userDetailsClient;
+
+    @Inject
+    private ReferenceDataClient referenceDataClient;
 
     @Context
     private HttpHeaders headers;
@@ -108,8 +120,10 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
 
         auditService.audit(commandEnvelope, Component.COMMAND_API);
 
-        prosecutingAuthorityValidationService.validateCallingUserBelongsToProsecutingAuthority(
-                userId, summonsProsecution.getProsecutingAuthority());
+        final String csvOuCode = summonsProsecution.getProsecutingAuthority();
+        final String prosecutorShortName = referenceDataClient.getProsecutorShortNameForOuCode(csvOuCode);
+
+        prosecutingAuthorityValidationService.validateCallingUserBelongsToProsecutingAuthority(userId, csvOuCode, prosecutorShortName);
 
         final Metadata accessControlMetadata = metadataBuilder()
                 .withId(randomUUID())
@@ -127,10 +141,29 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
             return Response.status(Response.Status.FORBIDDEN).entity(responseErrorMsg.toString()).build();
         }
 
+        final String fileName = extractFileName(multipartFormDataInput);
+        final String submittedByUserName = userDetailsClient.getDisplayNameForUser(userId).orElse(null);
+
         final Envelope<UrlResponse> result =
-                civilProsecutionApi.summonsProsecution(envelopeFrom(metadata, summonsProsecution));
+                civilProsecutionApi.summonsProsecution(
+                        envelopeFrom(metadata, summonsProsecution), fileName, submittedByUserName, prosecutorShortName);
 
         return Response.status(Response.Status.ACCEPTED).entity(result.payload()).build();
+    }
+
+    private String extractFileName(final MultipartFormDataInput multipartFormDataInput) {
+        final List<InputPart> fileParts = multipartFormDataInput.getFormDataMap().get(FILE_PART_NAME);
+        if (fileParts == null || fileParts.isEmpty()) {
+            return null;
+        }
+
+        final String contentDisposition = fileParts.get(0).getHeaders().getFirst(CONTENT_DISPOSITION_HEADER);
+        if (contentDisposition == null) {
+            return null;
+        }
+
+        final Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     private String requireUserIdHeader() {

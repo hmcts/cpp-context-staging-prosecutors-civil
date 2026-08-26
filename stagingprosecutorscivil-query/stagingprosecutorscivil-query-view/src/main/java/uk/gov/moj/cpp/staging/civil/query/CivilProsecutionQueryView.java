@@ -30,8 +30,9 @@ public class CivilProsecutionQueryView {
 
     public JsonEnvelope querySubmission(JsonEnvelope envelope) {
 
-        final UUID submissionId = fromString(envelope.payloadAsJsonObject()
-                .getString("submissionId"));
+        final JsonObject requestPayload = envelope.payloadAsJsonObject();
+        final UUID submissionId = fromString(requestPayload.getString("submissionId"));
+        final boolean additionalInfo = requestPayload.getBoolean("additionalInfo", false);
         LOGGER.info("Query Submission for Id {} ", submissionId);
         final Optional<Submission> submissionOptional = Optional.ofNullable(submissionRepository.findBy(submissionId));
 
@@ -60,6 +61,18 @@ public class CivilProsecutionQueryView {
                             // submission reaches a terminal status
                             if (nonNull(submission.getCompletedAt())) {
                                 result.add("completedAt", ZonedDateTimes.toString(submission.getCompletedAt()));
+                            }
+
+                            if (additionalInfo) {
+                                if (nonNull(submission.getFileName())) {
+                                    result.add("fileName", submission.getFileName());
+                                }
+                                if (nonNull(submission.getSubmittedByUserName())) {
+                                    result.add("username", submission.getSubmittedByUserName());
+                                }
+                                if (nonNull(submission.getProsecutorShortName())) {
+                                    result.add("prosecutingAuthority", submission.getProsecutorShortName());
+                                }
                             }
                             return result.build();
                         }

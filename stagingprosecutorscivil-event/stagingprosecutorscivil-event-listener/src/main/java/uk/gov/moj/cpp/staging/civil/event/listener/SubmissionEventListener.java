@@ -105,6 +105,9 @@ public class SubmissionEventListener {
                 .withErrors(null)
                 .withWarnings(null)
                 .withType(SubmissionType.PROSECUTION)
+                .withFileName(summonsProsecutionReceived.getFileName())
+                .withSubmittedByUserName(summonsProsecutionReceived.getSubmittedByUserName())
+                .withProsecutorShortName(summonsProsecutionReceived.getProsecutorShortName())
                 .build();
 
         submissionRepository.save(submission);
@@ -117,7 +120,13 @@ public class SubmissionEventListener {
         final UpdateCivilCaseReceived updatedCivilCaseReceived = event.payload();
         final Submission submission = submissionRepository.findBy(updatedCivilCaseReceived.getSubmissionId());
 
-        if (SubmissionStatus.REJECTED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
+        if (!isValidTransition(submission.getSubmissionStatus(), updatedCivilCaseReceived.getSubmissionStatus())) {
+            LOGGER.info("Ignoring submissionStatus transition to {} for SubmissionId {} - current status is {}, not PENDING_COURT_DECISION",
+                    updatedCivilCaseReceived.getSubmissionStatus(), updatedCivilCaseReceived.getSubmissionId(), submission.getSubmissionStatus());
+            return;
+        }
+
+        if (SubmissionStatus.FAILED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
             submission.setGroupCaseErrors(transformCaseProblemsToJsonArray(
                     mergeCaseProblems(updatedCivilCaseReceived.getCaseErrors(), updatedCivilCaseReceived.getGroupCaseErrors())));
             submission.setDefendantErrors(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantErrors()));
@@ -136,8 +145,38 @@ public class SubmissionEventListener {
         submissionRepository.save(submission);
     }
 
+    /**
+     * PCF sends {@code submission-approved}/{@code group-submission-approved} for every
+     * successful CIVIL summons case (gated only on channel and initiation code), from the same
+     * trigger as, and immediately after, the pre-existing {@code
+     * civil.prosecution-submission-succeeded}/{@code group-submission-succeeded} events — not
+     * only ones that went through the summons-application-approval (SA) parking flow. Without
+     * this guard, ACCEPTED arriving second would unconditionally overwrite an already-correct
+     * SUCCESS status.
+     *
+     * <p>{@code submission-rejected}/{@code group-submission-rejected} only ever fire from PCF's
+     * genuine SA-rejection path, which no longer also raises {@code civil-prosecution-rejected}/
+     * {@code group-prosecution-rejected} for CIVIL (that pairing was removed on PCF's side —
+     * those events are now reserved for business-validation failures at initial submission,
+     * always while a submission is still PENDING). The REJECTED guard below is therefore no
+     * longer strictly required to avoid a FAILED/REJECTED race, but is kept as defence in depth
+     * against out-of-order or replayed delivery.
+     *
+     * <p>ACCEPTED and REJECTED are therefore only ever applied as a transition out of
+     * PENDING_COURT_DECISION — the state a submission is only ever in while genuinely parked
+     * pending an SA court decision; any other current status means this event does not apply to
+     * a summons-approval-flow submission and is ignored.
+     */
+    private boolean isValidTransition(final String currentStatus, final SubmissionStatus incomingStatus) {
+        if (SubmissionStatus.ACCEPTED.equals(incomingStatus) || SubmissionStatus.REJECTED.equals(incomingStatus)) {
+            return SubmissionStatus.PENDING_COURT_DECISION.name().equals(currentStatus);
+        }
+        return true;
+    }
+
     private boolean isTerminalStatus(final SubmissionStatus submissionStatus) {
         return SubmissionStatus.SUCCESS.equals(submissionStatus)
+                || SubmissionStatus.FAILED.equals(submissionStatus)
                 || SubmissionStatus.REJECTED.equals(submissionStatus)
                 || SubmissionStatus.SUCCESS_WITH_WARNINGS.equals(submissionStatus);
     }
@@ -195,7 +234,7 @@ public class SubmissionEventListener {
         final Submission submission = submissionRepository.findBy(submissionId);
 
         if(nonNull(submission)) {
-            submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
+            submission.setSubmissionStatus(SubmissionStatus.FAILED.toString());
             submission.setCompletedAt(timestamp);
             submission.setErrors(submissionErrors);
             submission.setWarnings(submissionWarnings);

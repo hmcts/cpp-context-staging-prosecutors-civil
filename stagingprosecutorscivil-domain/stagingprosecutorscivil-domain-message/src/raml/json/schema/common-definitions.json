@@ -12,6 +12,8 @@
       "type": "string",
       "enum": [
         "PENDING",
+        "PENDING_COURT_DECISION",
+        "ACCEPTED",
         "FAILED",
         "REJECTED",
         "SUCCESS",

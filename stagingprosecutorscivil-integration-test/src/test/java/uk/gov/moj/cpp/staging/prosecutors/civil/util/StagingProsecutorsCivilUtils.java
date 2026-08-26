@@ -123,8 +123,16 @@ public class StagingProsecutorsCivilUtils {
         return getSubmission(submissionId, withJsonPath("status", is(expectedSubmissionStatus.name())));
     }
 
+    public static Submission pollForSubmissionWithAdditionalInfo(final UUID submissionId, final SubmissionStatus expectedSubmissionStatus) {
+        return getSubmission(submissionId, true, withJsonPath("status", is(expectedSubmissionStatus.name())));
+    }
+
     public static Submission getSubmission(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
-        final String payload = pollForSubmissionPayload(submissionId, matcher);
+        return getSubmission(submissionId, false, matcher);
+    }
+
+    public static Submission getSubmission(final UUID submissionId, final boolean additionalInfo, final Matcher<? super ReadContext> matcher) {
+        final String payload = pollForSubmissionPayload(submissionId, additionalInfo, matcher);
 
         try {
             return mapper.readValue(payload, Submission.class);
@@ -138,13 +146,13 @@ public class StagingProsecutorsCivilUtils {
     }
 
     public static JsonObject getSubmissionAsJson(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
-        final String payload = pollForSubmissionPayload(submissionId, matcher);
+        final String payload = pollForSubmissionPayload(submissionId, false, matcher);
 
         return createReader(new ByteArrayInputStream(payload.getBytes())).readObject();
     }
 
-    private static String pollForSubmissionPayload(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
-        return poll(getRequestParams(submissionId))
+    private static String pollForSubmissionPayload(final UUID submissionId, final boolean additionalInfo, final Matcher<? super ReadContext> matcher) {
+        return poll(getRequestParams(submissionId, additionalInfo))
                 .pollDelay(0, MILLISECONDS)
                 .pollInterval(100, MILLISECONDS)
                 .timeout(30, SECONDS)
@@ -159,8 +167,9 @@ public class StagingProsecutorsCivilUtils {
         return restClient.query(READ_BASE_URI + "/complaints-files-template", CSV_CONTENT_TYPE);
     }
 
-    private static RequestParams getRequestParams(final UUID submissionId) {
-        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+    private static RequestParams getRequestParams(final UUID submissionId, final boolean additionalInfo) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId
+                + (additionalInfo ? "?additionalInfo=true" : "");
         final String mediaType = "application/vnd.stagingprosecutorscivil.submission-details+json";
 
         return requestParams(url, mediaType)

@@ -59,6 +59,18 @@
       "items": {
         "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
       }
+    },
+    "fileName": {
+      "description": "The original filename of the uploaded complaints CSV file, when the submission originated from a CSV upload",
+      "type": "string"
+    },
+    "username": {
+      "description": "The display name of the user who submitted the complaints CSV file, when the submission originated from a CSV upload",
+      "type": "string"
+    },
+    "prosecutingAuthority": {
+      "description": "The resolved short name of the prosecuting authority for the submission, when the submission originated from a CSV upload",
+      "type": "string"
     }
   },
   "required": [

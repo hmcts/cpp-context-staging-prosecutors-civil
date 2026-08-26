@@ -79,6 +79,22 @@ public class CivilProsecutionApi {
 
     @Handles("stagingprosecutorscivil.summons-prosecution")
     public Envelope<UrlResponse> summonsProsecution(final Envelope<SummonsProsecution> envelope) {
+        return summonsProsecution(envelope, null, null, null);
+    }
+
+    /**
+     * Overload taking {@code fileName}, {@code submittedByUserName} and {@code prosecutorShortName}
+     * — called directly by {@code DefaultCommandApiComplaintsFilesResource} for the complaints CSV
+     * upload path, which resolves those values server-side (they are never part of the public
+     * {@code stagingprosecutorscivil.summons-prosecution} request schema). The framework's
+     * reflection-based dispatch of the direct JSON {@code stagingprosecutorscivil.summons-prosecution}
+     * submission still finds the single-{@code Envelope}-parameter {@link #summonsProsecution(Envelope)}
+     * via its {@code @Handles} annotation, so this overload is invisible to it.
+     */
+    public Envelope<UrlResponse> summonsProsecution(final Envelope<SummonsProsecution> envelope,
+                                                      final String fileName,
+                                                      final String submittedByUserName,
+                                                      final String prosecutorShortName) {
         final UUID submissionId = UUID.randomUUID();
         final SummonsProsecution summonsProsecution = envelope.payload();
         final SummonsProsecutionWithSubmissionId summonsProsecutionWithSubmissionId
@@ -87,8 +103,11 @@ public class CivilProsecutionApi {
                 .withProsecutingAuthority(summonsProsecution.getProsecutingAuthority())
                 .withHearingDetails(summonsProsecution.getHearingDetails())
                 .withSubmissionId(submissionId)
+                .withFileName(fileName)
+                .withSubmittedByUserName(submittedByUserName)
+                .withProsecutorShortName(prosecutorShortName)
                 .build();
-        LOGGER.info("Received submission at  stagingprosecutorscivil.summons-prosecution with submissionId {}",submissionId);
+        LOGGER.info("Received submission at stagingprosecutorscivil.summons-prosecution with submissionId {}", submissionId);
         sender.send(envelop(summonsProsecutionWithSubmissionId)
                 .withName("stagingprosecutorscivil.command.summons-prosecution")
                 .withMetadataFrom(envelope));
@@ -97,7 +116,6 @@ public class CivilProsecutionApi {
                 UrlResponse.urlResponse()
                         .withStatusURL(getBaseResponseURLWithVersion() + submissionId.toString())
                         .withSubmissionId(submissionId).build());
-
     }
 
     @Handles("stagingprosecutorscivil.submit-material")

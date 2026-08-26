@@ -12,6 +12,11 @@ protocols: [ HTTP, HTTPS ]
         responseType: application/vnd.stagingprosecutorscivil.submission-details+json
         name: stagingprosecutorscivil.submission-details
       ...
+    queryParameters:
+      additionalInfo:
+        description: when true, also returns fileName, username and prosecutingAuthority captured from the complaints CSV upload, when present on the submission
+        type: boolean
+        default: false
     responses:
         200:
           description: OK

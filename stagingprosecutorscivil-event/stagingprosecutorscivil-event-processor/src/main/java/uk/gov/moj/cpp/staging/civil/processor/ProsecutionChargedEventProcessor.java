@@ -12,8 +12,8 @@ import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
 import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReferences;
 import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getSummonsProsecutorCaseReferences;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.FAILED;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
 
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -38,7 +38,13 @@ import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateGroupProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicCivilProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupParkedForSummonsApplicationApproval;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicParkedForSummonsApplicationApproval;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionRejected;
 
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -85,13 +91,71 @@ public class ProsecutionChargedEventProcessor {
     @Handles("public.prosecutioncasefile.group-prosecution-rejected")
     public void handleGroupProsecutionRejected(final Envelope<PublicGroupProsecutionRejected> event) {
         LOGGER.info("Received public.prosecutioncasefile.group-prosecution-rejected event with payload for submission id {} ", event.payload().getExternalId());
-        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
+        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.FAILED);
     }
 
     @Handles("public.prosecutioncasefile.civil-prosecution-rejected")
     public void handleCivilProsecutionRejected(final Envelope<PublicCivilProsecutionRejected> event) {
         LOGGER.info("Received public.prosecutioncasefile.group-prosecution-rejected event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.FAILED);
+    }
+
+    @Handles("public.prosecutioncasefile.parked-for-summons-application-approval")
+    public void handleParkedForSummonsApplicationApproval(final Envelope<PublicParkedForSummonsApplicationApproval> event) {
+        LOGGER.info("Received public.prosecutioncasefile.parked-for-summons-application-approval event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION);
+    }
+
+    @Handles("public.prosecutioncasefile.group-parked-for-summons-application-approval")
+    public void handleGroupParkedForSummonsApplicationApproval(final Envelope<PublicGroupParkedForSummonsApplicationApproval> event) {
+        LOGGER.info("Received public.prosecutioncasefile.group-parked-for-summons-application-approval event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION);
+    }
+
+    /**
+     * PCF sends this from the same trigger, and immediately after, {@code
+     * civil.prosecution-submission-succeeded}/{@code group-submission-succeeded} for every
+     * successful CIVIL case creation — not only ones that were previously parked pending SA
+     * approval. {@link SubmissionEventListener#updatedCivilCaseReceived} only applies an incoming
+     * {@code ACCEPTED} when the submission's current status is {@code PENDING_COURT_DECISION}, so
+     * a submission that never went through the summons-approval flow (or whose SUCCESS event was
+     * already processed) is left untouched by this event.
+     */
+    @Handles("public.prosecutioncasefile.submission-approved")
+    public void handleSubmissionApproved(final Envelope<PublicSubmissionApproved> event) {
+        LOGGER.info("Received public.prosecutioncasefile.submission-approved event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.ACCEPTED);
+    }
+
+    /** Group counterpart of {@link #handleSubmissionApproved} — same guard applies downstream. */
+    @Handles("public.prosecutioncasefile.group-submission-approved")
+    public void handleGroupSubmissionApproved(final Envelope<PublicGroupSubmissionApproved> event) {
+        LOGGER.info("Received public.prosecutioncasefile.group-submission-approved event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.ACCEPTED);
+    }
+
+    /**
+     * PCF only raises this from its genuine summons-application (SA) rejection path — a case
+     * that was previously parked pending an SA court decision and has now been rejected. It no
+     * longer pairs with {@code civil-prosecution-rejected} for CIVIL (that pairing was removed on
+     * PCF's side; {@code civil-prosecution-rejected} is now reserved for business-validation
+     * failures at initial submission, always while a submission is still PENDING). {@link
+     * SubmissionEventListener#updatedCivilCaseReceived} still only applies an incoming {@code
+     * REJECTED} when the submission's current status is {@code PENDING_COURT_DECISION} — kept as
+     * defence in depth against out-of-order or replayed delivery, not because this event is
+     * expected against any other status.
+     */
+    @Handles("public.prosecutioncasefile.submission-rejected")
+    public void handleSubmissionRejected(final Envelope<PublicSubmissionRejected> event) {
+        LOGGER.info("Received public.prosecutioncasefile.submission-rejected event with payload for submission id {} ", event.payload().getExternalId());
         updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
+    }
+
+    /** Group counterpart of {@link #handleSubmissionRejected} — same guard applies downstream. */
+    @Handles("public.prosecutioncasefile.group-submission-rejected")
+    public void handleGroupSubmissionRejected(final Envelope<PublicGroupSubmissionRejected> event) {
+        LOGGER.info("Received public.prosecutioncasefile.group-submission-rejected event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
     }
 
     private void processChargeReceivedEvent(final Envelope<ChargeProsecutionReceived> event) {
@@ -246,7 +310,7 @@ public class ProsecutionChargedEventProcessor {
                 .add("submissionId", submissionId)
                 .add("submissionStatus", status.name());
 
-        if (status == REJECTED) {
+        if (status == FAILED) {
             final PublicCivilProsecutionRejected prosecutionRejected = (PublicCivilProsecutionRejected) event.payload();
             final JsonArray caseErrors = transformCaseProblemsToJsonArray(prosecutionRejected.getCaseErrors());
             final JsonArray defendantErrors = transformDefendantProblemsToJsonArray(prosecutionRejected.getDefendantErrors());
@@ -272,7 +336,7 @@ public class ProsecutionChargedEventProcessor {
                 .add("submissionId", submissionId)
                 .add("submissionStatus", status.name());
 
-        if (status == REJECTED) {
+        if (status == FAILED) {
             final PublicGroupProsecutionRejected prosecutionRejected = (PublicGroupProsecutionRejected) event.payload();
             final JsonArray caseErrors = transformCaseProblemsToJsonArray(prosecutionRejected.getCaseErrors());
             final JsonArray groupCaseErrors = transformCaseProblemsToJsonArray(prosecutionRejected.getGroupCaseErrors());
