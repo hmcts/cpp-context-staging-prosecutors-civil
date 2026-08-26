@@ -18,7 +18,7 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
-import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserDetailsClient;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 
@@ -92,7 +92,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
     private ProsecutingAuthorityValidationService prosecutingAuthorityValidationService;
 
     @Inject
-    private UserDetailsClient userDetailsClient;
+    private UserGroupsClient userGroupsClient;
 
     @Inject
     private ReferenceDataClient referenceDataClient;
@@ -142,7 +142,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         }
 
         final String fileName = extractFileName(multipartFormDataInput);
-        final String submittedByUserName = userDetailsClient.getDisplayNameForUser(userId).orElse(null);
+        final String submittedByUserName = userGroupsClient.getDisplayNameForUser(userId).orElse(null);
 
         final Envelope<UrlResponse> result =
                 civilProsecutionApi.summonsProsecution(

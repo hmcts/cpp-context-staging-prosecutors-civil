@@ -28,7 +28,7 @@ import uk.gov.justice.services.core.audit.AuditService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
-import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserDetailsClient;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 
@@ -95,7 +95,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     private ProsecutingAuthorityValidationService prosecutingAuthorityValidationService;
 
     @Mock
-    private UserDetailsClient userDetailsClient;
+    private UserGroupsClient userGroupsClient;
 
     @Mock
     private ReferenceDataClient referenceDataClient;
@@ -119,7 +119,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
         when(accessControlService.checkAccessControl(any(), any())).thenReturn(Optional.empty());
         when(referenceDataClient.getProsecutorShortNameForOuCode("GAAAA01")).thenReturn("TVL");
-        when(userDetailsClient.getDisplayNameForUser(any())).thenReturn(Optional.of("Richard Chapman"));
+        when(userGroupsClient.getDisplayNameForUser(any())).thenReturn(Optional.of("Richard Chapman"));
         final UUID submissionId = randomUUID();
         final UrlResponse urlResponse = new UrlResponse("https://replace-me.gov.uk/v1/" + submissionId, submissionId);
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))
@@ -151,7 +151,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
         when(accessControlService.checkAccessControl(any(), any())).thenReturn(Optional.empty());
         when(referenceDataClient.getProsecutorShortNameForOuCode("GAAAA01")).thenReturn("TVL");
-        when(userDetailsClient.getDisplayNameForUser(any())).thenReturn(Optional.of("Richard Chapman"));
+        when(userGroupsClient.getDisplayNameForUser(any())).thenReturn(Optional.of("Richard Chapman"));
         final UUID submissionId = randomUUID();
         final UrlResponse urlResponse = new UrlResponse("https://replace-me.gov.uk/v1/" + submissionId, submissionId);
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))
@@ -173,7 +173,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
         when(accessControlService.checkAccessControl(any(), any())).thenReturn(Optional.empty());
         when(referenceDataClient.getProsecutorShortNameForOuCode("GAAAA01")).thenReturn("TVL");
-        when(userDetailsClient.getDisplayNameForUser(any())).thenReturn(Optional.empty());
+        when(userGroupsClient.getDisplayNameForUser(any())).thenReturn(Optional.empty());
         final UUID submissionId = randomUUID();
         final UrlResponse urlResponse = new UrlResponse("https://replace-me.gov.uk/v1/" + submissionId, submissionId);
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))
@@ -196,7 +196,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
         when(accessControlService.checkAccessControl(any(), any())).thenReturn(Optional.empty());
         when(referenceDataClient.getProsecutorShortNameForOuCode("GAAAA01")).thenReturn("CPS");
-        when(userDetailsClient.getDisplayNameForUser(any())).thenReturn(Optional.of("Richard Chapman"));
+        when(userGroupsClient.getDisplayNameForUser(any())).thenReturn(Optional.of("Richard Chapman"));
         final UUID submissionId = randomUUID();
         final UrlResponse urlResponse = new UrlResponse("https://replace-me.gov.uk/v1/" + submissionId, submissionId);
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))

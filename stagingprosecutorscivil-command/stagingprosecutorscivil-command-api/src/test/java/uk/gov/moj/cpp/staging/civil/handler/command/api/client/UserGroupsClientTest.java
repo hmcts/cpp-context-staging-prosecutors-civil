@@ -14,6 +14,7 @@ import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 import uk.gov.justice.services.core.requester.Requester;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -59,5 +60,36 @@ class UserGroupsClientTest {
 
         assertThat(groups, hasSize(1));
         assertThat(groups.get(0).getString("groupName"), is("Charging Lawyers"));
+    }
+
+    @Test
+    void returnsComposedDisplayNameWhenFirstAndLastNamePresent() {
+        when(requester.request(any(), eq(JsonObject.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-details").build(),
+                Json.createObjectBuilder()
+                        .add("firstName", "Richard")
+                        .add("lastName", "Chapman")
+                        .add("email", "richard.chapman@acme.com")
+                        .build()));
+
+        assertThat(userGroupsClient.getDisplayNameForUser(USER_ID), is(Optional.of("Richard Chapman")));
+    }
+
+    @Test
+    void returnsEmptyWhenNeitherNamePresent() {
+        when(requester.request(any(), eq(JsonObject.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-details").build(),
+                Json.createObjectBuilder().build()));
+
+        assertThat(userGroupsClient.getDisplayNameForUser(USER_ID), is(Optional.empty()));
+    }
+
+    @Test
+    void returnsEmptyWhenResponsePayloadIsNull() {
+        when(requester.request(any(), eq(JsonObject.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("usersgroups.get-logged-in-user-details").build(),
+                null));
+
+        assertThat(userGroupsClient.getDisplayNameForUser(USER_ID), is(Optional.empty()));
     }
 }
