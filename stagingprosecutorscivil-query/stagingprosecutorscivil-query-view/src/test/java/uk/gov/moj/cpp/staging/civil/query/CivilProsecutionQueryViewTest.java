@@ -358,4 +358,126 @@ public class CivilProsecutionQueryViewTest {
         assertThat(responseEnvelope.metadata().name(), Is.is("stagingprosecutorscivil.query.submission-details"));
         assertEquals(JsonValue.NULL, responseEnvelope.payload());
     }
+
+    @Test
+    public void shouldBuildCsvFromCaseAndDefendantErrors() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonArray caseErrors = createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorCaseReference", "123")
+                        .add("problems", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("code", "PROSECUTOR_OUCODE_NOT_RECOGNISED")
+                                        .add("values", createArrayBuilder()
+                                                .add(createObjectBuilder().add("key", "prosecutingAuthority").add("value", "A010000"))))
+                                .add(createObjectBuilder()
+                                        .add("code", "CASE_MARKER_IS_INVALID")
+                                        .add("values", createArrayBuilder()
+                                                .add(createObjectBuilder().add("key", "caseMarkers").add("value", "MC"))))))
+                .build();
+        final JsonArray defendantErrors = createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorDefendantReference", "cad5a01")
+                        .add("problems", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("code", "OFFENCE_CODE_NOT_SUPPORTED")
+                                        .add("values", createArrayBuilder()
+                                                .add(createObjectBuilder().add("key", "offence_offenceCode").add("value", "AX03547"))
+                                                .add(createObjectBuilder().add("key", "offence_offenceSequenceNo").add("value", "1"))))
+                                .add(createObjectBuilder()
+                                        .add("code", "DATE_OF_HEARING_IN_THE_PAST")
+                                        .add("values", createArrayBuilder()
+                                                .add(createObjectBuilder().add("key", "initialHearing_dateOfHearing").add("value", "2026-05-05"))))))
+                .build();
+
+        final Submission submission = new Submission(
+                submissionId, "REJECTED", "ouCode", null, null, null, null,
+                ZonedDateTime.now(), ZonedDateTime.now(), new HashSet<>(),
+                SubmissionType.PROSECUTION, null, null, null);
+        submission.setGroupCaseErrors(caseErrors);
+        submission.setDefendantErrors(defendantErrors);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmissionErrorDetailsCsv(
+                createEnvelope("stagingprosecutorscivil.query.submission-error-details-csv",
+                        createObjectBuilder().add("submissionId", submissionId.toString()).build()));
+
+        assertThat(jsonEnvelope.metadata().name(), Is.is("stagingprosecutorscivil.query.submission-error-details-csv"));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("submissionId"), Is.is(submissionId.toString()));
+
+        final String expectedCsv = "Reference,Error Type,Error Code,Field,Value\n"
+                + "123,Case,PROSECUTOR_OUCODE_NOT_RECOGNISED,prosecutingAuthority,A010000\n"
+                + "123,Case,CASE_MARKER_IS_INVALID,caseMarkers,MC\n"
+                + "cad5a01,Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence_offenceCode,AX03547\n"
+                + "cad5a01,Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence_offenceSequenceNo,1\n"
+                + "cad5a01,Defendant,DATE_OF_HEARING_IN_THE_PAST,initialHearing_dateOfHearing,2026-05-05";
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("csv"), Is.is(expectedCsv));
+    }
+
+    @Test
+    public void shouldReturnHeaderOnlyCsvWhenNoCaseOrDefendantErrors() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final Submission submission = new Submission(
+                submissionId, "PENDING", "ouCode", null, null, null, null,
+                ZonedDateTime.now(), null, new HashSet<>(),
+                SubmissionType.PROSECUTION, null, null, null);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmissionErrorDetailsCsv(
+                createEnvelope("stagingprosecutorscivil.query.submission-error-details-csv",
+                        createObjectBuilder().add("submissionId", submissionId.toString()).build()));
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("csv"), Is.is("Reference,Error Type,Error Code,Field,Value"));
+    }
+
+    @Test
+    public void shouldReturnHeaderOnlyCsvWhenSubmissionNotFound() {
+        when(submissionRepository.findBy(any())).thenReturn(null);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmissionErrorDetailsCsv(
+                createEnvelope("stagingprosecutorscivil.query.submission-error-details-csv",
+                        createObjectBuilder().add("submissionId", UUID.randomUUID().toString()).build()));
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("csv"), Is.is("Reference,Error Type,Error Code,Field,Value"));
+    }
+
+    @Test
+    public void shouldEscapeCsvFieldsContainingCommasOrQuotes() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonArray caseErrors = createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorCaseReference", "ref,with,commas")
+                        .add("problems", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("code", "SOME_CODE")
+                                        .add("values", createArrayBuilder()
+                                                .add(createObjectBuilder().add("key", "field").add("value", "has \"quotes\" in it"))))))
+                .build();
+
+        final Submission submission = new Submission(
+                submissionId, "REJECTED", "ouCode", null, null, null, null,
+                ZonedDateTime.now(), ZonedDateTime.now(), new HashSet<>(),
+                SubmissionType.PROSECUTION, null, null, null);
+        submission.setGroupCaseErrors(caseErrors);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmissionErrorDetailsCsv(
+                createEnvelope("stagingprosecutorscivil.query.submission-error-details-csv",
+                        createObjectBuilder().add("submissionId", submissionId.toString()).build()));
+
+        final String expectedCsv = "Reference,Error Type,Error Code,Field,Value\n"
+                + "\"ref,with,commas\",Case,SOME_CODE,field,\"has \"\"quotes\"\" in it\"";
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("csv"), Is.is(expectedCsv));
+    }
 }

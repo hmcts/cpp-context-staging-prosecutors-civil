@@ -39,6 +39,17 @@ public class CivilProsecutionQueryApi {
 
     }
 
+    @Handles("stagingprosecutorscivil.submission-error-details-csv")
+    public JsonEnvelope getSubmissionErrorDetailsCsv(final JsonEnvelope envelope) {
+
+        validateSubmissionId(envelope);
+
+        final JsonEnvelope queryEnvelop = envelopeFrom(metadataFrom(envelope.metadata())
+                .withName("stagingprosecutorscivil.query.submission-error-details-csv"), envelope.payloadAsJsonObject());
+        return civilProsecutionQueryView.querySubmissionErrorDetailsCsv(queryEnvelop);
+
+    }
+
     @SuppressWarnings("squid:S1166")
     private void validateSubmissionId(final JsonEnvelope envelope) {
         final String submissionId = envelope.payloadAsJsonObject().getString("submissionId");

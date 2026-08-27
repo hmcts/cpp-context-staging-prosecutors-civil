@@ -51,4 +51,22 @@ public class CivilProsecutionQueryApiTest {
         assertThat(jsonEnvelope.metadata().name(), is("stagingprosecutorscivil.query.submission-details"));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("submissionId"), is(submissionId));
     }
+
+    @Test
+    public void shouldReturnSubmissionErrorDetailsCsv() {
+
+        final String submissionId = UUID.randomUUID().toString();
+        JsonEnvelope envelope = createEnvelope("stagingprosecutorscivil.query.submission-error-details-csv",
+                createObjectBuilder()
+                        .add("submissionId", submissionId)
+                        .build()
+        );
+
+        civilProsecutionQueryApi.getSubmissionErrorDetailsCsv(envelope);
+        verify(civilProsecutionQueryView).querySubmissionErrorDetailsCsv(jsonEnvelopeArgumentCaptor.capture());
+
+        final JsonEnvelope jsonEnvelope = jsonEnvelopeArgumentCaptor.getValue();
+        assertThat(jsonEnvelope.metadata().name(), is("stagingprosecutorscivil.query.submission-error-details-csv"));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("submissionId"), is(submissionId));
+    }
 }
