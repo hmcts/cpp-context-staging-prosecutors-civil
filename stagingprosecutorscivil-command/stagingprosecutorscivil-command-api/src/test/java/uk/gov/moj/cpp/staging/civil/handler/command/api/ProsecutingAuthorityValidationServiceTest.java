@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
-import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
 
 import java.util.List;
@@ -25,6 +24,7 @@ class ProsecutingAuthorityValidationServiceTest {
 
     private static final String CALLING_USER_ID = randomUUID().toString();
     private static final String CSV_OUCODE = "GAFTL00";
+    private static final String RESOLVED_SHORT_NAME = "DVLA";
 
     @InjectMocks
     private ProsecutingAuthorityValidationService service;
@@ -32,45 +32,40 @@ class ProsecutingAuthorityValidationServiceTest {
     @Mock
     private UserGroupsClient userGroupsClient;
 
-    @Mock
-    private ReferenceDataClient referenceDataClient;
-
     @Test
     void throwsWhenGroupsListIsEmpty() {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID)).thenReturn(List.of());
 
         assertThrows(BadRequestException.class,
-                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
     void throwsWhenNoGroupHasAnAuthorityAtAll() {
-        // Groups exist but none carry a prosecutingAuthority - reject without ever calling
-        // referencedata.
+        // Groups exist but none carry a prosecutingAuthority - reject outright.
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
                 .thenReturn(List.of(groupJsonWithoutAuthority("Charging Lawyers")));
 
         assertThrows(BadRequestException.class,
-                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
     void throwsWhenAuthorityDoesNotMatchResolvedShortName() {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
                 .thenReturn(List.of(groupJson("Charging Lawyers", "TFL")));
-        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
 
         assertThrows(BadRequestException.class,
-                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
     void passesWhenAuthorityMatchesResolvedShortNameCaseInsensitively() {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
-                .thenReturn(List.of(groupJson("Charging Lawyers", "gaaaa01")));
-        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
+                .thenReturn(List.of(groupJson("Charging Lawyers", "dvla")));
 
-        assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+        assertDoesNotThrow(() ->
+                service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
@@ -78,7 +73,8 @@ class ProsecutingAuthorityValidationServiceTest {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
                 .thenReturn(List.of(groupJson("Legal Advisers", "TFL")));
 
-        assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+        assertDoesNotThrow(() ->
+                service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
@@ -86,7 +82,8 @@ class ProsecutingAuthorityValidationServiceTest {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
                 .thenReturn(List.of(groupJson("Court Administrators", "TFL")));
 
-        assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+        assertDoesNotThrow(() ->
+                service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
@@ -94,18 +91,20 @@ class ProsecutingAuthorityValidationServiceTest {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID))
                 .thenReturn(List.of(groupJson("Court Associate", "TFL")));
 
-        assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+        assertDoesNotThrow(() ->
+                service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
     void doesNotThrowWhenAnyGroupIsExemptEvenIfNotFirst() {
         // First group is a non-exempt mismatch; second is Legal Advisers - the caller belongs to
-        // both, and any exempt group is enough to skip the check (and the referencedata call).
+        // both, and any exempt group is enough to skip the check.
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID)).thenReturn(List.of(
                 groupJson("Charging Lawyers", "TFL"),
                 groupJson("Legal Advisers", "TFL")));
 
-        assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+        assertDoesNotThrow(() ->
+                service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
@@ -113,10 +112,10 @@ class ProsecutingAuthorityValidationServiceTest {
         // First group's authority doesn't match the resolved short name; second group's does.
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID)).thenReturn(List.of(
                 groupJson("Charging Lawyers", "TFL"),
-                groupJson("Charging Lawyers", "GAAAA01")));
-        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
+                groupJson("Charging Lawyers", RESOLVED_SHORT_NAME)));
 
-        assertDoesNotThrow(() -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+        assertDoesNotThrow(() ->
+                service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     @Test
@@ -124,10 +123,9 @@ class ProsecutingAuthorityValidationServiceTest {
         when(userGroupsClient.getGroupsForUser(CALLING_USER_ID)).thenReturn(List.of(
                 groupJson("Charging Lawyers", "TFL"),
                 groupJson("Charging Lawyers", "OTHER")));
-        when(referenceDataClient.getProsecutorShortNameForOuCode(CSV_OUCODE)).thenReturn("GAAAA01");
 
         assertThrows(BadRequestException.class,
-                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE));
+                () -> service.validateCallingUserBelongsToProsecutingAuthority(CALLING_USER_ID, CSV_OUCODE, RESOLVED_SHORT_NAME));
     }
 
     private JsonObject groupJson(final String groupName, final String prosecutingAuthority) {

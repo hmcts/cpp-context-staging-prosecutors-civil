@@ -44,7 +44,13 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.CivilProsecutionSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.GroupSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicCivilProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupParkedForSummonsApplicationApproval;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicParkedForSummonsApplicationApproval;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionRejected;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -196,6 +202,55 @@ public class Prosecutors {
         return GroupSubmissionSucceeded.groupSubmissionSucceeded()
                 .withExternalId(SUBMISSION_ID)
                 .withGroupId(randomUUID())
+                .build();
+    }
+
+    public static PublicParkedForSummonsApplicationApproval parkedForSummonsApplicationApproval() {
+        return PublicParkedForSummonsApplicationApproval.publicParkedForSummonsApplicationApproval()
+                .withExternalId(SUBMISSION_ID)
+                .withCaseId(randomUUID())
+                .withApplicationId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicGroupParkedForSummonsApplicationApproval groupParkedForSummonsApplicationApproval() {
+        return PublicGroupParkedForSummonsApplicationApproval.publicGroupParkedForSummonsApplicationApproval()
+                .withExternalId(SUBMISSION_ID)
+                .withGroupId(randomUUID())
+                .withApplicationId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicSubmissionApproved submissionApproved() {
+        return PublicSubmissionApproved.publicSubmissionApproved()
+                .withExternalId(SUBMISSION_ID)
+                .withCaseId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicSubmissionRejected submissionRejected() {
+        return PublicSubmissionRejected.publicSubmissionRejected()
+                .withExternalId(SUBMISSION_ID)
+                .withCaseId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicGroupSubmissionApproved groupSubmissionApproved() {
+        return PublicGroupSubmissionApproved.publicGroupSubmissionApproved()
+                .withExternalId(SUBMISSION_ID)
+                .withGroupId(randomUUID())
+                .build();
+    }
+
+    public static PublicGroupSubmissionRejected groupSubmissionRejected() {
+        return PublicGroupSubmissionRejected.publicGroupSubmissionRejected()
+                .withExternalId(SUBMISSION_ID)
+                .withGroupId(randomUUID())
+                .withChannel(Channel.CIVIL)
                 .build();
     }
 

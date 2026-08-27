@@ -28,6 +28,12 @@ public class Submission {
 
     private final ZonedDateTime completedAt;
 
+    private final String fileName;
+
+    private final String username;
+
+    private final String prosecutingAuthority;
+
     @JsonCreator
     public Submission(
             @JsonProperty("id") UUID submissionId,
@@ -36,7 +42,10 @@ public class Submission {
             @JsonProperty("materialWarnings") List<Problem> materialWarnings,
             @JsonProperty("type") String type,
             @JsonProperty("receivedAt") ZonedDateTime receivedAt,
-            @JsonProperty("completedAt") ZonedDateTime completedAt) {
+            @JsonProperty("completedAt") ZonedDateTime completedAt,
+            @JsonProperty("fileName") String fileName,
+            @JsonProperty("username") String username,
+            @JsonProperty("prosecutingAuthority") String prosecutingAuthority) {
 
         this.submissionId = submissionId;
         this.submissionStatus = submissionStatus;
@@ -45,6 +54,9 @@ public class Submission {
         this.type = type;
         this.receivedAt = receivedAt;
         this.completedAt = completedAt;
+        this.fileName = fileName;
+        this.username = username;
+        this.prosecutingAuthority = prosecutingAuthority;
     }
 
     public static QueryPoller<Submission> poller() {
@@ -69,6 +81,18 @@ public class Submission {
 
     public ZonedDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getProsecutingAuthority() {
+        return prosecutingAuthority;
     }
 
     public List<Problem> getMaterialErrors() {

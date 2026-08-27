@@ -17,7 +17,13 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAS
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.chargeProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupChargeProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupParkedForSummonsApplicationApproval;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSubmissionApproved;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSubmissionRejected;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSummonsProsecutionReceived;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.parkedForSummonsApplicationApproval;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.submissionApproved;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.submissionRejected;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsProsecutionReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilProsecutionCaseReceived;
@@ -35,7 +41,13 @@ import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateGroupProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicCivilProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupParkedForSummonsApplicationApproval;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicParkedForSummonsApplicationApproval;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionRejected;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -113,7 +125,7 @@ public class ProsecutionChargedEventProcessorTest {
         verify(sender).send(captor.capture());
         JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(updateCivilCaseRejected.getExternalId().toString()));
-        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.REJECTED.name()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.FAILED.name()));
 
         assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getString("prosecutorCaseReference"), is("URN01"));
         assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getJsonArray("problems").getJsonObject(0).getString("code"), is("ERR01"));
@@ -132,10 +144,112 @@ public class ProsecutionChargedEventProcessorTest {
         verify(sender).send(captor.capture());
         JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(updateCivilProsecutionCaseRejected.getExternalId().toString()));
-        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.REJECTED.name()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.FAILED.name()));
 
         assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getString("prosecutorCaseReference"), is("URN01"));
         assertThat(payload.getJsonArray("caseErrors").getJsonObject(0).getJsonArray("problems").getJsonObject(0).getString("code"), is("ERR01"));
+    }
+
+    @Test
+    public void shouldHandleParkedForSummonsApplicationApproval() {
+        final PublicParkedForSummonsApplicationApproval parkedForApproval = parkedForSummonsApplicationApproval();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<PublicParkedForSummonsApplicationApproval> envelope = testEnvelope(parkedForApproval,
+                "public.prosecutioncasefile.parked-for-summons-application-approval",
+                parkedForApproval.getExternalId().toString(), eventCreatedTime);
+
+        target.handleParkedForSummonsApplicationApproval(envelope);
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+        assertThat(payload.getString("submissionId"), is(parkedForApproval.getExternalId().toString()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.PENDING_COURT_DECISION.name()));
+    }
+
+    @Test
+    public void shouldHandleGroupParkedForSummonsApplicationApproval() {
+        final PublicGroupParkedForSummonsApplicationApproval groupParkedForApproval = groupParkedForSummonsApplicationApproval();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<PublicGroupParkedForSummonsApplicationApproval> envelope = testEnvelope(groupParkedForApproval,
+                "public.prosecutioncasefile.group-parked-for-summons-application-approval",
+                groupParkedForApproval.getExternalId().toString(), eventCreatedTime);
+
+        target.handleGroupParkedForSummonsApplicationApproval(envelope);
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+        assertThat(payload.getString("submissionId"), is(groupParkedForApproval.getExternalId().toString()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.PENDING_COURT_DECISION.name()));
+    }
+
+    @Test
+    public void shouldHandleSubmissionApproved() {
+        final PublicSubmissionApproved approved = submissionApproved();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<PublicSubmissionApproved> envelope = testEnvelope(approved,
+                "public.prosecutioncasefile.submission-approved",
+                approved.getExternalId().toString(), eventCreatedTime);
+
+        target.handleSubmissionApproved(envelope);
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+        assertThat(payload.getString("submissionId"), is(approved.getExternalId().toString()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.ACCEPTED.name()));
+    }
+
+    @Test
+    public void shouldHandleGroupSubmissionApproved() {
+        final PublicGroupSubmissionApproved approved = groupSubmissionApproved();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<PublicGroupSubmissionApproved> envelope = testEnvelope(approved,
+                "public.prosecutioncasefile.group-submission-approved",
+                approved.getExternalId().toString(), eventCreatedTime);
+
+        target.handleGroupSubmissionApproved(envelope);
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+        assertThat(payload.getString("submissionId"), is(approved.getExternalId().toString()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.ACCEPTED.name()));
+    }
+
+    @Test
+    public void shouldHandleSubmissionRejected() {
+        final PublicSubmissionRejected rejected = submissionRejected();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<PublicSubmissionRejected> envelope = testEnvelope(rejected,
+                "public.prosecutioncasefile.submission-rejected",
+                rejected.getExternalId().toString(), eventCreatedTime);
+
+        target.handleSubmissionRejected(envelope);
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+        assertThat(payload.getString("submissionId"), is(rejected.getExternalId().toString()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.REJECTED.name()));
+    }
+
+    @Test
+    public void shouldHandleGroupSubmissionRejected() {
+        final PublicGroupSubmissionRejected rejected = groupSubmissionRejected();
+        final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
+        final Envelope<PublicGroupSubmissionRejected> envelope = testEnvelope(rejected,
+                "public.prosecutioncasefile.group-submission-rejected",
+                rejected.getExternalId().toString(), eventCreatedTime);
+
+        target.handleGroupSubmissionRejected(envelope);
+
+        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
+        verify(sender).send(captor.capture());
+        JsonObject payload = (JsonObject) captor.getValue().payload();
+        assertThat(payload.getString("submissionId"), is(rejected.getExternalId().toString()));
+        assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.REJECTED.name()));
     }
 
     @Test

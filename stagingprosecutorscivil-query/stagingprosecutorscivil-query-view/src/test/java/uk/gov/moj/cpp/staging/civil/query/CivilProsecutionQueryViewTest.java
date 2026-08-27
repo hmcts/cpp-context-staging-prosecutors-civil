@@ -75,7 +75,10 @@ public class CivilProsecutionQueryViewTest {
                 receivedAt,
                 completedAt,
                 caseDetails,
-                SubmissionType.PROSECUTION);
+                SubmissionType.PROSECUTION,
+                "summons-batch.csv",
+                "Richard Chapman",
+                "CPS");
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
 
@@ -97,6 +100,11 @@ public class CivilProsecutionQueryViewTest {
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("type"), Is.is(SubmissionType.PROSECUTION.name()));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("receivedAt"), Is.is(ZonedDateTimes.toString(receivedAt)));
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("completedAt"), Is.is(ZonedDateTimes.toString(completedAt)));
+        // additionalInfo was not requested, so fileName/username/prosecutingAuthority are omitted
+        // even though they are present on the Submission - restores pre-existing response shape.
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("fileName"), Is.is(false));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("username"), Is.is(false));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("prosecutingAuthority"), Is.is(false));
 
         // the pre-rename key names must no longer appear on the response
         assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("errors"), Is.is(false));
@@ -130,7 +138,10 @@ public class CivilProsecutionQueryViewTest {
                 ZonedDateTime.now(),
                 ZonedDateTime.now(),
                 new HashSet<>(),
-                SubmissionType.PROSECUTION);
+                SubmissionType.PROSECUTION,
+                null,
+                null,
+                null);
         submission.setGroupCaseErrors(caseErrors);
         submission.setDefendantErrors(defendantErrors);
 
@@ -160,7 +171,10 @@ public class CivilProsecutionQueryViewTest {
                 ZonedDateTime.now(),
                 null,
                 new HashSet<>(),
-                SubmissionType.PROSECUTION);
+                SubmissionType.PROSECUTION,
+                null,
+                null,
+                null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
 
@@ -178,6 +192,81 @@ public class CivilProsecutionQueryViewTest {
             assertThat(response.containsKey(attribute), Is.is(true));
             assertThat(response.getJsonArray(attribute), Is.is(empty));
         }
+    }
+
+    @Test
+    public void shouldReturnFileNameUsernameAndProsecutingAuthorityWhenAdditionalInfoRequested() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final Submission submission = new Submission(
+                submissionId,
+                "PENDING",
+                "ouCode",
+                createArrayBuilder().build(),
+                createArrayBuilder().build(),
+                null,
+                null,
+                null,
+                null,
+                new HashSet<>(),
+                null,
+                "summons-batch.csv",
+                "Richard Chapman",
+                "CPS");
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonObject payload = createObjectBuilder()
+                .add("submissionId", submissionId.toString())
+                .add("additionalInfo", true)
+                .build();
+        final JsonEnvelope requestEnvelope = createEnvelope("stagingprosecutorscivil.query.submission-details", payload);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmission(requestEnvelope);
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("fileName"), Is.is("summons-batch.csv"));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("username"), Is.is("Richard Chapman"));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("prosecutingAuthority"), Is.is("CPS"));
+    }
+
+    @Test
+    public void shouldOmitFileNameUsernameAndProsecutingAuthorityWhenNotPresentEvenIfAdditionalInfoRequested() {
+
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonArray errors = createArrayBuilder().build();
+        final JsonArray warnings = createArrayBuilder().build();
+
+        final Submission submission = new Submission(
+                submissionId,
+                "PENDING",
+                "ouCode",
+                errors,
+                warnings,
+                null,
+                null,
+                null,
+                null,
+                new HashSet<>(),
+                null,
+                null,
+                null,
+                null);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        final JsonObject payload = createObjectBuilder()
+                .add("submissionId", submissionId.toString())
+                .add("additionalInfo", true)
+                .build();
+        final JsonEnvelope requestEnvelope = createEnvelope("stagingprosecutorscivil.query.submission-details", payload);
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmission(requestEnvelope);
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("fileName"), Is.is(false));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("username"), Is.is(false));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("prosecutingAuthority"), Is.is(false));
     }
 
     @Test
@@ -200,6 +289,9 @@ public class CivilProsecutionQueryViewTest {
                 receivedAt,
                 null,
                 new HashSet<>(),
+                null,
+                null,
+                null,
                 null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
@@ -235,6 +327,9 @@ public class CivilProsecutionQueryViewTest {
                 null,
                 null,
                 new HashSet<>(),
+                null,
+                null,
+                null,
                 null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);

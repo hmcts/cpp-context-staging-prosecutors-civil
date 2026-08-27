@@ -55,7 +55,10 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
     public Stream<Object> receiveSummonsProsecution(final UUID submissionId,
                                                     final HearingDetails hearingDetails,
                                                     final String prosecutingAuthority,
-                                                    final List<SummonsProsecutionCase> prosecutionCases) {
+                                                    final List<SummonsProsecutionCase> prosecutionCases,
+                                                    final String fileName,
+                                                    final String submittedByUserName,
+                                                    final String prosecutorShortName) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.summons-prosecution-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
@@ -65,6 +68,9 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                 .withProsecutingAuthority(prosecutingAuthority)
                                 .withHearingDetails(hearingDetails)
                                 .withProsecutionCases(prosecutionCases)
+                                .withFileName(fileName)
+                                .withSubmittedByUserName(submittedByUserName)
+                                .withProsecutorShortName(prosecutorShortName)
                                 .build()
                 )
         );

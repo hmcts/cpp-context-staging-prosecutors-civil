@@ -128,7 +128,7 @@ public class ChargeProsecutionIT {
                 PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.FAILED);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
@@ -151,7 +151,7 @@ public class ChargeProsecutionIT {
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.FAILED);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
@@ -174,7 +174,7 @@ public class ChargeProsecutionIT {
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
-        final JsonObject submission = StagingProsecutorsCivilUtils.pollForSubmissionAsJson(submissionId, SubmissionStatus.REJECTED);
+        final JsonObject submission = StagingProsecutorsCivilUtils.pollForSubmissionAsJson(submissionId, SubmissionStatus.FAILED);
         assertThat(submission.getString("id"), Matchers.is(submissionId.toString()));
         assertCaseProblemsPersisted(submission.getJsonArray("caseErrors"));
     }
@@ -198,7 +198,7 @@ public class ChargeProsecutionIT {
                 PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
-        final JsonObject submission = StagingProsecutorsCivilUtils.pollForSubmissionAsJson(submissionId, SubmissionStatus.REJECTED);
+        final JsonObject submission = StagingProsecutorsCivilUtils.pollForSubmissionAsJson(submissionId, SubmissionStatus.FAILED);
         assertThat(submission.getString("id"), Matchers.is(submissionId.toString()));
 
         // case-level and group-level problems are merged into a single CaseProblem[] list, persisted under caseErrors

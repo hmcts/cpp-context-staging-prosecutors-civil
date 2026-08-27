@@ -30,45 +30,68 @@ public class CivilProsecutionQueryView {
 
     public JsonEnvelope querySubmission(JsonEnvelope envelope) {
 
-        final UUID submissionId = fromString(envelope.payloadAsJsonObject()
-                .getString("submissionId"));
+        final JsonObject requestPayload = envelope.payloadAsJsonObject();
+        final UUID submissionId = fromString(requestPayload.getString("submissionId"));
+        final boolean additionalInfo = requestPayload.getBoolean("additionalInfo", false);
         LOGGER.info("Query Submission for Id {} ", submissionId);
         final Optional<Submission> submissionOptional = Optional.ofNullable(submissionRepository.findBy(submissionId));
 
         final JsonObject payload = submissionOptional
-                .map(submission -> {
-                            // every array attribute is always present: consumers can rely on the key
-                            // existing, with an empty array standing in for "no data"
-                            final JsonObjectBuilder result = createObjectBuilder()
-                                    .add("id", submission.getSubmissionId().toString())
-                                    .add("status", submission.getSubmissionStatus())
-                                    .add("materialWarnings", orEmptyArray(submission.getWarnings()))
-                                    .add("materialErrors", orEmptyArray(submission.getErrors()))
-                                    .add("caseErrors", orEmptyArray(submission.getGroupCaseErrors()))
-                                    .add("defendantErrors", orEmptyArray(submission.getDefendantErrors()))
-                                    .add("caseWarnings", orEmptyArray(submission.getCaseWarnings()))
-                                    .add("defendantWarnings", orEmptyArray(submission.getDefendantWarnings()));
-                            // type and received_at carry no NOT NULL constraint in the viewstore, so a
-                            // legacy row could still hold null; guard rather than fail the whole query
-                            if (nonNull(submission.getType())) {
-                                result.add("type", submission.getType().name());
-                            }
-                            if (nonNull(submission.getReceivedAt())) {
-                                result.add("receivedAt", ZonedDateTimes.toString(submission.getReceivedAt()));
-                            }
-                            // completedAt is the sole genuinely optional attribute: absent until the
-                            // submission reaches a terminal status
-                            if (nonNull(submission.getCompletedAt())) {
-                                result.add("completedAt", ZonedDateTimes.toString(submission.getCompletedAt()));
-                            }
-                            return result.build();
-                        }
-                )
+                .map(submission -> buildSubmissionDetailsPayload(submission, additionalInfo))
                 .orElse(null);
 
         return envelopeFrom(metadataFrom(envelope.metadata())
                 .withName("stagingprosecutorscivil.query.submission-details"), payload);
 
+    }
+
+    private static JsonObject buildSubmissionDetailsPayload(final Submission submission, final boolean additionalInfo) {
+        // every array attribute is always present: consumers can rely on the key existing, with
+        // an empty array standing in for "no data"
+        final JsonObjectBuilder result = createObjectBuilder()
+                .add("id", submission.getSubmissionId().toString())
+                .add("status", submission.getSubmissionStatus())
+                .add("materialWarnings", orEmptyArray(submission.getWarnings()))
+                .add("materialErrors", orEmptyArray(submission.getErrors()))
+                .add("caseErrors", orEmptyArray(submission.getGroupCaseErrors()))
+                .add("defendantErrors", orEmptyArray(submission.getDefendantErrors()))
+                .add("caseWarnings", orEmptyArray(submission.getCaseWarnings()))
+                .add("defendantWarnings", orEmptyArray(submission.getDefendantWarnings()));
+
+        addTypeAndTimestamps(result, submission);
+
+        if (additionalInfo) {
+            addAdditionalInfo(result, submission);
+        }
+
+        return result.build();
+    }
+
+    // type and received_at carry no NOT NULL constraint in the viewstore, so a legacy row could
+    // still hold null; guard rather than fail the whole query. completedAt is the sole genuinely
+    // optional attribute: absent until the submission reaches a terminal status
+    private static void addTypeAndTimestamps(final JsonObjectBuilder result, final Submission submission) {
+        if (nonNull(submission.getType())) {
+            result.add("type", submission.getType().name());
+        }
+        if (nonNull(submission.getReceivedAt())) {
+            result.add("receivedAt", ZonedDateTimes.toString(submission.getReceivedAt()));
+        }
+        if (nonNull(submission.getCompletedAt())) {
+            result.add("completedAt", ZonedDateTimes.toString(submission.getCompletedAt()));
+        }
+    }
+
+    private static void addAdditionalInfo(final JsonObjectBuilder result, final Submission submission) {
+        if (nonNull(submission.getFileName())) {
+            result.add("fileName", submission.getFileName());
+        }
+        if (nonNull(submission.getSubmittedByUserName())) {
+            result.add("username", submission.getSubmittedByUserName());
+        }
+        if (nonNull(submission.getProsecutorShortName())) {
+            result.add("prosecutingAuthority", submission.getProsecutorShortName());
+        }
     }
 
     private static JsonArray orEmptyArray(final JsonArray value) {

@@ -178,7 +178,10 @@ public class CivilProsecutionHandlerTest {
                                 withJsonPath("$.prosecutionCases[0].summonsCode", is("A")),
                                 withJsonPath("$.prosecutionCases[0].defendants[0]", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].defendants[0].offences[0]", notNullValue()),
-                                withJsonPath("$.prosecutionCases[0].defendants[0].offences[0].arrestDate", is(LocalDate.now().toString())))
+                                withJsonPath("$.prosecutionCases[0].defendants[0].offences[0].arrestDate", is(LocalDate.now().toString())),
+                                withJsonPath("$.fileName", is("summons-batch.csv")),
+                                withJsonPath("$.submittedByUserName", is("Richard Chapman")),
+                                withJsonPath("$.prosecutorShortName", is("CPS")))
                         )
                 ))
         );
@@ -249,6 +252,9 @@ public class CivilProsecutionHandlerTest {
                                 .build()))
                         .build()))
                 .withSubmissionId(UUID.fromString("ce1c9255-725f-4669-a7e5-78c07252c82d"))
+                .withFileName("summons-batch.csv")
+                .withSubmittedByUserName("Richard Chapman")
+                .withProsecutorShortName("CPS")
                 .build();
 
         final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(

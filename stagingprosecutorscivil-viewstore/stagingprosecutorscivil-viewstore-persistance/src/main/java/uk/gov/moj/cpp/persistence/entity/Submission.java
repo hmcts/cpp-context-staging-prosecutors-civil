@@ -75,6 +75,15 @@ public class Submission implements Serializable {
     @Enumerated(EnumType.STRING)
     private SubmissionType type;
 
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "submitted_by_user_name")
+    private String submittedByUserName;
+
+    @Column(name = "prosecutor_short_name")
+    private String prosecutorShortName;
+
     public Submission() {
     }
 
@@ -88,7 +97,10 @@ public class Submission implements Serializable {
                       final ZonedDateTime receivedAt,
                       final ZonedDateTime completedAt,
                       final Set<CaseDetail> caseDetail,
-                      final SubmissionType type) {
+                      final SubmissionType type,
+                      final String fileName,
+                      final String submittedByUserName,
+                      final String prosecutorShortName) {
         this.submissionId = submissionId;
         this.submissionStatus = submissionStatus;
         this.ouCode = ouCode;
@@ -101,6 +113,9 @@ public class Submission implements Serializable {
         this.caseDetail = caseDetail;
         this.setCaseDetail(caseDetail);
         this.type = type;
+        this.fileName = fileName;
+        this.submittedByUserName = submittedByUserName;
+        this.prosecutorShortName = prosecutorShortName;
     }
 
     public UUID getSubmissionId() {
@@ -212,6 +227,30 @@ public class Submission implements Serializable {
         this.type = type;
     }
 
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(final String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getSubmittedByUserName() {
+        return submittedByUserName;
+    }
+
+    public void setSubmittedByUserName(final String submittedByUserName) {
+        this.submittedByUserName = submittedByUserName;
+    }
+
+    public String getProsecutorShortName() {
+        return prosecutorShortName;
+    }
+
+    public void setProsecutorShortName(final String prosecutorShortName) {
+        this.prosecutorShortName = prosecutorShortName;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -228,6 +267,9 @@ public class Submission implements Serializable {
         private ZonedDateTime completedAt;
         private Set<CaseDetail> caseDetail = new HashSet<>();
         private SubmissionType type;
+        private String fileName;
+        private String submittedByUserName;
+        private String prosecutorShortName;
 
         public static Builder aSubmission() {
             return new Builder();
@@ -292,8 +334,23 @@ public class Submission implements Serializable {
             return this;
         }
 
+        public Builder withFileName(String fileName) {
+            this.fileName = fileName;
+            return this;
+        }
+
+        public Builder withSubmittedByUserName(String submittedByUserName) {
+            this.submittedByUserName = submittedByUserName;
+            return this;
+        }
+
+        public Builder withProsecutorShortName(String prosecutorShortName) {
+            this.prosecutorShortName = prosecutorShortName;
+            return this;
+        }
+
         public Submission build() {
-            return new Submission(submissionId, submissionStatus, ouCode, errors, warnings, caseWarnings, defendantWarnings, receivedAt, completedAt, caseDetail, type);
+            return new Submission(submissionId, submissionStatus, ouCode, errors, warnings, caseWarnings, defendantWarnings, receivedAt, completedAt, caseDetail, type, fileName, submittedByUserName, prosecutorShortName);
         }
     }
 }

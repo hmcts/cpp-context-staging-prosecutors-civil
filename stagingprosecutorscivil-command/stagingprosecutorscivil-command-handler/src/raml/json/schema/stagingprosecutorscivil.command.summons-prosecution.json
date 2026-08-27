@@ -23,6 +23,18 @@
     },
     "submissionId": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "fileName": {
+      "description": "The original filename of the uploaded complaints CSV file",
+      "type": "string"
+    },
+    "submittedByUserName": {
+      "description": "The display name of the user who submitted the complaints CSV file",
+      "type": "string"
+    },
+    "prosecutorShortName": {
+      "description": "The resolved short name of the prosecuting authority for the submission's ou code",
+      "type": "string"
     }
   },
   "required": [

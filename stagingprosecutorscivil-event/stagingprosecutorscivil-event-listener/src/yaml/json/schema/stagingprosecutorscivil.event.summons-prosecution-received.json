@@ -26,6 +26,18 @@
     "hearingDetails": {
       "description": "Court Hearing details",
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json"
+    },
+    "fileName": {
+      "description": "The original filename of the uploaded complaints CSV file",
+      "type": "string"
+    },
+    "submittedByUserName": {
+      "description": "The display name of the user who submitted the complaints CSV file",
+      "type": "string"
+    },
+    "prosecutorShortName": {
+      "description": "The resolved short name of the prosecuting authority for the submission's ou code",
+      "type": "string"
     }
   },
   "required": [
