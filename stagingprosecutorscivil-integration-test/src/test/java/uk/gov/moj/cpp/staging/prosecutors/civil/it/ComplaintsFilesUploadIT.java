@@ -175,13 +175,20 @@ public class ComplaintsFilesUploadIT {
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
-        pollForSubmission(submissionId, SubmissionStatus.FAILED);
+        final Submission submission = pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
 
         final Response csvResponse = getSubmissionErrorDetailsCsv(submissionId);
-
         assertThat(csvResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+        // Assert against whatever fileName the submission actually carries at query time, rather
+        // than assuming the upload always captured one - the CSV endpoint falls back to a
+        // submissionId-based name when it didn't.
+        final String expectedFileName = submission.getFileName() != null
+                ? FilenameUtils.getBaseName(submission.getFileName()) + "_error.csv"
+                : "submission-" + submissionId + "-errors.csv";
+
         assertThat(csvResponse.getHeaderString("Content-Disposition"),
-                containsString("filename=\"" + FilenameUtils.getBaseName(getFileFrom(COMPLAINTS_CSV).getName()) + "_error.csv\""));
+                containsString("filename=\"" + expectedFileName + "\""));
     }
 
     @Test

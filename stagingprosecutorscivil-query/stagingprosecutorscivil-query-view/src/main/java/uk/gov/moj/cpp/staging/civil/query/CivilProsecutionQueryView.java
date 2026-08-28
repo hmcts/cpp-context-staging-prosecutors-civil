@@ -114,9 +114,9 @@ public class CivilProsecutionQueryView {
 
         // fileName is only captured on submissions that originated from a complaints CSV upload;
         // the response strategy falls back to a submissionId-based name when it is absent
-        submissionOptional
-                .map(Submission::getFileName)
-                .ifPresent(fileName -> payloadBuilder.add("fileName", fileName));
+        final Optional<String> fileName = submissionOptional.map(Submission::getFileName);
+        LOGGER.info("Submission {} fileName for error CSV naming: {}", submissionId, fileName.orElse("<absent>"));
+        fileName.ifPresent(name -> payloadBuilder.add("fileName", name));
 
         final JsonObject payload = payloadBuilder.build();
 
