@@ -94,6 +94,37 @@ public class CivilProsecutionQueryView {
         }
     }
 
+    public JsonEnvelope querySubmissionErrorDetailsCsv(final JsonEnvelope envelope) {
+
+        final JsonObject requestPayload = envelope.payloadAsJsonObject();
+        final UUID submissionId = fromString(requestPayload.getString("submissionId"));
+        LOGGER.info("Query Submission Error Details CSV for Id {} ", submissionId);
+        final Optional<Submission> submissionOptional = Optional.ofNullable(submissionRepository.findBy(submissionId));
+
+        // a submission with no case/defendant errors, or one that can't be found, both yield a
+        // header-only CSV rather than a 404 - consistent with the JSON path never 404-ing either
+
+        final String csv = submissionOptional
+                .map(submission -> SubmissionErrorDetailsCsvBuilder.build(submission.getGroupCaseErrors(), submission.getDefendantErrors()))
+                .orElseGet(() -> SubmissionErrorDetailsCsvBuilder.build(null, null));
+
+        final JsonObjectBuilder payloadBuilder = createObjectBuilder()
+                .add("submissionId", submissionId.toString())
+                .add("csv", csv);
+
+        // fileName is only captured on submissions that originated from a complaints CSV upload;
+        // the response strategy falls back to a submissionId-based name when it is absent
+        submissionOptional
+                .map(Submission::getFileName)
+                .ifPresent(fileName -> payloadBuilder.add("fileName", fileName));
+
+        final JsonObject payload = payloadBuilder.build();
+
+        return envelopeFrom(metadataFrom(envelope.metadata())
+                .withName("stagingprosecutorscivil.query.submission-error-details-csv"), payload);
+
+    }
+
     private static JsonArray orEmptyArray(final JsonArray value) {
         return nonNull(value) ? value : createArrayBuilder().build();
     }
