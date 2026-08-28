@@ -221,6 +221,36 @@ public class ComplaintsFilesUploadIT {
     }
 
     @Test
+    public void shouldRetainFileNameAndCaptureSummonsApplicationIdWhenPendingCourtDecision() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final UUID applicationId = randomUUID();
+        final JsonObject parkedForApprovalEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("applicationId", applicationId.toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL, randomUUID().toString()), parkedForApprovalEvent));
+
+        final Submission submission = pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.PENDING_COURT_DECISION);
+
+        // The upload metadata captured at submission time, and the summons application id
+        // captured on parking, are both present while the submission awaits an SA court decision.
+        assertThat(submission.getFileName(), is(getFileFrom(COMPLAINTS_CSV).getName()));
+        assertThat(submission.getSummonsApplicationId(), is(applicationId));
+    }
+
+    @Test
     public void shouldTransitionFromPendingCourtDecisionToAcceptedForUploadedComplaint() throws IOException {
         wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
         wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
@@ -231,9 +261,10 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
+        final UUID applicationId = randomUUID();
         final JsonObject parkedForApprovalEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
-                .add("applicationId", randomUUID().toString())
+                .add("applicationId", applicationId.toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
                 .build();
@@ -259,6 +290,7 @@ public class ComplaintsFilesUploadIT {
         assertThat(submission.getFileName(), is(getFileFrom(COMPLAINTS_CSV).getName()));
         assertThat(submission.getUsername(), is("Richard Chapman"));
         assertThat(submission.getProsecutingAuthority(), is(PROSECUTOR_SHORT_NAME));
+        assertThat(submission.getSummonsApplicationId(), is(applicationId));
     }
 
     @Test
@@ -272,9 +304,10 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
+        final UUID applicationId = randomUUID();
         final JsonObject parkedForApprovalEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
-                .add("applicationId", randomUUID().toString())
+                .add("applicationId", applicationId.toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
                 .build();
@@ -300,6 +333,7 @@ public class ComplaintsFilesUploadIT {
         assertThat(submission.getFileName(), is(getFileFrom(COMPLAINTS_CSV).getName()));
         assertThat(submission.getUsername(), is("Richard Chapman"));
         assertThat(submission.getProsecutingAuthority(), is(PROSECUTOR_SHORT_NAME));
+        assertThat(submission.getSummonsApplicationId(), is(applicationId));
     }
 
     @Test

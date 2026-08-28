@@ -122,7 +122,7 @@ public class SubmitSummonsProsecutionIT {
                 PUBLIC_EVENT_PCF_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL, randomUUID().toString()), parkedForApprovalEvent));
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING_COURT_DECISION);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.PENDING_COURT_DECISION);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
         assertThat(submission.getSummonsApplicationId(), Matchers.is(applicationId));
     }
@@ -279,7 +279,7 @@ public class SubmitSummonsProsecutionIT {
                 PUBLIC_EVENT_PCF_GROUP_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_GROUP_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL, randomUUID().toString()), groupParkedForApprovalEvent));
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING_COURT_DECISION);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.PENDING_COURT_DECISION);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
         assertThat(submission.getSummonsApplicationId(), Matchers.is(applicationId));
     }
