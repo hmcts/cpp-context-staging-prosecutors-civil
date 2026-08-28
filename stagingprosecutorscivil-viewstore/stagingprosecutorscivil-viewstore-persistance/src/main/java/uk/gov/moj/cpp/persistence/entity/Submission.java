@@ -84,6 +84,9 @@ public class Submission implements Serializable {
     @Column(name = "prosecutor_short_name")
     private String prosecutorShortName;
 
+    @Column(name = "summons_application_id")
+    private UUID summonsApplicationId;
+
     public Submission() {
     }
 
@@ -100,7 +103,8 @@ public class Submission implements Serializable {
                       final SubmissionType type,
                       final String fileName,
                       final String submittedByUserName,
-                      final String prosecutorShortName) {
+                      final String prosecutorShortName,
+                      final UUID summonsApplicationId) {
         this.submissionId = submissionId;
         this.submissionStatus = submissionStatus;
         this.ouCode = ouCode;
@@ -116,6 +120,7 @@ public class Submission implements Serializable {
         this.fileName = fileName;
         this.submittedByUserName = submittedByUserName;
         this.prosecutorShortName = prosecutorShortName;
+        this.summonsApplicationId = summonsApplicationId;
     }
 
     public UUID getSubmissionId() {
@@ -251,6 +256,14 @@ public class Submission implements Serializable {
         this.prosecutorShortName = prosecutorShortName;
     }
 
+    public UUID getSummonsApplicationId() {
+        return summonsApplicationId;
+    }
+
+    public void setSummonsApplicationId(final UUID summonsApplicationId) {
+        this.summonsApplicationId = summonsApplicationId;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -270,6 +283,7 @@ public class Submission implements Serializable {
         private String fileName;
         private String submittedByUserName;
         private String prosecutorShortName;
+        private UUID summonsApplicationId;
 
         public static Builder aSubmission() {
             return new Builder();
@@ -349,8 +363,13 @@ public class Submission implements Serializable {
             return this;
         }
 
+        public Builder withSummonsApplicationId(UUID summonsApplicationId) {
+            this.summonsApplicationId = summonsApplicationId;
+            return this;
+        }
+
         public Submission build() {
-            return new Submission(submissionId, submissionStatus, ouCode, errors, warnings, caseWarnings, defendantWarnings, receivedAt, completedAt, caseDetail, type, fileName, submittedByUserName, prosecutorShortName);
+            return new Submission(submissionId, submissionStatus, ouCode, errors, warnings, caseWarnings, defendantWarnings, receivedAt, completedAt, caseDetail, type, fileName, submittedByUserName, prosecutorShortName, summonsApplicationId);
         }
     }
 }

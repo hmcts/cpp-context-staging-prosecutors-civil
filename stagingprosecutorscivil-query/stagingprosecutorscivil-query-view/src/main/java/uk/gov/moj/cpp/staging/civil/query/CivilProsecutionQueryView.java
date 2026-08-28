@@ -82,6 +82,9 @@ public class CivilProsecutionQueryView {
         if (nonNull(submission.getCompletedAt())) {
             result.add("completedAt", ZonedDateTimes.toString(submission.getCompletedAt()));
         }
+        if (nonNull(submission.getSummonsApplicationId())) {
+            result.add("summonsApplicationId", submission.getSummonsApplicationId().toString());
+        }
     }
 
     private static void addAdditionalInfo(final JsonObjectBuilder result, final Submission submission) {
