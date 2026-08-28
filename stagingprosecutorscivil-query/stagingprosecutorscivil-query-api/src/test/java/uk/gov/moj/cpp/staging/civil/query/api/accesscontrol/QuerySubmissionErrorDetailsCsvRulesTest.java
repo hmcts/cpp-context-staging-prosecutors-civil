@@ -22,13 +22,13 @@ public class QuerySubmissionErrorDetailsCsvRulesTest extends BaseDroolsAccessCon
 
     private Action action;
 
-    private final static String kSessionName = "QUERY_API_SESSION";
+    private final static String SESSION_NAME = "QUERY_API_SESSION";
 
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
 
     public QuerySubmissionErrorDetailsCsvRulesTest() {
-        super(kSessionName);
+        super(SESSION_NAME);
     }
 
     @Override

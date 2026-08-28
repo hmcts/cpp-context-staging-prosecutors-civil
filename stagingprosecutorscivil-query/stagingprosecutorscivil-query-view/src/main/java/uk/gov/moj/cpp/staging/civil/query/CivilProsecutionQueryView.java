@@ -25,13 +25,15 @@ import org.slf4j.Logger;
 
 public class CivilProsecutionQueryView {
     private static final Logger LOGGER = getLogger(CivilProsecutionQueryView.class);
+    private static final String SUBMISSION_ID = "submissionId";
+
     @Inject
     private SubmissionRepository submissionRepository;
 
     public JsonEnvelope querySubmission(JsonEnvelope envelope) {
 
         final JsonObject requestPayload = envelope.payloadAsJsonObject();
-        final UUID submissionId = fromString(requestPayload.getString("submissionId"));
+        final UUID submissionId = fromString(requestPayload.getString(SUBMISSION_ID));
         final boolean additionalInfo = requestPayload.getBoolean("additionalInfo", false);
         LOGGER.info("Query Submission for Id {} ", submissionId);
         final Optional<Submission> submissionOptional = Optional.ofNullable(submissionRepository.findBy(submissionId));
@@ -97,7 +99,7 @@ public class CivilProsecutionQueryView {
     public JsonEnvelope querySubmissionErrorDetailsCsv(final JsonEnvelope envelope) {
 
         final JsonObject requestPayload = envelope.payloadAsJsonObject();
-        final UUID submissionId = fromString(requestPayload.getString("submissionId"));
+        final UUID submissionId = fromString(requestPayload.getString(SUBMISSION_ID));
         LOGGER.info("Query Submission Error Details CSV for Id {} ", submissionId);
         final Optional<Submission> submissionOptional = Optional.ofNullable(submissionRepository.findBy(submissionId));
 
@@ -109,7 +111,7 @@ public class CivilProsecutionQueryView {
                 .orElseGet(() -> SubmissionErrorDetailsCsvBuilder.build(null, null));
 
         final JsonObjectBuilder payloadBuilder = createObjectBuilder()
-                .add("submissionId", submissionId.toString())
+                .add(SUBMISSION_ID, submissionId.toString())
                 .add("csv", csv);
 
         // fileName is only captured on submissions that originated from a complaints CSV upload;
