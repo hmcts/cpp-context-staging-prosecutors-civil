@@ -141,6 +141,42 @@ public class CivilProsecutionHandlerTest {
         verifyUpdateCaseFileReceivedPrivateEvent();
     }
 
+    @Test
+    public void shouldRaiseUpdateCivilCaseReceivedPrivateEventWithSummonsApplicationId() throws Exception {
+        final UUID summonsApplicationId = randomUUID();
+        final UpdateCivilCase updateCivilCase = UpdateCivilCase.updateCivilCase()
+                .withSubmissionId(UUID.randomUUID())
+                .withSubmissionStatus(SubmissionStatus.PENDING.name())
+                .withSummonsApplicationId(summonsApplicationId)
+                .build();
+
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString())
+                        .withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+
+        final Envelope<UpdateCivilCase> envelope = Enveloper.envelop(updateCivilCase)
+                .withName(PRIVATE_COMMAND_UPDATE_CASE_PROFILE)
+                .withMetadataFrom(requestEnvelope);
+
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
+
+        civilProsecutionHandler.handleCivilCaseUpdate(envelope);
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata()
+                                .withName(PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED),
+                        payload().isJson(allOf(
+                                withJsonPath("$.submissionId", notNullValue()),
+                                withJsonPath("$.summonsApplicationId", is(summonsApplicationId.toString())))
+                        )
+                ))
+        );
+    }
+
     private void verifyChargeProsecutionReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);

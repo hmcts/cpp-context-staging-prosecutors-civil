@@ -9,6 +9,9 @@
     "submissionStatus": {
       "type": "string"
     },
+    "summonsApplicationId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
     "groupCaseErrors": {
       "type": "array",
       "items": {

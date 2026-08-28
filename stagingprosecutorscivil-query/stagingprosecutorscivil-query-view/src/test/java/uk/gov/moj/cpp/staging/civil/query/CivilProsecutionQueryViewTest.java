@@ -78,7 +78,8 @@ public class CivilProsecutionQueryViewTest {
                 SubmissionType.PROSECUTION,
                 "summons-batch.csv",
                 "Richard Chapman",
-                "CPS");
+                "CPS",
+                null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
 
@@ -141,6 +142,7 @@ public class CivilProsecutionQueryViewTest {
                 SubmissionType.PROSECUTION,
                 null,
                 null,
+                null,
                 null);
         submission.setGroupCaseErrors(caseErrors);
         submission.setDefendantErrors(defendantErrors);
@@ -172,6 +174,7 @@ public class CivilProsecutionQueryViewTest {
                 null,
                 new HashSet<>(),
                 SubmissionType.PROSECUTION,
+                null,
                 null,
                 null,
                 null);
@@ -213,7 +216,8 @@ public class CivilProsecutionQueryViewTest {
                 null,
                 "summons-batch.csv",
                 "Richard Chapman",
-                "CPS");
+                "CPS",
+                null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
 
@@ -249,6 +253,7 @@ public class CivilProsecutionQueryViewTest {
                 null,
                 null,
                 new HashSet<>(),
+                null,
                 null,
                 null,
                 null,
@@ -292,6 +297,7 @@ public class CivilProsecutionQueryViewTest {
                 null,
                 null,
                 null,
+                null,
                 null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
@@ -327,6 +333,7 @@ public class CivilProsecutionQueryViewTest {
                 null,
                 null,
                 new HashSet<>(),
+                null,
                 null,
                 null,
                 null,
@@ -395,7 +402,8 @@ public class CivilProsecutionQueryViewTest {
         final Submission submission = new Submission(
                 submissionId, "REJECTED", "ouCode", null, null, null, null,
                 ZonedDateTime.now(), ZonedDateTime.now(), new HashSet<>(),
-                SubmissionType.PROSECUTION, null, null, null);
+                SubmissionType.PROSECUTION, null, null, null,
+                null);
         submission.setGroupCaseErrors(caseErrors);
         submission.setDefendantErrors(defendantErrors);
 
@@ -427,7 +435,8 @@ public class CivilProsecutionQueryViewTest {
         final Submission submission = new Submission(
                 submissionId, "REJECTED", "ouCode", null, null, null, null,
                 ZonedDateTime.now(), ZonedDateTime.now(), new HashSet<>(),
-                SubmissionType.PROSECUTION, "complaints-2026-01-01.csv", null, null);
+                SubmissionType.PROSECUTION, "complaints-2026-01-01.csv", null, null,
+                null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
 
@@ -446,7 +455,8 @@ public class CivilProsecutionQueryViewTest {
         final Submission submission = new Submission(
                 submissionId, "PENDING", "ouCode", null, null, null, null,
                 ZonedDateTime.now(), null, new HashSet<>(),
-                SubmissionType.PROSECUTION, null, null, null);
+                SubmissionType.PROSECUTION, null, null, null,
+                null);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);
 
@@ -487,7 +497,8 @@ public class CivilProsecutionQueryViewTest {
         final Submission submission = new Submission(
                 submissionId, "REJECTED", "ouCode", null, null, null, null,
                 ZonedDateTime.now(), ZonedDateTime.now(), new HashSet<>(),
-                SubmissionType.PROSECUTION, null, null, null);
+                SubmissionType.PROSECUTION, null, null, null,
+                null);
         submission.setGroupCaseErrors(caseErrors);
 
         when(submissionRepository.findBy(submissionId)).thenReturn(submission);

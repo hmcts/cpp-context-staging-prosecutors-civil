@@ -103,13 +103,13 @@ public class ProsecutionChargedEventProcessor {
     @Handles("public.prosecutioncasefile.parked-for-summons-application-approval")
     public void handleParkedForSummonsApplicationApproval(final Envelope<PublicParkedForSummonsApplicationApproval> event) {
         LOGGER.info("Received public.prosecutioncasefile.parked-for-summons-application-approval event with payload for submission id {} ", event.payload().getExternalId());
-        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION);
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION, event.payload().getApplicationId());
     }
 
     @Handles("public.prosecutioncasefile.group-parked-for-summons-application-approval")
     public void handleGroupParkedForSummonsApplicationApproval(final Envelope<PublicGroupParkedForSummonsApplicationApproval> event) {
         LOGGER.info("Received public.prosecutioncasefile.group-parked-for-summons-application-approval event with payload for submission id {} ", event.payload().getExternalId());
-        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION);
+        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION, event.payload().getApplicationId());
     }
 
     /**
@@ -305,10 +305,16 @@ public class ProsecutionChargedEventProcessor {
 
 
     private void updateCivilStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status) {
+        updateCivilStatus(event, submissionId, status, null);
+    }
+
+    private void updateCivilStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status, final UUID summonsApplicationId) {
 
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                 .add("submissionId", submissionId)
                 .add("submissionStatus", status.name());
+
+        ofNullable(summonsApplicationId).ifPresent(id -> jsonObjectBuilder.add("summonsApplicationId", id.toString()));
 
         if (status == FAILED) {
             final PublicCivilProsecutionRejected prosecutionRejected = (PublicCivilProsecutionRejected) event.payload();
@@ -331,10 +337,16 @@ public class ProsecutionChargedEventProcessor {
     }
 
     private void updateCivilCaseStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status) {
+        updateCivilCaseStatus(event, submissionId, status, null);
+    }
+
+    private void updateCivilCaseStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status, final UUID summonsApplicationId) {
 
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                 .add("submissionId", submissionId)
                 .add("submissionStatus", status.name());
+
+        ofNullable(summonsApplicationId).ifPresent(id -> jsonObjectBuilder.add("summonsApplicationId", id.toString()));
 
         if (status == FAILED) {
             final PublicGroupProsecutionRejected prosecutionRejected = (PublicGroupProsecutionRejected) event.payload();

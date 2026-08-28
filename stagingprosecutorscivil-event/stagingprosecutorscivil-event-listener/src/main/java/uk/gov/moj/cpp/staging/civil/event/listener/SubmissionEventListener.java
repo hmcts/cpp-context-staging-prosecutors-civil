@@ -135,6 +135,10 @@ public class SubmissionEventListener {
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
 
+        if (updatedCivilCaseReceived.getSummonsApplicationId() != null) {
+            submission.setSummonsApplicationId(updatedCivilCaseReceived.getSummonsApplicationId());
+        }
+
         if (isTerminalStatus(updatedCivilCaseReceived.getSubmissionStatus())) {
             // Wall-clock time, not the event's metadata createdAt: this listener's viewstore is
             // derived state, but completedAt is intentionally allowed to differ on replay/rebuild
@@ -304,4 +308,3 @@ public class SubmissionEventListener {
         return arrayBuilder.build();
     }
 }
-

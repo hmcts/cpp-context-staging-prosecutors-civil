@@ -34,6 +34,8 @@ public class Submission {
 
     private final String prosecutingAuthority;
 
+    private final UUID summonsApplicationId;
+
     @JsonCreator
     public Submission(
             @JsonProperty("id") UUID submissionId,
@@ -45,7 +47,8 @@ public class Submission {
             @JsonProperty("completedAt") ZonedDateTime completedAt,
             @JsonProperty("fileName") String fileName,
             @JsonProperty("username") String username,
-            @JsonProperty("prosecutingAuthority") String prosecutingAuthority) {
+            @JsonProperty("prosecutingAuthority") String prosecutingAuthority,
+            @JsonProperty("summonsApplicationId") UUID summonsApplicationId) {
 
         this.submissionId = submissionId;
         this.submissionStatus = submissionStatus;
@@ -57,6 +60,7 @@ public class Submission {
         this.fileName = fileName;
         this.username = username;
         this.prosecutingAuthority = prosecutingAuthority;
+        this.summonsApplicationId = summonsApplicationId;
     }
 
     public static QueryPoller<Submission> poller() {
@@ -93,6 +97,10 @@ public class Submission {
 
     public String getProsecutingAuthority() {
         return prosecutingAuthority;
+    }
+
+    public UUID getSummonsApplicationId() {
+        return summonsApplicationId;
     }
 
     public List<Problem> getMaterialErrors() {

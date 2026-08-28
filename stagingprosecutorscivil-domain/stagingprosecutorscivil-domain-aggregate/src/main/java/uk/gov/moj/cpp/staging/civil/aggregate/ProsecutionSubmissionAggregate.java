@@ -78,7 +78,8 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
 
     public Stream<Object> receiveCivilCaseUpdate(final UUID submissionId, final String submissionStatus, final List<CaseProblem> caseErrors,
                                                  final List<DefendantProblem> defendantErrors, final List<CaseProblem> groupCaseErrors,
-                                                 final List<Problem> warnings, final List<CaseProblem> caseWarnings, final List<DefendantProblem> defendantWarnings) {
+                                                 final List<Problem> warnings, final List<CaseProblem> caseWarnings, final List<DefendantProblem> defendantWarnings,
+                                                 final UUID summonsApplicationId) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.update-civil-case-received for submission id {} and status {}", submissionId, submissionStatus);
         return apply(
                 Stream.of(
@@ -91,6 +92,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                 .withWarnings(warnings)
                                 .withCaseWarnings(caseWarnings)
                                 .withDefendantWarnings(defendantWarnings)
+                                .withSummonsApplicationId(summonsApplicationId)
                                 .build()
                 )
         );
