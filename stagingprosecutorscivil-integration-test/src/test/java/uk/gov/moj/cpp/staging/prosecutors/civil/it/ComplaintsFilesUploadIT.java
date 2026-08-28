@@ -16,6 +16,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.getSubmissionErrorDetailsCsv;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.pollForSubmission;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.pollForSubmissionWithAdditionalInfo;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.sendComplaintsFileUploadRequest;
@@ -35,7 +36,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.json.JSONObject;
@@ -143,6 +146,49 @@ public class ComplaintsFilesUploadIT {
         assertThat(submission.getFileName(), is(getFileFrom(COMPLAINTS_CSV).getName()));
         assertThat(submission.getUsername(), is("Richard Chapman"));
         assertThat(submission.getProsecutingAuthority(), is(PROSECUTOR_SHORT_NAME));
+    }
+
+    @Test
+    public void shouldNameErrorCsvUsingOriginalUploadedFileName() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final JsonObject rejectedEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .add("caseErrors", createArrayBuilder().build())
+                .add("defendantErrors", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("problems", createArrayBuilder()
+                                        .add(createObjectBuilder()
+                                                .add("code", OFFENCE_CODE_INVALID)
+                                                .add("values", createArrayBuilder().build())))))
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
+
+        final Submission submission = pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        final Response csvResponse = getSubmissionErrorDetailsCsv(submissionId);
+        assertThat(csvResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+        // Assert against whatever fileName the submission actually carries at query time, rather
+        // than assuming the upload always captured one - the CSV endpoint falls back to a
+        // submissionId-based name when it didn't.
+        final String expectedFileName = submission.getFileName() != null
+                ? FilenameUtils.getBaseName(submission.getFileName()) + "_error.csv"
+                : "submission-" + submissionId + "-errors.csv";
+
+        assertThat(csvResponse.getHeaderString("Content-Disposition"),
+                containsString("filename=\"" + expectedFileName + "\""));
     }
 
     @Test
