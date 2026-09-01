@@ -55,35 +55,50 @@ class SummonsProsecutionCsvToJsonConverterTest {
     }
 
     @Test
-    void groupsRowsByCaseUrnAndDefendantIdAndPreservesOffenceOrder() throws IOException {
+    void convertsEachRowIntoADistinctCaseWithASingleDefendant() throws IOException {
         final SummonsProsecution summonsProsecution = convertTemplateToObject();
 
         assertEquals("GAAAA01", summonsProsecution.getProsecutingAuthority());
         assertEquals("B01LY01", summonsProsecution.getHearingDetails().getCourtHearingLocation());
-        assertEquals(2, summonsProsecution.getProsecutionCases().size());
+        assertEquals(3, summonsProsecution.getProsecutionCases().size());
 
         final var firstCase = summonsProsecution.getProsecutionCases().get(0);
         assertEquals("SCIV67890", firstCase.getUrn());
-        assertEquals(2, firstCase.getDefendants().size());
+        assertEquals(1, firstCase.getDefendants().size());
 
         final var individualDefendant = firstCase.getDefendants().get(0);
         assertNotNull(individualDefendant.getIndividual());
         assertNull(individualDefendant.getOrganisation());
         assertEquals("Jane", individualDefendant.getIndividual().getNameDetails().getForename());
-        assertEquals(2, individualDefendant.getOffences().size());
+        assertEquals(1, individualDefendant.getOffences().size());
         assertEquals(1, individualDefendant.getOffences().get(0).getOffenceDetails().getOffenceSequenceNo());
-        assertEquals(2, individualDefendant.getOffences().get(1).getOffenceDetails().getOffenceSequenceNo());
 
-        final var organisationDefendant = firstCase.getDefendants().get(1);
+        final var secondCase = summonsProsecution.getProsecutionCases().get(1);
+        assertEquals("SCIV67891", secondCase.getUrn());
+        assertEquals(1, secondCase.getDefendants().size());
+        final var organisationDefendant = secondCase.getDefendants().get(0);
         assertNotNull(organisationDefendant.getOrganisation());
         assertNull(organisationDefendant.getIndividual());
         assertEquals("Acme Retail Ltd", organisationDefendant.getOrganisation().getOrganisationName());
 
-        final var secondCase = summonsProsecution.getProsecutionCases().get(1);
-        assertEquals("SCIV99999", secondCase.getUrn());
-        final var minorDefendant = secondCase.getDefendants().get(0);
+        final var thirdCase = summonsProsecution.getProsecutionCases().get(2);
+        assertEquals("SCIV99999", thirdCase.getUrn());
+        final var minorDefendant = thirdCase.getDefendants().get(0);
         assertNotNull(minorDefendant.getIndividual().getParentGuardian());
         assertEquals("Jones", minorDefendant.getIndividual().getParentGuardian().getIndividual().getNameDetails().getSurname());
+    }
+
+    @Test
+    void throwsWhenCaseUrnIsDuplicated() {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n"
+                + buildCsvRow(Map.of()) + "\n"
+                + buildCsvRow(Map.of(SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "DEF00002")) + "\n";
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains("duplicate case URN"));
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.CASE_URN));
     }
 
     @Test
@@ -409,21 +424,22 @@ class SummonsProsecutionCsvToJsonConverterTest {
      * one column it wants to exercise.
      */
     private static String buildCsv(final Map<String, String> overrides) {
+        final String header = String.join(",", SummonsProsecutionCsvColumns.HEADERS);
+        return header + "\n" + buildCsvRow(overrides) + "\n";
+    }
+
+    private static String buildCsvRow(final Map<String, String> overrides) {
         final Map<String, String> values = new LinkedHashMap<>(defaultValidValues());
         values.putAll(overrides);
 
-        final StringBuilder header = new StringBuilder();
         final StringBuilder row = new StringBuilder();
         for (int i = 0; i < SummonsProsecutionCsvColumns.HEADERS.length; i++) {
             if (i > 0) {
-                header.append(',');
                 row.append(',');
             }
-            final String column = SummonsProsecutionCsvColumns.HEADERS[i];
-            header.append(column);
-            row.append(values.getOrDefault(column, ""));
+            row.append(values.getOrDefault(SummonsProsecutionCsvColumns.HEADERS[i], ""));
         }
-        return header + "\n" + row + "\n";
+        return row.toString();
     }
 
     private static Map<String, String> defaultValidValues() {
