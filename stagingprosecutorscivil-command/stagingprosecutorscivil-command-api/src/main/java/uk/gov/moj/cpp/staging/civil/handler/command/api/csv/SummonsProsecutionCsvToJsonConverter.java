@@ -126,10 +126,10 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
  * CSV produced by {@code summons-prosecution-template.csv}.
  * <p>
  * The whole CSV file is treated as a single submission: {@code prosecutingAuthority} and
- * {@code hearingDetails.*} are read once, from the first data row. Rows are grouped into
- * {@link SummonsProsecutionCase}s by {@code case.urn}, and into {@link Defendant}s by
- * {@code defendant.prosecutorDefendantId} within each case; each row contributes exactly one
- * {@link Offence} to its defendant's offence list.
+ * {@code hearingDetails.*} are read once, from the first data row. Each row represents exactly
+ * one {@link SummonsProsecutionCase} for a single {@link Defendant} with a single {@link Offence}
+ * - there is no multi-defendant-per-case flow, so {@code case.urn} must be unique across the rows
+ * of a file; a repeated URN is rejected.
  */
 public class SummonsProsecutionCsvToJsonConverter {
 
@@ -163,12 +163,16 @@ public class SummonsProsecutionCsvToJsonConverter {
                 }
 
                 final String caseUrn = requireNonBlank(record, CASE_URN);
-                final CaseAccumulator caseAccumulator = caseAccumulators.computeIfAbsent(caseUrn,
-                        urn -> new CaseAccumulator(newCaseBuilder(record)));
+                if (caseAccumulators.containsKey(caseUrn)) {
+                    throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": duplicate case URN '"
+                            + caseUrn + "' - each row must have a unique case.urn");
+                }
+                final CaseAccumulator caseAccumulator = new CaseAccumulator(newCaseBuilder(record));
+                caseAccumulators.put(caseUrn, caseAccumulator);
 
                 final String defendantId = requireNonBlank(record, DEFENDANT_PROSECUTOR_DEFENDANT_ID);
-                final DefendantAccumulator defendantAccumulator = caseAccumulator.defendantAccumulators
-                        .computeIfAbsent(defendantId, id -> newDefendantAccumulator(record));
+                final DefendantAccumulator defendantAccumulator = newDefendantAccumulator(record);
+                caseAccumulator.defendantAccumulators.put(defendantId, defendantAccumulator);
 
                 defendantAccumulator.offences.add(buildOffence(record));
             }

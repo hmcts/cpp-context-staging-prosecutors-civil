@@ -56,6 +56,7 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV = "payload/complaints/complaints-summons-prosecution.csv";
     private static final String COMPLAINTS_CSV_MISSING_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-missing-summons-code.csv";
     private static final String COMPLAINTS_CSV_INVALID_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-invalid-summons-code.csv";
+    private static final String COMPLAINTS_CSV_DUPLICATE_URN = "payload/complaints/complaints-summons-prosecution-duplicate-urn.csv";
     private static final String CSV_OUCODE = "GAAAA01";
     private static final String PROSECUTOR_SHORT_NAME = "DVLA";
     private static final String LEGAL_ADVISERS_GROUP_NAME = "Legal Advisers";
@@ -357,6 +358,17 @@ public class ComplaintsFilesUploadIT {
 
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmission(submissionId, SubmissionStatus.PENDING);
+    }
+
+    @Test
+    public void shouldRejectUploadWhenCsvContainsDuplicateCaseUrn() throws IOException {
+        // Each row represents a single case/defendant - there is no multi-defendant-per-case
+        // flow in scope, so a case.urn must be unique across the rows of a single uploaded file.
+        // This is validated at request time, before any downstream submission is created.
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_DUPLICATE_URN), randomUUID().toString());
+
+        assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
+        assertThat(extractErrorMessage(response), containsString("SCIV11111"));
     }
 
     private File getFileFrom(final String filePath) {
