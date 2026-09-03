@@ -125,7 +125,7 @@ public class SubmitMaterialIT {
     private static void publishPublicProgressionCourtDocumentAdded(final UUID submissionId) {
 
         sendPublicMessageAndExpectPrivateMessage(
-                "stagingprosecutorscivil.command.receive-material-submission-successful",
+                "stagingcivil.command.receive-material-submission-successful",
                 createObjectBuilder().build(),
                 publicProgressionCourtDocumentAdded(submissionId),
                 PUBLIC_EVENT_PROGRESSION_COURT_DOCUMENT_ADDED);

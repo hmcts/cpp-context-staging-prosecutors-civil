@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/command/handler/charge-prosecution.json",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/command/api/summons-with-submission-id.json",
   "type": "object",
   "properties": {
     "prosecutionCases": {
@@ -8,7 +8,7 @@
       "minItems": 1,
       "items": {
         "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/prosecution-case.json"
-        }
+      }
     },
     "prosecutingAuthority": {
       "description": "Identifies the Prosecuting Organisation responsible for initiating the case",

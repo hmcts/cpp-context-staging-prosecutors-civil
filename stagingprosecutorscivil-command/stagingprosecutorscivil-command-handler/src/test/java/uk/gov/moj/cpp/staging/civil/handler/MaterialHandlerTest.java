@@ -51,10 +51,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class MaterialHandlerTest {
 
-    private static final String PRIVATE_COMMAND_SUBMIT_MATERIAL = "stagingprosecutorscivil.command.submit-material";
+    private static final String PRIVATE_COMMAND_SUBMIT_MATERIAL = "stagingcivil.command.submit-material";
     private static final String PRIVATE_EVENT_MATERIAL_SUBMITTED = "stagingprosecutorscivil.event.material-submitted";
-    private static final String PRIVATE_COMMAND_REJECT_MATERIAL = "stagingprosecutorscivil.command.reject-material";
-    private static final String PRIVATE_COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL = "stagingprosecutorscivil.command.receive-material-submission-successful";
+    private static final String PRIVATE_COMMAND_REJECT_MATERIAL = "stagingcivil.command.reject-material";
+    private static final String PRIVATE_COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL = "stagingcivil.command.receive-material-submission-successful";
     private static final String PRIVATE_EVENT_MATERIAL_SUBMISSION_SUCCESSFUL = "stagingprosecutorscivil.event.material-submission-successful";
 
     @InjectMocks

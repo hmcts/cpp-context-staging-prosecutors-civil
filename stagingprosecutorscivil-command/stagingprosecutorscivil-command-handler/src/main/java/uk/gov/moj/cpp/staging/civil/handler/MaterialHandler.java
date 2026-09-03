@@ -38,7 +38,7 @@ public class MaterialHandler {
     @Inject
     private AggregateService aggregateService;
 
-    @Handles("stagingprosecutorscivil.command.submit-material")
+    @Handles("stagingcivil.command.submit-material")
     public void handleSubmitMaterial(final Envelope<SubmitMaterialCommand> command) throws EventStreamException {
         final SubmitMaterialCommand payload = command.payload();
         LOGGER.info("Received command to submit material with SubmissionId {}",payload.getSubmissionId());
@@ -52,7 +52,7 @@ public class MaterialHandler {
                 ofNullable(payload.getDefendantId())));
     }
 
-    @Handles("stagingprosecutorscivil.command.reject-material")
+    @Handles("stagingcivil.command.reject-material")
     public void handleReceiveMaterialSubmissionRejected(final Envelope<RejectMaterial> command) throws EventStreamException {
         final RejectMaterial payload = command.payload();
         LOGGER.info("Received command to reject material submission with SubmissionId {}",payload.getSubmissionId());
@@ -72,7 +72,7 @@ public class MaterialHandler {
         eventStream.append(events.map(toEnvelopeWithMetadataFrom(jsonEnvelope)));
     }
 
-    @Handles("stagingprosecutorscivil.command.receive-material-submission-successful")
+    @Handles("stagingcivil.command.receive-material-submission-successful")
     public void handleReceiveMaterial(final Envelope<ReceiveMaterialSubmissionSuccessful> receiveMaterialSubmissionSuccessfulEnvelope) throws EventStreamException {
         final ReceiveMaterialSubmissionSuccessful receiveSubmissionSuccessful = receiveMaterialSubmissionSuccessfulEnvelope.payload();
         final UUID submissionId = receiveSubmissionSuccessful.getSubmissionId();

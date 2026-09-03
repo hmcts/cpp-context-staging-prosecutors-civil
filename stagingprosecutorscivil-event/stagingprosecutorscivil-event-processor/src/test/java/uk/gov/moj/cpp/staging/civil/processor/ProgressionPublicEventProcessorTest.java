@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ProgressionPublicEventProcessorTest {
 
     private static final String PUBLIC_EVENT_COURT_DOCUMENT_ADDED = "public.progression.court-document-added";
-    private static final String COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL = "stagingprosecutorscivil.command.receive-material-submission-successful";
+    private static final String COMMAND_RECEIVE_MATERIAL_SUBMISSION_SUCCESSFUL = "stagingcivil.command.receive-material-submission-successful";
 
     @InjectMocks
     private ProgressionPublicEventProcessor progressionPublicEventProcessor;

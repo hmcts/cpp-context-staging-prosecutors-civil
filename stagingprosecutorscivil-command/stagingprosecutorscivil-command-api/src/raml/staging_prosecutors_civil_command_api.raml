@@ -1,34 +1,34 @@
   #%RAML 0.8
 title: Case Management Command API
 version: 1.0
-baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/rest/stagingprosecutors-civil
+baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/rest/staging-civil
 
-/prosecutions:
+/cases:
   post:
       description:  |
         Submit civil prosecutions
         ...
         (mapping):
-            requestType: application/vnd.stagingprosecutorscivil.charge-prosecution+json
-            name: stagingprosecutorscivil.charge-prosecution
+            requestType: application/vnd.stagingcivil.other-case+json
+            name: stagingcivil.other-case
         (mapping):
-            requestType: application/vnd.stagingprosecutorscivil.summons-prosecution+json
-            name: stagingprosecutorscivil.summons-prosecution
+            requestType: application/vnd.stagingcivil.summons+json
+            name: stagingcivil.summons
         ...
       body:
-        application/vnd.stagingprosecutorscivil.charge-prosecution+json:
-          schema: !include json/schema/stagingprosecutorscivil.charge-prosecution.json
-          example: !include json/stagingprosecutorscivil.charge-prosecution.json
-        application/vnd.stagingprosecutorscivil.summons-prosecution+json:
-          schema: !include json/schema/stagingprosecutorscivil.summons-prosecution.json
-          example: !include json/stagingprosecutorscivil.summons-prosecution.json
+        application/vnd.stagingcivil.other-case+json:
+          schema: !include json/schema/stagingcivil.other-case.json
+          example: !include json/stagingcivil.other-case.json
+        application/vnd.stagingcivil.summons+json:
+          schema: !include json/schema/stagingcivil.summons.json
+          example: !include json/stagingcivil.summons.json
       responses:
             202:
                 description: OK
                 body:
                   application/json:
-                    schema: !include json/schema/stagingprosecutorscivil.url-response.json
-                    example: !include json/stagingprosecutorscivil.url-response.json
+                    schema: !include json/schema/stagingcivil.url-response.json
+                    example: !include json/stagingcivil.url-response.json
             500:
                 description: Internal Server Error
 
@@ -39,7 +39,7 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
       ...
       (mapping):
         requestType: multipart/form-data
-        name: stagingprosecutorscivil.submit-material
+        name: stagingcivil.submit-material
       ...
     body:
       multipart/form-data:
@@ -52,8 +52,8 @@ baseUri:  http://localhost:8080/stagingprosecutorscivil-command-api/command/api/
         description: Accepted
         body:
           application/json:
-            schema: !include json/schema/stagingprosecutorscivil.url-response.json
-            example: !include json/stagingprosecutorscivil.url-response.json
+            schema: !include json/schema/stagingcivil.url-response.json
+            example: !include json/stagingcivil.url-response.json
       400:
         description: Bad Request
       500:

@@ -11,7 +11,6 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
 import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReferences;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
 
 import uk.gov.justice.services.common.converter.Converter;
@@ -24,12 +23,12 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForCharge;
+import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForOthers;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForSummons;
 import uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.ChargeProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateGroupProsecution;
@@ -53,9 +52,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ServiceComponent(EVENT_PROCESSOR)
-public class ProsecutionChargedEventProcessor {
+public class ProsecutionEventProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProsecutionChargedEventProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProsecutionEventProcessor.class);
 
     @Inject
     private Sender sender;
@@ -66,15 +65,15 @@ public class ProsecutionChargedEventProcessor {
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    @Handles("stagingprosecutorscivil.event.charge-prosecution-received")
-    public void processProsecutionCharged(final Envelope<ChargeProsecutionReceived> event) {
-        LOGGER.info("Received stagingprosecutorscivil.event.charge-prosecution-received event with SubmissionId {}", event.payload().getSubmissionId());
-        processChargeReceivedEvent(event);
+    @Handles("stagingprosecutorscivil.event.other-case-received")
+    public void processProsecutionOthers(final Envelope<OtherCaseReceived> event) {
+        LOGGER.info("Received stagingprosecutorscivil.event.other-case-received event with SubmissionId {}", event.payload().getSubmissionId());
+        processOthersReceivedEvent(event);
     }
 
-    @Handles("stagingprosecutorscivil.event.summons-prosecution-received")
-    public void processProsecutionSummons(final Envelope<SummonsProsecutionReceived> event) {
-        LOGGER.info("Received stagingprosecutorscivil.event.summons-prosecution-received event with SubmissionId {}", event.payload().getSubmissionId());
+    @Handles("stagingprosecutorscivil.event.summons-received")
+    public void processProsecutionSummons(final Envelope<SummonsReceived> event) {
+        LOGGER.info("Received stagingprosecutorscivil.event.summons-received event with SubmissionId {}", event.payload().getSubmissionId());
         processSummonsReceivedEvent(event);
     }
 
@@ -91,47 +90,45 @@ public class ProsecutionChargedEventProcessor {
         updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
     }
 
-    private void processChargeReceivedEvent(final Envelope<ChargeProsecutionReceived> event) {
+    private void processOthersReceivedEvent(final Envelope<OtherCaseReceived> event) {
         final ZonedDateTime dateReceived = event.metadata().createdAt().orElse(now());
-        final ChargeProsecutionReceived chargeProsecutionReceived = event.payload();
-        final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForCharge(dateReceived, chargeProsecutionReceived, randomUUID());
+        final OtherCaseReceived otherCaseReceived = event.payload();
+        final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForOthers(dateReceived, otherCaseReceived, randomUUID());
 
-        initiatePCFCommand(groupProsecutions, chargeProsecutionReceived.getSubmissionId(), event.metadata());
-        updateCivilCaseStatus(event, chargeProsecutionReceived.getSubmissionId().toString(), PENDING);
+        initiatePCFCommand(groupProsecutions, otherCaseReceived.getSubmissionId(), event.metadata());
 
     }
 
-    private void processSummonsReceivedEvent(final Envelope<SummonsProsecutionReceived> event) {
+    private void processSummonsReceivedEvent(final Envelope<SummonsReceived> event) {
         final ZonedDateTime dateReceived = event.metadata().createdAt().orElse(now());
-        final SummonsProsecutionReceived summonsProsecutionReceived = event.payload();
-        final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForSummons(dateReceived, summonsProsecutionReceived, randomUUID());
+        final SummonsReceived summonsReceived = event.payload();
+        final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForSummons(dateReceived, summonsReceived, randomUUID());
 
-        initiatePCFCommand(groupProsecutions, summonsProsecutionReceived.getSubmissionId(), event.metadata());
-        updateCivilCaseStatus(event, summonsProsecutionReceived.getSubmissionId().toString(), PENDING);
+        initiatePCFCommand(groupProsecutions, summonsReceived.getSubmissionId(), event.metadata());
 
     }
 
-    private List<GroupProsecutions> getGroupProsecutionsForCharge(final ZonedDateTime dateReceived,
-                                                                  final ChargeProsecutionReceived chargeProsecutionReceived,
+    private List<GroupProsecutions> getGroupProsecutionsForOthers(final ZonedDateTime dateReceived,
+                                                                  final OtherCaseReceived otherCaseReceived,
                                                                   final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getCaseReferences(chargeProsecutionReceived.getProsecutionCases()), chargeProsecutionReceived.getProsecutingAuthority());
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getCaseReferences(otherCaseReceived.getProsecutionCases()), otherCaseReceived.getProsecutingAuthority());
         final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverter
-                = new ProsecutionCaseToGroupProsecutionConverterForCharge(dateReceived, chargeProsecutionReceived, groupId, caseRefToCaseId);
+                = new ProsecutionCaseToGroupProsecutionConverterForOthers(dateReceived, otherCaseReceived, groupId, caseRefToCaseId);
 
-        return chargeProsecutionReceived.getProsecutionCases()
+        return otherCaseReceived.getProsecutionCases()
                 .stream()
                 .map(prosecutionCaseToGroupProsecutionConverter::convert)
                 .collect(Collectors.toList());
     }
 
     private List<GroupProsecutions> getGroupProsecutionsForSummons(final ZonedDateTime dateReceived,
-                                                                   final SummonsProsecutionReceived summonsProsecutionReceived,
+                                                                   final SummonsReceived summonsReceived,
                                                                    final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(summonsProsecutionReceived.getProsecutionCases(), summonsProsecutionReceived.getProsecutingAuthority()), null);
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(summonsReceived.getProsecutionCases(), summonsReceived.getProsecutingAuthority()), null);
         final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverterForSummons
-                = new ProsecutionCaseToGroupProsecutionConverterForSummons(dateReceived, summonsProsecutionReceived, groupId, caseRefToCaseId);
+                = new ProsecutionCaseToGroupProsecutionConverterForSummons(dateReceived, summonsReceived, groupId, caseRefToCaseId);
 
-        return summonsProsecutionReceived.getProsecutionCases()
+        return summonsReceived.getProsecutionCases()
                 .stream()
                 .map(prosecutionCaseToGroupProsecutionConverterForSummons::convert)
                 .collect(Collectors.toList());
@@ -238,14 +235,14 @@ public class ProsecutionChargedEventProcessor {
             jsonObjectBuilder.add("defendantErrors", transformDefendantProblemsToJsonArray(prosecutionRejected.getDefendantErrors()));
         }
         if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Calling stagingprosecutorscivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
+            LOGGER.info("Calling stagingcivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
         }
         updateSubmitionStatus(event, jsonObjectBuilder);
     }
 
     private void updateSubmitionStatus(final Envelope<?> event, final JsonObjectBuilder jsonObjectBuilder) {
         sender.send(envelop(jsonObjectBuilder.build())
-                .withName("stagingprosecutorscivil.command.update-civil-case")
+                .withName("stagingcivil.command.update-civil-case")
                 .withMetadataFrom(event));
     }
 
@@ -267,7 +264,7 @@ public class ProsecutionChargedEventProcessor {
         }
 
         if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Calling stagingprosecutorscivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
+            LOGGER.info("Calling stagingcivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
         }
         updateSubmitionStatus(event, jsonObjectBuilder);
     }
