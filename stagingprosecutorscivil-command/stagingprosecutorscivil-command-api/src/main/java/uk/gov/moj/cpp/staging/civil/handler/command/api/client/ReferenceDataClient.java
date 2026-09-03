@@ -36,6 +36,7 @@ public class ReferenceDataClient {
         final JsonEnvelope requestEnvelope = envelopeFrom(metadata, queryPayload);
 
         final Envelope<JsonObject> response = requester.requestAsAdmin(requestEnvelope, JsonObject.class);
-        return response.payload().getString(SHORT_NAME_FIELD, null);
+        final JsonObject payload = response.payload();
+        return payload == null ? null : payload.getString(SHORT_NAME_FIELD, null);
     }
 }

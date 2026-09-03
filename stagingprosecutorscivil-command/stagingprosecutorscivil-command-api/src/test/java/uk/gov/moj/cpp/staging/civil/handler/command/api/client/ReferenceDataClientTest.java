@@ -49,4 +49,13 @@ class ReferenceDataClientTest {
 
         assertThat(referenceDataClient.getProsecutorShortNameForOuCode(OUCODE), is(nullValue()));
     }
+
+    @Test
+    void returnsNullWhenResponsePayloadIsNull() {
+        when(requester.requestAsAdmin(any(), eq(JsonObject.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.get.prosecutor.by.oucode").build(),
+                null));
+
+        assertThat(referenceDataClient.getProsecutorShortNameForOuCode(OUCODE), is(nullValue()));
+    }
 }
