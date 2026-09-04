@@ -28,13 +28,13 @@ public class CivilProsecutionQueryApi {
     @Inject
     private Requester requester;
 
-    @Handles("stagingprosecutorscivil.submission-details")
+    @Handles("stagingcivil.submission-details")
     public JsonEnvelope getSubmissionDetails(final JsonEnvelope envelope) {
 
         validateSubmissionId(envelope);
 
         final JsonEnvelope queryEnvelop = envelopeFrom(metadataFrom(envelope.metadata())
-                .withName("stagingprosecutorscivil.query.submission-details"), envelope.payloadAsJsonObject());
+                .withName("stagingcivil.query.submission-details"), envelope.payloadAsJsonObject());
         return civilProsecutionQueryView.querySubmission(queryEnvelop);
 
     }

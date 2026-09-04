@@ -11,7 +11,7 @@ import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Prosecutor;
 import uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsProsecutionReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
@@ -25,12 +25,12 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
 
     private static final String INITIATION_CODE_SUMMONS_CASE = "S";
     private final ZonedDateTime dateReceived;
-    private final SummonsProsecutionReceived summonsProsecutionReceived;
+    private final SummonsReceived summonsReceived;
     private final UUID groupId;
     private Map<String, UUID> caseRefToCaseId;
-    public ProsecutionCaseToGroupProsecutionConverterForSummons(final ZonedDateTime dateReceived, final SummonsProsecutionReceived summonsProsecutionReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
+    public ProsecutionCaseToGroupProsecutionConverterForSummons(final ZonedDateTime dateReceived, final SummonsReceived summonsReceived, final UUID groupId, final Map<String, UUID> caseRefToCaseId) {
         this.dateReceived = dateReceived;
-        this.summonsProsecutionReceived = summonsProsecutionReceived;
+        this.summonsReceived = summonsReceived;
         this.groupId = groupId;
         this.caseRefToCaseId = caseRefToCaseId;
     }
@@ -39,7 +39,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
     public GroupProsecutions convert(final ProsecutionCase prosecutionCase) {
 
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> defendantToProsecutionCaseFileDefendantConverter
-                = new DefendantToProsecutionCaseFileDefendantConverter(summonsProsecutionReceived.getHearingDetails());
+                = new DefendantToProsecutionCaseFileDefendantConverter(summonsReceived.getHearingDetails());
 
         return GroupProsecutions.groupProsecutions()
                 .withCaseDetails(buildCaseDetails(prosecutionCase))
@@ -61,7 +61,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
     }
 
     private CaseDetails buildCaseDetails(final ProsecutionCase prosecutionCase) {
-        final UUID caseFileId = caseRefToCaseId.get(ProsecutorCaseReferenceUtil.getProsecutorCaseReference(summonsProsecutionReceived.getProsecutingAuthority(), prosecutionCase.getUrn()));
+        final UUID caseFileId = caseRefToCaseId.get(ProsecutorCaseReferenceUtil.getProsecutorCaseReference(summonsReceived.getProsecutingAuthority(), prosecutionCase.getUrn()));
 
         return CaseDetails.caseDetails()
                 .withDateReceived(dateReceived.toLocalDate())
@@ -72,11 +72,11 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
                 .withSummonsCode(prosecutionCase.getSummonsCode())
                 .withCpsOrganisation(null)
                 .withInitiationCode(INITIATION_CODE_SUMMONS_CASE)
-                .withOriginatingOrganisation(summonsProsecutionReceived.getProsecutingAuthority())
+                .withOriginatingOrganisation(summonsReceived.getProsecutingAuthority())
                 .withCaseMarkers(buildCaseMarkers(ofNullable(prosecutionCase.getCaseMarker()).orElse(null)))
                 .withProsecutor(Prosecutor.prosecutor()
                         .withInformant(ofNullable(prosecutionCase.getInformant()).orElse(null))
-                        .withProsecutingAuthority(summonsProsecutionReceived.getProsecutingAuthority()).build())
+                        .withProsecutingAuthority(summonsReceived.getProsecutingAuthority()).build())
                 .build();
     }
 

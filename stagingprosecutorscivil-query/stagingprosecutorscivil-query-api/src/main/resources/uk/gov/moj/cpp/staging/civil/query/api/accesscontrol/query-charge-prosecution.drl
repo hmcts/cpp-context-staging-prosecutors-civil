@@ -8,7 +8,7 @@ global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAn
 rule "Command - Rule for getting submission details"
   when
     $outcome: Outcome();
-    $action: Action(name == "stagingprosecutorscivil.submission-details");
+    $action: Action(name == "stagingcivil.submission-details");
     eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
   then
     $outcome.setSuccess(true);

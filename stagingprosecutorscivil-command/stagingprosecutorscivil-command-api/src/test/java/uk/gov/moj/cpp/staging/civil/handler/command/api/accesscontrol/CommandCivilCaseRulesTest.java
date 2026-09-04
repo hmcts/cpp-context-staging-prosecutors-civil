@@ -42,7 +42,7 @@ public class CommandCivilCaseRulesTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToSubmitCivilCaseWithPermissionCivilAccess() throws JsonProcessingException {
         final Map<String, String> metadata = new HashMap();
         metadata.putIfAbsent("id", UUID.randomUUID().toString());
-        metadata.putIfAbsent("name", "stagingprosecutorscivil.charge-prosecution");
+        metadata.putIfAbsent("name", "stagingcivil.other-case");
         action = createActionFor(metadata);
         given(userAndGroupProvider.hasPermission(action, RuleConstants.getCivilCasePermission())).willReturn(true);
 
@@ -55,7 +55,7 @@ public class CommandCivilCaseRulesTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToSubmitSummonWithPermissionCivilAccess() throws JsonProcessingException {
         final Map<String, String> metadata = new HashMap();
         metadata.putIfAbsent("id", UUID.randomUUID().toString());
-        metadata.putIfAbsent("name", "stagingprosecutorscivil.summons-prosecution");
+        metadata.putIfAbsent("name", "stagingcivil.summons");
         action = createActionFor(metadata);
         given(userAndGroupProvider.hasPermission(action, RuleConstants.getCivilCasePermission())).willReturn(true);
 

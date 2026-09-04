@@ -5,8 +5,8 @@ class SchemaTestConstants {
     private SchemaTestConstants() {}
 
     // schemas
-    static final String CHARGE_PROSECUTION_SCHEMA_FILE  = "/json/schema/stagingprosecutorscivil.charge-prosecution.json";
-    static final String SUMMONS_PROSECUTION_SCHEMA_FILE = "/json/schema/stagingprosecutorscivil.summons-prosecution.json";
+    static final String CHARGE_PROSECUTION_SCHEMA_FILE  = "/json/schema/stagingcivil.other-case.json";
+    static final String SUMMONS_PROSECUTION_SCHEMA_FILE = "/json/schema/stagingcivil.summons.json";
 
     // valid requests
     static final String VALID_CHARGE_PROSECUTION_REQUEST   = "/valid-charge-prosecution-request.json";

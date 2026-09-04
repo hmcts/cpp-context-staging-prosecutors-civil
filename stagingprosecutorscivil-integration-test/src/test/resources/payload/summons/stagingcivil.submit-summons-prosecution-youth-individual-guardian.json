@@ -8,11 +8,12 @@
   "prosecutionCases": [
     {
       "informant": "Adam",
-      "urn": "case-urn-value-youth-individual",
+      "urn": "case-urn-value-youth-summons",
       "defendants": [
         {
           "defendantDetails": {
-            "prosecutorDefendantId": "YOUTHDEF001",
+            "prosecutorDefendantId": "YOUTHDEF002",
+            "asn": "SummonsYouth001",
             "documentationLanguage": "E",
             "hearingLanguage": "E",
             "address": {
@@ -52,7 +53,7 @@
               "offenceDetails": {
                 "cjsOffenceCode": "CA03014",
                 "offenceSequenceNo": 1,
-                "offenceWording": "Test youth prosecution charge wording",
+                "offenceWording": "Test youth summons prosecution charge wording",
                 "laidDate": "2019-06-11"
               }
             }
