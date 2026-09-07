@@ -2,6 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+
 ## Project Overview
 
 This is the **civil prosecution staging service** — the inbound gateway that receives civil criminal case submissions from external prosecution authorities via Azure APIM and mediates them into `cpp-context-prosecution-casefile` (PCF). It handles two pathways:
