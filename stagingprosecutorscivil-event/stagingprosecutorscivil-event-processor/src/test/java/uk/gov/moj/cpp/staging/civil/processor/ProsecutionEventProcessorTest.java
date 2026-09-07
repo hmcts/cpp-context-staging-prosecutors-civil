@@ -4,8 +4,8 @@ import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -22,7 +22,6 @@ import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupSumm
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.updateCivilProsecutionCaseReceived;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -143,7 +142,7 @@ public class ProsecutionEventProcessorTest {
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         caseRefToCaseId.put(prosecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        when(systemIdMapperService.getCppCaseIdMapFor(any())).thenReturn(caseRefToCaseId);
+        when(systemIdMapperService.getCppCaseIdMapFor(any(), any())).thenReturn(caseRefToCaseId);
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);
 
@@ -169,7 +168,7 @@ public class ProsecutionEventProcessorTest {
         final UUID caseFileId = UUID.randomUUID();
         final Map<String, UUID> caseRefToCaseId = new HashMap<>();
         caseRefToCaseId.put(prosecutionReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
-        when(systemIdMapperService.getCppCaseIdMapFor(any())).thenReturn(caseRefToCaseId);
+        when(systemIdMapperService.getCppCaseIdMapFor(any(), any())).thenReturn(caseRefToCaseId);
         target.processProsecutionSummons(prosecutionReceivedEnvelope);
 
         ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
@@ -226,7 +225,7 @@ public class ProsecutionEventProcessorTest {
     }
 
     @Test
-    public void shouldCallCommandToUpdateCivilCase() {
+    public void shouldNotSendRedundantUpdateCivilCaseCommandOnReceipt() {
         final OtherCaseReceived prosecutionReceived = groupOtherCaseReceived();
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
         final Envelope<OtherCaseReceived> prosecutionReceivedEnvelope = testEnvelope(prosecutionReceived, "stagingprosecutorscivil.event.other-case-received",
@@ -234,12 +233,8 @@ public class ProsecutionEventProcessorTest {
 
         target.processProsecutionOthers(prosecutionReceivedEnvelope);
 
-        ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
-        verify(sender).send(captor.capture());
-        final JsonObject jsonObject = objectToJsonObjectConverter.convert(captor.getValue().payload());
-
-        assertThat(jsonObject.getString("submissionId"), is(notNullValue()));
-        assertThat(jsonObject.getString("submissionStatus"), is(PENDING.name()));
+        verify(sender).sendAsAdmin(groupEnvelopeCaptor.capture());
+        verify(sender, never()).send(any());
     }
 
     @Test

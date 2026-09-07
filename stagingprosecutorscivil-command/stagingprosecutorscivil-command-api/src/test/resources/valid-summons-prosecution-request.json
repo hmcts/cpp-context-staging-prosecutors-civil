@@ -1,0 +1,48 @@
+{
+  "prosecutingAuthority": "GAAAA01",
+  "prosecutionCases": [
+    {
+      "informant": "Jane Smith",
+      "urn": "SCIV67890",
+      "caseMarker": "ST",
+      "summonsCode": "S",
+      "defendants": [
+        {
+          "individual": {
+            "dateOfBirth": "1985-03-15",
+            "nameDetails": {
+              "forename": "Jane",
+              "surname": "Smith"
+            },
+            "gender": 2
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "offenceWording": "Failure to comply with a community protection notice",
+                "cjsOffenceCode": "CA03010",
+                "offenceSequenceNo": 1,
+                "offenceLocation": "Liverpool",
+                "laidDate": "2022-01-10"
+              }
+            }
+          ],
+          "defendantDetails": {
+            "prosecutorDefendantId": "987fcdeb-51a2-43f1-b456-987654321000",
+            "documentationLanguage": "E",
+            "address": {
+              "address1": "123 High Street",
+              "postcode": "L1 1AA"
+            },
+            "hearingLanguage": "E"
+          }
+        }
+      ]
+    }
+  ],
+  "hearingDetails": {
+    "timeOfHearing": "09:05:00",
+    "courtHearingLocation": "B01LY01",
+    "dateOfHearing": "2022-02-04"
+  }
+}

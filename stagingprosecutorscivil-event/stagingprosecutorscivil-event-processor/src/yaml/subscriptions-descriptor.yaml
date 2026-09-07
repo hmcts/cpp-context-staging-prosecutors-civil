@@ -9,6 +9,8 @@ subscriptions_descriptor:
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.other-case-received.json
         - name: stagingprosecutorscivil.event.summons-received
           schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/json/schemas/stagingprosecutorscivil.event.summons-received.json
+        - name: stagingprosecutorscivil.event.material-submitted
+          schema_uri: http://cpp.moj.gov.uk/staging/prosecutors/civil/event/material-submitted.json
       event_source_name: stagingprosecutorscivil
 
     - name: public processor subscription
@@ -27,4 +29,10 @@ subscriptions_descriptor:
 
         - name: public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings
           schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings.json
+
+        - name: public.prosecutioncasefile.material-rejected
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/processor.public-material-rejected.json
+
+        - name: public.progression.court-document-added
+          schema_uri: http://moj.gov.uk/cps/prosecutioncasefile/domain/event/public.progression.court-document-added.json
       event_source_name: public.event.source

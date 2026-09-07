@@ -29,6 +29,7 @@ function runLiquibase {
    runViewStoreLiquibase
    runSystemLiquibase
    runEventTrackingLiquibase
+   runFileServiceLiquibase
    printf "${CYAN}All liquibase $LIQUIBASE_COMMAND scripts run${NO_COLOUR}\n\n"
 }
 

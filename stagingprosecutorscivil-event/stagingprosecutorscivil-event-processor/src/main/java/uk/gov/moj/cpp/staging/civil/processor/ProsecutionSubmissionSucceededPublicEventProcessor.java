@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
 import static java.util.Objects.nonNull;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
@@ -67,10 +66,16 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
         if (nonNull(submissionId) && CIVIL.equals(payload.getChannel())) {
             final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                     .add("submissionId", submissionId)
-                    .add("submissionStatus", SubmissionStatus.SUCCESS_WITH_WARNINGS.name())
-                    .add("warnings", problemsToJsonArray(payload.getWarnings()))
-                    .add("caseWarnings", problemsToJsonArray(payload.getCaseWarnings()))
-                    .add("defendantWarnings", defendantProblemsToJsonArray(payload.getDefendantWarnings()));
+                    .add("submissionStatus", SubmissionStatus.SUCCESS_WITH_WARNINGS.name());
+            if (payload.getWarnings() != null) {
+                jsonObjectBuilder.add("warnings", problemsToJsonArray(payload.getWarnings()));
+            }
+            if (payload.getCaseWarnings() != null) {
+                jsonObjectBuilder.add("caseWarnings", problemsToJsonArray(payload.getCaseWarnings()));
+            }
+            if (payload.getDefendantWarnings() != null) {
+                jsonObjectBuilder.add("defendantWarnings", defendantProblemsToJsonArray(payload.getDefendantWarnings()));
+            }
             sender.send(envelop(jsonObjectBuilder.build())
                     .withName("stagingcivil.command.update-civil-case")
                     .withMetadataFrom(prosecutionSubmissionSucceededWithWarningsEnvelope));

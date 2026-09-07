@@ -44,8 +44,16 @@
     "prosecutingAuthority"
   ],
   "oneOf": [
-    { "required": ["hearingDetails"] },
-    { "required": ["hearingDateRangeDetails"] }
+    {
+      "required": [
+        "hearingDetails"
+      ]
+    },
+    {
+      "required": [
+        "hearingDateRangeDetails"
+      ]
+    }
   ],
   "additionalProperties": false
 }

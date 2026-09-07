@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Build and Test Commands
+
 ## Project Overview
 
 This is the **civil prosecution staging service** — the inbound gateway that receives civil criminal case submissions from external prosecution authorities via Azure APIM and mediates them into `cpp-context-prosecution-casefile` (PCF). It handles two pathways:
@@ -14,22 +16,19 @@ Each submission is tracked through states: `PENDING` → `SUCCESS` / `SUCCESS_WI
 ## Build Commands
 
 ```bash
-# Full build + unit tests
+# Full build
 mvn clean install
 
-# Skip tests
-mvn install -DskipTests
+# Build skipping tests
+mvn clean install -DskipTests
 
-# Unit tests only
-mvn test
+# Run all unit tests for a specific module
+mvn test -pl stagingprosecutorscivil-command/stagingprosecutorscivil-command-handler
 
-# Single module test
-mvn -pl stagingprosecutorscivil-command/stagingprosecutorscivil-command-api test
+# Run a single test class
+mvn test -pl stagingprosecutorscivil-command/stagingprosecutorscivil-command-handler -Dtest=CivilProsecutionHandlerTest
 
-# Single test class
-mvn test -Dtest=CivilProsecutionApiTest
-
-# Integration tests (requires Docker + CPP_DOCKER_DIR env var)
+# Run integration tests (requires Docker and CPP_DOCKER_DIR env var pointing to cpp-developers-docker repo)
 ./runIntegrationTests.sh
 
 # Viewstore Liquibase migrations (local dev, no Docker)
@@ -94,132 +93,97 @@ External Authority
                                (first element marked isGroupMaster=true)
       Sends stagingprosecutorscivil.command.update-civil-case (status=PENDING)
 
-  ← public.event (from PCF context):
-      public.prosecutioncasefile.civil.prosecution-submission-succeeded
-      public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings
-      public.prosecutioncasefile.group-submission-succeeded
-      public.prosecutioncasefile.civil-prosecution-rejected
-      public.prosecutioncasefile.group-prosecution-rejected
+`runIntegrationTests.sh` builds WARs, runs all Liquibase changesets (event log, aggregate snapshot, event buffer, viewstore, system, event tracking, file service), deploys WireMock stubs plus the WARs into the shared WildFly container, runs healthchecks, then executes `stagingprosecutorscivil-integration-test`.
 
-  → EVENT_PROCESSOR (filters Channel=CIVIL, ignores other channels)
-      Sends stagingprosecutorscivil.command.update-civil-case (status=SUCCESS/REJECTED/etc.)
+## Architecture Overview
 
-  → EVENT_LISTENER: SubmissionEventListener.updatedCivilCaseReceived
-      Updates Submission status + errors/warnings in viewstore
+This is an event-sourced, CQRS microservice built on the **HMCTS CPP Framework**. It handles civil prosecution submissions — accepting "other case" (charge) and summons requests from prosecutors, plus post-hoc material (document) submissions against an existing case, tracks their lifecycle, and projects status into a queryable view.
 
-Caller polls:
-  GET /submissions/{submissionId} → CivilProsecutionQueryApi → SubmissionRepository
+There are two independent submission flows sharing the same `submission` viewstore table and status-lookup endpoint, but backed by two separate aggregates:
+
+- **Case submission flow** — `other-case` / `summons` → `ProsecutionSubmissionAggregate`
+- **Material submission flow** — `submit-material` → `MaterialSubmission` aggregate
+
+### Case Submission Flow
+
+1. **Command API** (`stagingprosecutorscivil-command-api`, class `CivilProsecutionApi`) handles REST requests `stagingcivil.other-case` and `stagingcivil.summons` at `POST /cases` (content negotiated via the `application/vnd.stagingcivil.other-case+json` / `...summons+json` media types), generates a `submissionId`, and forwards `stagingcivil.command.other-case` / `stagingcivil.command.summons` commands. Returns a `UrlResponse` (202) with a status URL built from `submissionId`.
+2. **Command Handler** (`stagingprosecutorscivil-command-handler`, class `CivilProsecutionHandler`) loads/creates a `ProsecutionSubmissionAggregate` via `AggregateService` and appends the resulting events to the event stream. Also handles `stagingcivil.command.update-civil-case`, which comes back from the event processor (step 5 below), not from the REST layer.
+3. **Domain Aggregate** (`stagingprosecutorscivil-domain-aggregate`, class `ProsecutionSubmissionAggregate`) raises private events: `stagingprosecutorscivil.event.other-case-received`, `stagingprosecutorscivil.event.summons-received`, `stagingprosecutorscivil.event.update-civil-case-received`.
+4. **Event Listener** (`stagingprosecutorscivil-event-listener`, class `SubmissionEventListener`) consumes those private events and upserts `Submission`/`CaseDetail` entities in the viewstore via `SubmissionRepository`. On `update-civil-case-received` it sets `errors`/`caseErrors`/`defendantErrors` for `REJECTED`, or `warnings`/`caseWarnings`/`defendantWarnings` for `SUCCESS_WITH_WARNINGS`.
+5. **Event Processor** (`stagingprosecutorscivil-event-processor`, class `ProsecutionEventProcessor`) consumes its own `other-case-received`/`summons-received` events, converts them to Prosecution Case File `InitiateProsecution`/`InitiateGroupProsecution` commands (via `ProsecutionCaseToGroupProsecutionConverterForOthers`/`...ForSummons`), and separately consumes external *public* events from Prosecution Case File (`public.prosecutioncasefile.civil-prosecution-rejected`, `public.prosecutioncasefile.group-prosecution-rejected`, and — in `ProsecutionSubmissionSucceededPublicEventProcessor`/`GroupSubmissionSucceededPublicEventProcessor` — the `*-submission-succeeded[-with-warnings]` events), translating them into `stagingcivil.command.update-civil-case` commands to close the feedback loop. Public events are filtered to the `CIVIL` channel (`uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL`).
+6. **Query API/View** (`stagingprosecutorscivil-query-api` / `-query-view`) exposes `CivilProsecutionQueryApi` → `CivilProsecutionQueryView.querySubmission`, which looks up `Submission` by `submissionId` and returns id/status/warnings/errors (+ caseErrors/defendantErrors when present) as `stagingcivil.query.submission-details`.
+
+### Material Submission Flow
+
+1. **Command API** `CivilProsecutionApi.submitMaterial` handles `stagingcivil.submit-material` at `POST /v1/prosecutions/{caseUrn}/materials` (multipart form upload), validates the payload against its JSON schema explicitly (`jsonSchemaValidator.validate(...)`), and sends `stagingcivil.command.submit-material`.
+2. **Command Handler** `MaterialHandler` handles `submit-material`, `reject-material`, and `receive-material-submission-successful` commands against the `MaterialSubmission` aggregate.
+3. **Domain Aggregate** `MaterialSubmission` raises `MaterialSubmitted`, `MaterialSubmissionRejected`, `MaterialSubmissionSuccessful` private events.
+4. **Event Listener** `SubmissionEventListener` handles `stagingprosecutorscivil.event.material-submitted` (creates a `Submission` with `type=MATERIAL`), `...material-submission-rejected`, and `...material-submission-successful` (sets `completedAt` + status `SUCCESS`).
+5. **Event Processor** classes `MaterialSubmittedProcessor` / `SystemIdMapperService` push material to the downstream System ID Mapper / Prosecution Case File services and the loop closes the same way via `receive-material-submission-successful` / `reject-material` commands.
+
+### CPP Framework Component Types
+
+Classes are annotated with `@ServiceComponent(<type>)` which determines how the framework routes messages to them:
+
+| Annotation | Module pattern | Role |
+|---|---|---|
+| `COMMAND_API` | `*-command-api` | REST → command dispatch |
+| `COMMAND_HANDLER` | `*-command-handler` | Command → aggregate → event store |
+| `EVENT_LISTENER` | `*-event-listener` | Internal event → viewstore write |
+| `EVENT_PROCESSOR` | `*-event-processor` | External public event → new command |
+| `QUERY_API` | `*-query-api` | REST → viewstore read |
+
+### Message Naming Conventions
+
+REST APIs and internal commands consistently use the `stagingcivil.*` prefix. Internal *events*, however, still use the longer `stagingprosecutorscivil.event.*` prefix — this is a deliberate, narrower scope than the REST/command rename (see below):
+
+- REST APIs: `stagingcivil.other-case`, `stagingcivil.summons`, `stagingcivil.submit-material`
+- Internal commands: `stagingcivil.command.other-case`, `stagingcivil.command.summons`, `stagingcivil.command.update-civil-case`, `stagingcivil.command.submit-material`, `stagingcivil.command.reject-material`, `stagingcivil.command.receive-material-submission-successful`
+- Internal events: `stagingprosecutorscivil.event.<name>` (e.g. `other-case-received`, `summons-received`, `update-civil-case-received`, `material-submitted`, `material-submission-rejected`, `material-submission-successful`)
+- External public events consumed: `public.prosecutioncasefile.civil-prosecution-rejected`, `public.prosecutioncasefile.group-prosecution-rejected`, `public.prosecutioncasefile.prosecution-submission-succeeded[-with-warnings]`, `public.prosecutioncasefile.group-submission-succeeded`, `public.prosecutioncasefile.group-submission-failed`
+- Query: `stagingcivil.query.submission-details`
+
+When adding a new message, check which prefix convention the *adjacent* messages in that flow use rather than assuming one global prefix.
+
+Access control rules live in Drools files (`*/accesscontrol/*.drl`), keyed by the exact message name (e.g. `command-api.drl` matches `Action(name == "stagingcivil.other-case")`) against permissions in `RuleConstants`.
+
+### Domain Message Classes
+
+Java command/event/schema classes (`OtherCase`, `Summons`, `OtherCaseReceived`, `SubmitMaterialCommand`, etc.) are generated at build time from JSON schemas under `src/raml/json/schema/` in each module (command-api, command-handler, event-processor). Each module generates its own copy of shared types under module-specific packages (e.g. `...command.api.OtherCase` vs `...command.handler.OtherCase`) — when adding a field, the schema must be updated in every module that has its own copy. When adding a new command or event, define/update the schema first, then rebuild to regenerate the Java classes; never hand-edit generated sources.
+
+### ViewStore
+
+JPA + PostgreSQL, module `stagingprosecutorscivil-viewstore-persistance`. The core entity is `Submission` (table `submission`): `submissionId` (UUID PK), `submissionStatus`, `ouCode`, `type` (`SubmissionType`: `PROSECUTION` / `MATERIAL`), `receivedAt`/`completedAt`, and `JsonArray` columns for `errors`/`warnings`/`caseErrors`(`groupCaseErrors`)/`defendantErrors`/`caseWarnings`/`defendantWarnings` (via `JsonArrayConverter`). `CaseDetail` is a child entity (one-to-many, cascade all, orphan removal) storing case URNs. Access is via `SubmissionRepository`. Schema migrations are Liquibase changesets in `stagingprosecutorscivil-viewstore-liquibase`.
+
+### Testing Patterns
+
+Unit tests use JUnit 5 with `@ExtendWith(MockitoExtension.class)`. Handler tests rely on CPP framework test utilities:
+
+```java
+// Verify a handler is wired to the correct message name
+assertThat(handler, isHandler(COMMAND_HANDLER)
+    .with(method("handleOtherCase")
+        .thatHandles("stagingcivil.command.other-case")));
+
+// Verify events appended to the event stream
+final Stream<JsonEnvelope> stream = verifyAppendAndGetArgumentFrom(eventStream);
+assertThat(stream, streamContaining(
+    jsonEnvelope(metadata().withName("stagingprosecutorscivil.event.other-case-received"),
+                 payload().isJson(withJsonPath("$.submissionId", notNullValue())))));
 ```
 
-## Event Sources
+The `Enveloper` spy in handler tests must be initialised with `createEnveloperWithEvents(...)` listing every event class the handler under test can emit (e.g. `CivilProsecutionHandlerTest` lists `OtherCaseReceived`, `SummonsReceived`, `UpdateCivilCaseReceived`, `MaterialSubmitted`).
 
-- **Own topic**: `jms:topic:stagingprosecutorscivil.event`
-- **Subscribed**: `jms:topic:public.event` (PCF public events only, filtered by `Channel.CIVIL`)
+Schema-validation tests (`*SchemaValidationTest`, extending `AbstractProsecutionSchemaValidationTest`) assert request payloads validate against the RAML JSON schemas independent of the handler logic.
 
-**Internal events emitted:**
-- `stagingprosecutorscivil.event.charge-prosecution-received`
-- `stagingprosecutorscivil.event.summons-prosecution-received`
-- `stagingprosecutorscivil.event.update-civil-case-received`
+Integration tests (`stagingprosecutorscivil-integration-test`) run against a live WildFly container via Docker and use WireMock to stub the Prosecution Case File and System ID Mapper services.
 
-**Commands sent to PCF (as admin):**
-- `prosecutioncasefile.command.initiate-cc-prosecution` (single case)
-- `prosecutioncasefile.command.initiate-group-prosecution` (multiple cases)
+### Other Modules
 
-## Viewstore Schema
+- `stagingprosecutorscivil-apim-policy` — Azure API Management policy XML/OpenAPI config for exposing the command/query endpoints externally.
+- `stagingprosecutorscivil-event-sources` — declares the JMS event sources (`stagingprosecutorscivil.event` topic, plus the `public.event` topic this service subscribes to) in `src/yaml/event-sources.yaml`.
+- `stagingprosecutorscivil-healthchecks` — custom healthcheck provider (`CivilIgnoredHealthcheckNamesProvider`).
 
-- `submission` table: `submission_id`, `submission_status`, `ou_code`, `received_at`, `completed_at`, `errors`, `warnings`, `case_errors`, `defendant_errors`, `case_warnings`, `defendant_warnings` (JsonArray columns via `JsonArrayConverter`)
-- `case_detail` table: `id`, `case_urn`, FK to `submission`
+### CI/CD
 
-## Key Conventions
-
-- **Synchronous response from async system**: Unlike typical CQRS services, `CivilProsecutionApi` returns `UrlResponse` (with `statusURL` + `submissionId`) synchronously in the POST response. The actual processing is async; callers must poll.
-- **Channel filtering**: All event processors guard on `Channel.CIVIL` and silently drop non-civil events. PCF emits events for criminal cases on the same `public.event` topic.
-- **`sendAsAdmin()`**: Commands to PCF are dispatched as admin because the originating user context (prosecution authority) doesn't hold PCF-side authorisation.
-- **System ID Mapper**: `SystemIdMapperService` resolves external prosecution authority URNs to CPP-internal case UUIDs before forwarding to PCF.
-- **APIM contract**: `stagingprosecutorscivil-apim-policy/` holds the OpenAPI v3 spec and XML policies for the external-facing surface. This is the authoritative contract for external consumers — keep it in sync with handler behaviour.
-- **Version pins**: Tightly coupled to `prosecutioncasefile.version` and `referencedata.version` — bump both in `pom.xml` together and verify schema classifier deps match.
-- **No Spring**: CDI/JEE only — `@Inject`, `@ApplicationScoped`, `@ServiceComponent`, `@Handles`.
-
-## Enforcement Case Creation — Full Sequence Diagram
-
-"Enforcement" cases are civil cases (civil offence codes, `isCivil=true`). They travel the charge prosecution pathway — there is no separate enforcement code path.
-
-```mermaid
-sequenceDiagram
-    participant EA as External Authority
-    participant SC as staging-prosecutors-civil
-    participant SIM as SystemIdMapper
-    participant PCF as prosecution-casefile
-    participant Prog as progression
-
-    EA->>SC: POST /chargeprosecutions (APIM)
-    SC-->>EA: UrlResponse {submissionId, statusURL}  ← synchronous
-
-    Note over SC: CivilProsecutionHandler<br/>ProsecutionSubmissionAggregate<br/>EVENT: charge-prosecution-received<br/>{submissionId, PENDING, prosecutingAuthority,<br/>hearingDetails, prosecutionCases}
-
-    SC->>SC: SubmissionEventListener<br/>INSERT submission(PENDING) + case_detail
-
-    SC->>SIM: getCppCaseIdMapFor(URNs)
-    SIM-->>SC: caseId UUIDs
-
-    alt single prosecution case
-        SC->>PCF: sendAsAdmin("prosecutioncasefile.command.initiate-cc-prosecution")<br/>{channel=CIVIL, isCivil=true, externalId=submissionId}
-    else multiple prosecution cases
-        SC->>PCF: sendAsAdmin("prosecutioncasefile.command.initiate-group-prosecution")<br/>{isGroupMaster=true on first, channel=CIVIL}
-    end
-
-    Note over PCF: InitiateCCProsecutionApi (COMMAND_API)<br/>Civil validation: no chargeDate, address mandatory<br/>Enrichment: sowRef="MoJ", CivilOffence.isExParte from ref-data<br/>→ "prosecutioncasefile.command.initiate-cc-prosecution-with-reference-data"
-
-    Note over PCF: CcProsecutionHandler (COMMAND_HANDLER)<br/>ProsecutionCaseFile aggregate.receiveCCCase()<br/>channel=CIVIL → messageFromCppiOrMccOrCivil=true
-
-    alt validation errors
-        PCF-->>SC: public.prosecutioncasefile.civil-prosecution-rejected
-        SC->>SC: UPDATE submission.status = REJECTED
-    else validation warnings
-        Note over PCF: EVENT: prosecutioncasefile.events.cc-case-received-with-warnings
-        PCF->>Prog: sendAsAdmin("progression.initiate-court-proceedings")
-        PCF-->>SC: public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings
-    else success
-        Note over PCF: EVENT: prosecutioncasefile.events.cc-case-received
-        PCF->>Prog: sendAsAdmin("progression.initiate-court-proceedings")
-    end
-
-    Note over Prog: InitiateCourtProceedingsApi (COMMAND_API)<br/>→ "progression.command.initiate-court-proceedings"
-
-    Note over Prog: InitiateCourtProceedingsHandler (COMMAND_HANDLER)<br/>matchedDefendantLoadService enriches defendants<br/>CasesReferredToCourtAggregate.initiateCourtProceedings()<br/>EVENT: progression.event.court-proceedings-initiated
-
-    Note over Prog: CourtProceedingsInitiatedProcessor (EVENT_PROCESSOR)<br/>ReferenceDataOffenceService enriches offences<br/>→ "progression.command.create-prosecution-case" (per case)
-
-    Note over Prog: CreateProsecutionCaseHandler (COMMAND_HANDLER)<br/>CaseAggregate.createProsecutionCase()
-
-    alt civil case already exists for this URN
-        Note over Prog: EMITS: civil-case-exists<br/>No row written — duplicate guard
-    else normal path
-        Note over Prog: EVENT: progression.event.prosecution-case-created
-
-        Prog->>Prog: ProsecutionCaseEventListener<br/>enrichDefendantsWithPoliceBailInformation()<br/>filterDuplicateOffencesById()<br/>INSERT prosecution_case {id, payload JSON, group_id}<br/>INSERT search_prosecution_case (per defendant)
-
-        Prog-->>PCF: public.progression.prosecution-case-created
-
-        Note over PCF: ProgressionPublicEventProcessor<br/>sends "prosecutioncasefile.command.accept-case"
-        Note over PCF: AcceptCaseHandler<br/>ProsecutionCaseFile.acceptCase()<br/>EVENT: prosecutioncasefile.events.case-created-successfully
-
-        Note over PCF: CaseCreatedEventProcessor (channel=CIVIL)
-
-        PCF-->>SC: public.prosecutioncasefile.civil.prosecution-submission-succeeded<br/>{caseId, externalId=submissionId, channel=CIVIL}
-
-        SC->>SC: ProsecutionSubmissionSucceededPublicEventProcessor<br/>channel guard: CIVIL ✓<br/>→ "stagingprosecutorscivil.command.update-civil-case" {SUCCESS}<br/>UPDATE submission.status = SUCCESS
-    end
-
-    EA->>SC: GET /submissions/{submissionId}
-    SC-->>EA: {status: SUCCESS / REJECTED}
-```
-
-## CI/CD
-
-- **Azure Pipelines** (`azure-pipelines.yaml`): agent `MDV-ADO-AGENT-AKS-01` (CentOS 8, Java 17)
-  - PR trigger → `context-verify.yaml` (SonarQube)
-  - Push to `main` / `team/*` → `context-validation.yaml` (full build + ITs + AKS deploy)
-  - SonarQube project key: `uk.gov.moj.cpp.stagingprosecutorscivil:stagingprosecutorscivil-parent`
-- **GitHub Actions**: GitLeaks secret scan on all PRs + weekly Thursday schedule
-- **Docker**: `docker/Dockerfile_stagingprosecutorscivil-service` for the WildFly WAR image
+Azure Pipelines runs on `main` and `team/*` branches. The pipeline uses Java 17 on CentOS 8 and includes SonarQube analysis (`uk.gov.moj.cpp.stagingprosecutorscivil:stagingprosecutorscivil-parent`). Secret scanning runs on PRs via GitHub Actions (Gitleaks).

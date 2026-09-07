@@ -7,10 +7,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker.caseMarker;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.enforcementOtherCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOtherCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsCaseDetail;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.RELATED_REFERENCE_NUMBER;
 
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
@@ -73,6 +71,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthersTest {
                 .withMarkerTypeCode(prosecutionCase.getCaseMarker())
                 .build())));
         assertThat(pcfCaseDetails.getProsecutorCaseReference(), is(prosecutionCase.getUrn()));
+        assertThat(pcfCaseDetails.getRelatedUrn(), is(prosecutionCase.getRelatedReferenceNumber()));
         assertThat(pcfCaseDetails.getSummonsCode(), is(prosecutionCase.getSummonsCode()));
 
         assertThat(pcfCaseDetails.getOtherPartyOfficerInCase(), is(nullValue()));
