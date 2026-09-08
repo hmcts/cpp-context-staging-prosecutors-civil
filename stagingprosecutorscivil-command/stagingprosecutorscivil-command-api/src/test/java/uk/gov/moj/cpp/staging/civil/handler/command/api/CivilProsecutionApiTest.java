@@ -137,7 +137,7 @@ public class CivilProsecutionApiTest {
     @Test
     public void shouldHandleOtherCaseWithValidHearingDateRange() {
         final OtherCase otherCase = otherCaseWithHearingDateRange(
-                LocalDate.now().minusDays(10), LocalDate.now().plusDays(5));
+                LocalDate.now(), LocalDate.now().plusDays(5));
 
         final Metadata metadata = metadataBuilder()
                 .withName("stagingcivil.other-case")
@@ -154,9 +154,9 @@ public class CivilProsecutionApiTest {
     }
 
     @Test
-    public void shouldHandleOtherCaseWithHearingDateRangeOnBoundaryOf31DaysInThePast() {
+    public void shouldRejectOtherCaseWhenStartDateRangeOfHearingIsInThePast() {
         final OtherCase otherCase = otherCaseWithHearingDateRange(
-                LocalDate.now().minusDays(31), LocalDate.now().minusDays(31));
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
 
         final Metadata metadata = metadataBuilder()
                 .withName("stagingcivil.other-case")
@@ -164,9 +164,10 @@ public class CivilProsecutionApiTest {
                 .withUserId(randomUUID().toString())
                 .build();
 
-        api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
+        assertThrows(BadRequestException.class,
+                () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
 
-        verify(sender).send(envelopeCaptor.capture());
+        verifyNoInteractions(sender);
     }
 
     @Test
@@ -187,7 +188,7 @@ public class CivilProsecutionApiTest {
     }
 
     @Test
-    public void shouldHandleOtherCaseWhenStartDateRangeOfHearingIsMoreThan31DaysInThePast() {
+    public void shouldRejectOtherCaseWhenStartDateRangeOfHearingIsMoreThan31DaysInThePast() {
         final OtherCase otherCase = otherCaseWithHearingDateRange(
                 LocalDate.now().minusDays(32), LocalDate.now().plusDays(1));
 
@@ -197,9 +198,10 @@ public class CivilProsecutionApiTest {
                 .withUserId(randomUUID().toString())
                 .build();
 
-        api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
+        assertThrows(BadRequestException.class,
+                () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
 
-        verify(sender).send(envelopeCaptor.capture());
+        verifyNoInteractions(sender);
     }
 
     private OtherCase otherCaseWithHearingDateRange(final LocalDate startDate, final LocalDate endDate) {
