@@ -28,17 +28,6 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Covers the query-side prosecuting-authority check on GET /submissions/{submissionId} (both the
- * JSON details and CSV error-details variants): a caller must belong to the prosecuting authority
- * the submission was made for - or hold an exempt role - to view it. See
- * openspec/changes/validate-prosecuting-authority-on-submission-query for the design.
- *
- * <p>Uses the complaints-CSV-upload flow (rather than a plain summons/charge-prosecution submit)
- * because it is the only flow that lets a test control {@code prosecutorShortName} directly via
- * {@link WiremockUtils#stubUserGroupsWithProsecutingAuthority}, without needing a separate
- * reference-data stub for every scenario.
- */
 public class SubmissionQueryAuthorizationIT {
 
     private static final String COMPLAINTS_CSV = "payload/complaints/complaints-summons-prosecution.csv";

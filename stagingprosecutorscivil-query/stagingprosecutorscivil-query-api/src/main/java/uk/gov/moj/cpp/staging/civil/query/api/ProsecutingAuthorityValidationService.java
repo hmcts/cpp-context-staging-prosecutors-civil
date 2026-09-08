@@ -13,19 +13,6 @@ import javax.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Query-api-local counterpart of
- * {@code uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService}
- * (command-api). Same membership rule and exempt-group list, deliberately not shared as a single
- * class/module - see design.md ("no shared module") - but shaped differently for its own call
- * site: the query path silently folds a mismatch into "not found" rather than throwing, so this
- * returns a boolean instead of the command-side method's void-or-throw.
- *
- * <p>Unlike the command-side check, {@code prosecutorShortName} may be {@code null} here (it is
- * only ever persisted on {@code Submission} for complaints-CSV-uploaded summons submissions) - in
- * that case this resolves it from {@code ouCode} via {@link ReferenceDataClient}, the same
- * resolution the CSV upload path performs once at write time.
- */
 public class ProsecutingAuthorityValidationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProsecutingAuthorityValidationService.class);

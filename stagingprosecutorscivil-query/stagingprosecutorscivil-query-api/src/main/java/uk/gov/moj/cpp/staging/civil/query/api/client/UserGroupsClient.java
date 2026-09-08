@@ -19,12 +19,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-/**
- * Query-api-local counterpart of {@code uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient}
- * (command-api). Not shared with command-api: the {@link Requester} qualifier below is
- * component-scoped, so a query-side caller needs its own {@code QUERY_API}-qualified client rather
- * than depending on command-api's class.
- */
 public class UserGroupsClient {
 
     private static final String USERSGROUPS_GET_LOGGED_IN_USER_GROUPS = "usersgroups.get-logged-in-user-groups";

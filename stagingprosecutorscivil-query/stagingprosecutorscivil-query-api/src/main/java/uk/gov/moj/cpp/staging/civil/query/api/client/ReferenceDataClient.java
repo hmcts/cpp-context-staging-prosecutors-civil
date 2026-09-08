@@ -15,14 +15,6 @@ import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-/**
- * Query-api-local counterpart of {@code uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient}
- * (command-api). Needed on the query side because {@code Submission.prosecutorShortName} is only
- * ever populated for complaints-CSV-uploaded summons submissions - regular charge-prosecution and
- * summons-prosecution submissions carry only {@code ouCode}, so authority validation on read must
- * be able to resolve a short name from that ou code, the same way the CSV upload path does at
- * write time.
- */
 public class ReferenceDataClient {
 
     private static final String REFERENCEDATA_GET_PROSECUTOR_BY_OUCODE = "referencedata.query.get.prosecutor.by.oucode";
