@@ -30,13 +30,34 @@ public class CivilProsecutionQueryView {
     @Inject
     private SubmissionRepository submissionRepository;
 
-    public JsonEnvelope querySubmission(JsonEnvelope envelope) {
+    /**
+     * Exposed so callers (e.g. the query-api's prosecuting-authority check) can inspect a
+     * submission's ouCode/prosecutorShortName ahead of - and independently of - building the full
+     * response payload via {@link #buildSubmissionDetailsResponse(JsonEnvelope, Optional)}.
+     */
+    public Optional<Submission> findSubmission(final UUID submissionId) {
+        return Optional.ofNullable(submissionRepository.findBy(submissionId));
+    }
+
+    public JsonEnvelope querySubmission(final JsonEnvelope envelope) {
+        final UUID submissionId = fromString(envelope.payloadAsJsonObject().getString(SUBMISSION_ID));
+        LOGGER.info("Query Submission for Id {} ", submissionId);
+        return buildSubmissionDetailsResponse(envelope, findSubmission(submissionId));
+    }
+
+    /**
+     * Renders a submission-details response from an already-resolved {@code submissionOptional} -
+     * unlike {@link #querySubmission(JsonEnvelope)}, this does not itself query the repository, so
+     * a caller that must inspect the submission before deciding whether to return it at all (e.g.
+     * the query-api's prosecuting-authority check) can do so with a single
+     * {@link #findSubmission(UUID)} lookup: passing {@code Optional.empty()} here reuses this
+     * method's existing "not found" response shape for a caller who isn't authorised to see an
+     * existing submission.
+     */
+    public JsonEnvelope buildSubmissionDetailsResponse(final JsonEnvelope envelope, final Optional<Submission> submissionOptional) {
 
         final JsonObject requestPayload = envelope.payloadAsJsonObject();
-        final UUID submissionId = fromString(requestPayload.getString(SUBMISSION_ID));
         final boolean additionalInfo = requestPayload.getBoolean("additionalInfo", false);
-        LOGGER.info("Query Submission for Id {} ", submissionId);
-        final Optional<Submission> submissionOptional = Optional.ofNullable(submissionRepository.findBy(submissionId));
 
         final JsonObject payload = submissionOptional
                 .map(submission -> buildSubmissionDetailsPayload(submission, additionalInfo))
@@ -100,14 +121,23 @@ public class CivilProsecutionQueryView {
     }
 
     public JsonEnvelope querySubmissionErrorDetailsCsv(final JsonEnvelope envelope) {
+        final UUID submissionId = fromString(envelope.payloadAsJsonObject().getString(SUBMISSION_ID));
+        LOGGER.info("Query Submission Error Details CSV for Id {} ", submissionId);
+        return buildSubmissionErrorDetailsCsvResponse(envelope, findSubmission(submissionId));
+    }
+
+    /**
+     * Renders an error-details-CSV response from an already-resolved {@code submissionOptional} -
+     * see {@link #buildSubmissionDetailsResponse(JsonEnvelope, Optional)} for why.
+     */
+    public JsonEnvelope buildSubmissionErrorDetailsCsvResponse(final JsonEnvelope envelope, final Optional<Submission> submissionOptional) {
 
         final JsonObject requestPayload = envelope.payloadAsJsonObject();
         final UUID submissionId = fromString(requestPayload.getString(SUBMISSION_ID));
-        LOGGER.info("Query Submission Error Details CSV for Id {} ", submissionId);
-        final Optional<Submission> submissionOptional = Optional.ofNullable(submissionRepository.findBy(submissionId));
 
-        // a submission with no case/defendant errors, or one that can't be found, both yield a
-        // header-only CSV rather than a 404 - consistent with the JSON path never 404-ing either
+        // a submission with no case/defendant errors, or one that can't be found (or can't be
+        // accessed), all yield a header-only CSV rather than a 404 - consistent with the JSON
+        // path never 404-ing either
 
         final String csv = submissionOptional
                 .map(submission -> SubmissionErrorDetailsCsvBuilder.build(submission.getGroupCaseErrors(), submission.getDefendantErrors()))
