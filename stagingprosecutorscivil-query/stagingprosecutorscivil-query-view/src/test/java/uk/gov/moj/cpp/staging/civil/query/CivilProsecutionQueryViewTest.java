@@ -19,6 +19,7 @@ import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 
 import java.time.ZonedDateTime;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -364,6 +365,52 @@ public class CivilProsecutionQueryViewTest {
 
         assertThat(responseEnvelope.metadata().name(), Is.is("stagingprosecutorscivil.query.submission-details"));
         assertEquals(JsonValue.NULL, responseEnvelope.payload());
+    }
+
+    @Test
+    public void findSubmissionShouldReturnEmptyWhenRepositoryReturnsNull() {
+        when(submissionRepository.findBy(any())).thenReturn(null);
+
+        assertThat(civilProsecutionQueryView.findSubmission(UUID.randomUUID()), Is.is(Optional.empty()));
+    }
+
+    @Test
+    public void findSubmissionShouldReturnSubmissionWhenPresent() {
+        final UUID submissionId = UUID.randomUUID();
+        final Submission submission = new Submission(
+                submissionId, "PENDING", "ouCode", null, null, null, null,
+                ZonedDateTime.now(), null, new HashSet<>(), SubmissionType.PROSECUTION,
+                null, null, null, null);
+
+        when(submissionRepository.findBy(submissionId)).thenReturn(submission);
+
+        assertThat(civilProsecutionQueryView.findSubmission(submissionId), Is.is(Optional.of(submission)));
+    }
+
+    @Test
+    public void buildSubmissionDetailsResponseShouldReturnNullPayloadWhenSubmissionOptionalIsEmpty() {
+        // exercises the same "not found" shape a caller (e.g. the query-api prosecuting-authority
+        // check) relies on when passing Optional.empty() for an authority mismatch
+        final JsonEnvelope responseEnvelope = civilProsecutionQueryView.buildSubmissionDetailsResponse(
+                createEnvelope("stagingprosecutorscivil.query.submission-details",
+                        createObjectBuilder().add("submissionId", UUID.randomUUID().toString()).build()),
+                Optional.empty());
+
+        assertThat(responseEnvelope.metadata().name(), Is.is("stagingprosecutorscivil.query.submission-details"));
+        assertEquals(JsonValue.NULL, responseEnvelope.payload());
+    }
+
+    @Test
+    public void buildSubmissionErrorDetailsCsvResponseShouldReturnHeaderOnlyCsvWhenSubmissionOptionalIsEmpty() {
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.buildSubmissionErrorDetailsCsvResponse(
+                createEnvelope("stagingprosecutorscivil.query.submission-error-details-csv",
+                        createObjectBuilder().add("submissionId", submissionId.toString()).build()),
+                Optional.empty());
+
+        assertThat(jsonEnvelope.payloadAsJsonObject().getString("csv"), Is.is("Reference,Error Type,Error Code,Field,Value"));
+        assertThat(jsonEnvelope.payloadAsJsonObject().containsKey("fileName"), Is.is(false));
     }
 
     @Test
