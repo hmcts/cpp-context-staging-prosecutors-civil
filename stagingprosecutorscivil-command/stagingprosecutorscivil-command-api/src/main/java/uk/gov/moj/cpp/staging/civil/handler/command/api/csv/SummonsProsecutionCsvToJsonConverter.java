@@ -98,9 +98,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import uk.gov.justice.services.common.configuration.Value;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
@@ -130,6 +133,10 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
  * one {@link SummonsProsecutionCase} for a single {@link Defendant} with a single {@link Offence}
  * - there is no multi-defendant-per-case flow, so {@code case.urn} must be unique across the rows
  * of a file; a repeated URN is rejected.
+ * <p>
+ * The number of data rows accepted per file is capped by the {@code
+ * stagingprosecutorscivil.complaints-files.max-rows} configuration value (defaults to 1000 and can
+ * be set per environment); a file with more rows than the configured limit is rejected.
  */
 public class SummonsProsecutionCsvToJsonConverter {
 
@@ -142,17 +149,29 @@ public class SummonsProsecutionCsvToJsonConverter {
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
+    @Inject
+    @Value(key = "stagingprosecutorscivil.complaints-files.max-rows", defaultValue = "1000")
+    public String maxRows = "1000";
+
     public String convertToJson(final Reader csvReader) throws IOException {
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(convertToObject(csvReader));
     }
 
     public SummonsProsecution convertToObject(final Reader csvReader) throws IOException {
         try (CSVParser parser = CSV_FORMAT.parse(csvReader)) {
+            final int maxRowsAllowed = Integer.parseInt(maxRows);
             final Map<String, CaseAccumulator> caseAccumulators = new LinkedHashMap<>();
             HearingDetails hearingDetails = null;
             String prosecutingAuthority = null;
+            int rowCount = 0;
 
             for (final CSVRecord record : parser) {
+                rowCount++;
+                if (rowCount > maxRowsAllowed) {
+                    throw new IllegalArgumentException("CSV file exceeds the maximum allowed number of rows ("
+                            + maxRowsAllowed + ")");
+                }
+
                 if (hearingDetails == null) {
                     prosecutingAuthority = requireNonBlank(record, PROSECUTING_AUTHORITY);
                     hearingDetails = HearingDetails.hearingDetails()
