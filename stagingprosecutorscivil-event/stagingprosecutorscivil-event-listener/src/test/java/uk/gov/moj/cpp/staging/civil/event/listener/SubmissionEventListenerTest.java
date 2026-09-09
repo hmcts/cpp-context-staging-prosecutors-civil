@@ -24,9 +24,6 @@ import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -154,31 +151,6 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(REJECTED.name())
                 .build();
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-received", summonsReceived);
-        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
-        submissionEventListener.updatedCivilCaseReceived(envelope);
-        verify(submissionRepository).save(argumentCaptor.capture());
-        final Submission submission = argumentCaptor.getValue();
-        assertThat(submission.getSubmissionId(), is(submissionId));
-        assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
-    }
-
-    @Test
-    void shouldUpdateCaseFileForRejectedStatus() {
-        final UUID submissionId = randomUUID();
-        final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
-                .withSubmissionId(submissionId)
-                .withSubmissionStatus(REJECTED)
-                .withCaseErrors(Collections.EMPTY_LIST)
-                .withGroupCaseErrors(Collections.EMPTY_LIST)
-                .withDefendantErrors(Collections.EMPTY_LIST)
-                .build();
-
-        Submission inputSubmission = Submission.builder()
-                .withSubmissionId(submissionId)
-                .withSubmissionStatus(REJECTED.name())
-                .build();
-
         final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         submissionEventListener.updatedCivilCaseReceived(envelope);
@@ -255,32 +227,7 @@ public class SubmissionEventListenerTest {
         final Submission submission = argumentCaptor.getValue();
 
         assertThat(submission.getSubmissionId(), is(submissionId));
-        assertThat(submission.getSubmissionStatus(), is(REJECTED.name()));
-    }
-
-    @Test
-    void shouldUpdateCaseFileForSuccessWithWarningsStatus() {
-        final UUID submissionId = randomUUID();
-        final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
-                .withSubmissionId(submissionId)
-                .withSubmissionStatus(SUCCESS_WITH_WARNINGS)
-                .withWarnings(Collections.EMPTY_LIST)
-                .withCaseWarnings(Collections.EMPTY_LIST)
-                .withDefendantWarnings(Collections.EMPTY_LIST)
-                .build();
-
-        Submission inputSubmission = Submission.builder()
-                .withSubmissionId(submissionId)
-                .withSubmissionStatus(SUCCESS_WITH_WARNINGS.name())
-                .build();
-
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
-        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
-        submissionEventListener.updatedCivilCaseReceived(envelope);
-        verify(submissionRepository).save(argumentCaptor.capture());
-        final Submission submission = argumentCaptor.getValue();
-        assertThat(submission.getSubmissionId(), is(submissionId));
-        assertThat(submission.getSubmissionStatus(), is(SUCCESS_WITH_WARNINGS.name()));
+        assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
         assertThat(submission.getOuCode(), is(prosecutingAuthority));
         assertThat(submission.getCaseDetail().stream().findFirst().get().getCaseUrn(), is(caseUrn));
         assertThat(submission.getType(), is(SubmissionType.MATERIAL));

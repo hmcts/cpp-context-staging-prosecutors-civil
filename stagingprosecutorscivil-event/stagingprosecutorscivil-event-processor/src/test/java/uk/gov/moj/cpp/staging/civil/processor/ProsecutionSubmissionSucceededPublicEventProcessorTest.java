@@ -151,7 +151,7 @@ public class ProsecutionSubmissionSucceededPublicEventProcessorTest {
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
         final Envelope<ProsecutionSubmissionSucceededWithWarnings> envelope = testEnvelope(payload,
                 "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
-                payload.getExternalId().toString(), eventCreatedTime);
+                eventCreatedTime);
 
         prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceededWithWarnings(envelope);
 
@@ -178,7 +178,7 @@ public class ProsecutionSubmissionSucceededPublicEventProcessorTest {
         final ZonedDateTime eventCreatedTime = PAST_UTC_DATE_TIME.next();
         final Envelope<ProsecutionSubmissionSucceededWithWarnings> envelope = testEnvelope(payload,
                 "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
-                payload.getExternalId().toString(), eventCreatedTime);
+                eventCreatedTime);
 
         prosecutionSubmissionSucceededPublicEventProcessor.prosecutionSubmissionSucceededWithWarnings(envelope);
 

@@ -79,6 +79,12 @@ public class StagingProsecutorsCivilUtils {
 
     }
 
+    public static Response submitOtherCaseExpectingRejection(final String inputFileName, final String contentType) {
+
+        return postCommand(inputFileName, contentType);
+
+    }
+
     private static UrlResponse submitProsecution(final String inputFileName, final String contentType, final String eventName) {
 
         try (final MessageConsumerClient messageConsumerClient = new MessageConsumerClient()) {

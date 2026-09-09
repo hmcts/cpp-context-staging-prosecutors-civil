@@ -129,6 +129,10 @@ public class SubmissionEventListener {
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
 
+        if (!SubmissionStatus.PENDING.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
+            submission.setCompletedAt(extractCreatedAt(event.metadata()));
+        }
+
         submission.setSubmissionStatus(updatedCivilCaseReceived.getSubmissionStatus().name());
         submissionRepository.save(submission);
     }

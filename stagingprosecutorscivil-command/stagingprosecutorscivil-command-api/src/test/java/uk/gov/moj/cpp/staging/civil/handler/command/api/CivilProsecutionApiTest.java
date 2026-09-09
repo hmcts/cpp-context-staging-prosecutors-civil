@@ -1,20 +1,14 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api;
 
-import static java.util.UUID.randomUUID;
-import static javax.json.Json.createObjectBuilder;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-
+import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.json.JsonSchemaValidationException;
 import uk.gov.justice.services.core.json.JsonSchemaValidator;
@@ -24,12 +18,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCase;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCaseWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SubmitMaterialWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SubmitMaterialWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
@@ -40,15 +29,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static java.util.UUID.randomUUID;
+import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 @ExtendWith(MockitoExtension.class)
 public class CivilProsecutionApiTest {
@@ -122,6 +114,98 @@ public class CivilProsecutionApiTest {
         assertThat(receivedOtherCase.getProsecutionCases().get(0).getUrn(), is("urn1"));
         assertThat(receivedOtherCase.getProsecutionCases().get(0).getRelatedReferenceNumber(), is("RELREF-1"));
         assertNotNull(urlResponse.getSubmissionId());
+    }
+
+    @Test
+    public void shouldHandleOtherCaseWithValidHearingDateRange() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now(), LocalDate.now().plusDays(5));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
+
+        verify(sender).send(envelopeCaptor.capture());
+        final OtherCaseWithSubmissionId receivedOtherCase =
+                (OtherCaseWithSubmissionId) envelopeCaptor.getValue().payload();
+        assertThat(receivedOtherCase.getHearingDateRangeDetails().getCourtHearingLocation(), is("B01LY01"));
+    }
+
+    @Test
+    public void shouldRejectOtherCaseWhenStartDateRangeOfHearingIsInThePast() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        assertThrows(BadRequestException.class,
+                () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
+
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldRejectOtherCaseWhenEndDateRangeOfHearingIsBeforeStartDateRangeOfHearing() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now(), LocalDate.now().minusDays(1));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        assertThrows(BadRequestException.class,
+                () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
+
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldRejectOtherCaseWhenStartDateRangeOfHearingIsMoreThan31DaysInThePast() {
+        final OtherCase otherCase = otherCaseWithHearingDateRange(
+                LocalDate.now().minusDays(32), LocalDate.now().plusDays(1));
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        assertThrows(BadRequestException.class,
+                () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
+
+        verifyNoInteractions(sender);
+    }
+
+    private OtherCase otherCaseWithHearingDateRange(final LocalDate startDate, final LocalDate endDate) {
+        final List<ProsecutionCase> prosecutionCaseList = new ArrayList<>();
+        prosecutionCaseList.add(
+                ProsecutionCase.prosecutionCase()
+                        .withUrn("urn-enforcement-range-1")
+                        .withDefendants(new ArrayList<>())
+                        .build()
+        );
+        return OtherCase
+                .otherCase()
+                .withProsecutionCases(prosecutionCaseList)
+                .withProsecutingAuthority("GAAAA01")
+                .withRelatedReferenceNumber("GOB123456789")
+                .withHearingDateRangeDetails(
+                        HearingDateRangeDetails.hearingDateRangeDetails()
+                                .withStartDateRangeOfHearing(startDate)
+                                .withEndDateRangeOfHearing(endDate)
+                                .withCourtHearingLocation("B01LY01")
+                                .build())
+                .build();
     }
 
     @Test

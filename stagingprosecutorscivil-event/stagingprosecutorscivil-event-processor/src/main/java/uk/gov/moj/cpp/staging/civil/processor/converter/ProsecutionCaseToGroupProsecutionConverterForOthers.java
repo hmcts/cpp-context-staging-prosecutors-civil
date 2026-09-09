@@ -79,7 +79,6 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
                 .withProsecutor(Prosecutor.prosecutor()
                         .withInformant(ofNullable(prosecutionCase.getInformant()).orElse(null))
                         .withProsecutingAuthority(otherCaseReceived.getProsecutingAuthority()).build())
-                .withRelatedUrn(otherCaseReceived.getRelatedReferenceNumber())
                 .build();
     }
 

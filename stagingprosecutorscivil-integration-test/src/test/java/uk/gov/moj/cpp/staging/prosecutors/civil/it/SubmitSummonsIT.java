@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:stagingprosecutorscivil-integration-test/src/test/java/uk/gov/moj/cpp/staging/prosecutors/civil/it/SubmitSummonsIT.java
 package uk.gov.moj.cpp.staging.prosecutors.civil.it;
 
 import static java.util.UUID.randomUUID;
@@ -143,5 +142,3 @@ public class SubmitSummonsIT {
     }
 
 }
-========
->>>>>>>> origin:stagingprosecutorscivil-integration-test/src/test/java/uk/gov/moj/cpp/staging/prosecutors/civil/it/SubmitSummonsProsecutionIT.java

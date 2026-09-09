@@ -350,18 +350,6 @@ public class Prosecutors {
                 .build();
     }
 
-    public static SummonsReceived groupSummonsReceived() {
-        return SummonsReceived.summonsReceived()
-                .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(summonsCaseDetail(), summonsCaseDetail()))
-                .withHearingDetails(hearingDetails()
-                        .withDateOfHearing(LocalDate.now())
-                        .withTimeOfHearing(TIME_OF_HEARING)
-                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
-                        .build())
-                .build();
-    }
-
     public static OtherCaseReceived otherCaseReceived() {
         return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)

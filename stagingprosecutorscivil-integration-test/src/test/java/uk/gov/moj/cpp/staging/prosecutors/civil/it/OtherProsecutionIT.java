@@ -145,9 +145,6 @@ public class OtherProsecutionIT {
                 .add("caseErrors", createArrayBuilder().build())
                 .add("defendantErrors", createArrayBuilder().build())
                 .build();
-        final JsonEnvelope warningsEventEnvelope = envelopeFrom(
-                buildMetadata("public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings", randomUUID().toString()),
-                warningsEvent);
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
@@ -212,9 +209,6 @@ public class OtherProsecutionIT {
                                                 .add("key", "dob")
                                                 .add("value", "2050-01-01")))))
                 .build();
-        final JsonEnvelope rejectionEventEnvelope = envelopeFrom(
-                buildMetadata("public.prosecutioncasefile.civil-prosecution-rejected", randomUUID().toString()),
-                rejectionEvent);
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS, randomUUID().toString()), warningsEvent));

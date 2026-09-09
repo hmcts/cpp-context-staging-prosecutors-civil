@@ -1,10 +1,8 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api;
 
-import static java.lang.String.format;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
-import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
-
+import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.configuration.Value;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -15,21 +13,18 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCase;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCaseWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SubmitMaterialWithSubmissionId;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
-
-import java.time.LocalDate;
-import java.util.UUID;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
+import java.time.LocalDate;
+import java.util.UUID;
 
-import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.lang.String.format;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 
 @ServiceComponent(COMMAND_API)
 public class CivilProsecutionApi {

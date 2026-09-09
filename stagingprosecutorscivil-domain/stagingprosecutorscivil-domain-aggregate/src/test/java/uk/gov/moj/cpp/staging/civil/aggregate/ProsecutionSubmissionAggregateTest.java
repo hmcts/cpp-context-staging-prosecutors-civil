@@ -45,7 +45,7 @@ public class ProsecutionSubmissionAggregateTest {
                 .build());
 
         final Stream<Object> events = aggregate.receiveOtherCase(
-                submissionId, hearingDetails, "GAAAA01", cases);
+                submissionId, hearingDetails, null, "GAAAA01", cases, null);
 
         final List<Object> eventList = events.collect(Collectors.toList());
         assertThat(eventList.size(), is(1));
