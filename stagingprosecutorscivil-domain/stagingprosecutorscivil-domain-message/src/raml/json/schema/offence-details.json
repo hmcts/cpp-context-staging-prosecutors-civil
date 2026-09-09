@@ -7,6 +7,7 @@
     "cjsOffenceCode": {
       "type": "string",
       "description": "Identifies the CJS code applicable to criminal offences as per the CJS Standard section 3.11",
+      "minLength": 1,
       "maxLength": 8
     },
     "offenceSequenceNo": {
@@ -39,6 +40,7 @@
     "offenceWording": {
       "type": "string",
       "description": "Details of Information or Charge to be laid before the court",
+      "minLength": 1,
       "maxLength": 2500
     },
     "offenceWordingWelsh": {

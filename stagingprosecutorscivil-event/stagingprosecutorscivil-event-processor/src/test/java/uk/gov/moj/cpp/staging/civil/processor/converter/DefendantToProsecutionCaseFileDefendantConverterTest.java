@@ -56,8 +56,6 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
         assertThat(result.getInitialHearing().getEndDate(), is(endDate.toString()));
         assertThat(result.getInitialHearing().getCourtHearingLocation(), is("B01LY01"));
     }
-
-
     private static void assertProsecutionCaseFileDefendantMatchesProsecutionDefendant(final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant prosecutionCaseFileDefendant,
                                                                                       final Defendant prosecutorsDefendant, final OtherCaseReceived otherCaseReceived) {
 

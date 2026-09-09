@@ -1,9 +1,6 @@
 package uk.gov.moj.cpp.staging.civil.handler;
 
-import static org.slf4j.LoggerFactory.getLogger;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.moj.cpp.staging.civil.handler.util.EventStreamAppender.appendEventsToStream;
-
+import org.slf4j.Logger;
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -16,11 +13,12 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
+import javax.inject.Inject;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
+import static org.slf4j.LoggerFactory.getLogger;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.moj.cpp.staging.civil.handler.util.EventStreamAppender.appendEventsToStream;
 
 @ServiceComponent(COMMAND_HANDLER)
 public class CivilProsecutionHandler {

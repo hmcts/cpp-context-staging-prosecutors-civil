@@ -2,8 +2,8 @@ package uk.gov.moj.cpp.staging.civil.query;
 
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;

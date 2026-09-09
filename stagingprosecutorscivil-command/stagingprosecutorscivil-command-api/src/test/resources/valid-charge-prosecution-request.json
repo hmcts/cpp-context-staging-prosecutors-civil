@@ -1,0 +1,51 @@
+{
+  "prosecutingAuthority": "GAEAA01",
+  "prosecutionCases": [
+    {
+      "informant": "John Doe",
+      "urn": "SCIV12345",
+      "caseMarker": "HT",
+      "defendants": [
+        {
+          "individual": {
+            "custodyStatus": "B",
+            "bailConditions": "This is a free text",
+            "dateOfBirth": "2011-11-07",
+            "nameDetails": {
+              "forename": "John",
+              "surname": "Doe"
+            },
+            "gender": 1
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "offenceWording": "Application for a slavery and trafficking risk order",
+                "cjsOffenceCode": "MS15503",
+                "offenceSequenceNo": 1,
+                "offenceLocation": "Croydon",
+                "laidDate": "2011-11-02"
+              },
+              "statementOfFacts": "statementOfFacts"
+            }
+          ],
+          "defendantDetails": {
+            "prosecutorDefendantId": "123e4567-e89b-12d3-a456-426614174000",
+            "asn": "24SINCIV010112345C",
+            "documentationLanguage": "E",
+            "address": {
+              "address1": "849 Akeem Stravenue",
+              "postcode": "CR0 1XG"
+            },
+            "hearingLanguage": "E"
+          }
+        }
+      ]
+    }
+  ],
+  "hearingDetails": {
+    "timeOfHearing": "10:30:00",
+    "courtHearingLocation": "B01LY01",
+    "dateOfHearing": "2011-11-17"
+  }
+}

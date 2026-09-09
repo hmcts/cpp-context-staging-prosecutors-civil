@@ -1,18 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
-import static java.time.ZonedDateTime.now;
-import static java.util.Optional.ofNullable;
-import static java.util.UUID.randomUUID;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
-import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
-import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
-import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -25,7 +14,6 @@ import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.ProblemValue;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForOthers;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForSummons;
-import uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
@@ -36,6 +24,10 @@ import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicCivilProsecutionRejected;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupProsecutionRejected;
 
+import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -43,13 +35,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.time.ZonedDateTime.now;
+import static java.util.Optional.ofNullable;
+import static java.util.UUID.randomUUID;
+import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
+import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReferences;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
 
 @ServiceComponent(EVENT_PROCESSOR)
 public class ProsecutionEventProcessor {
@@ -110,7 +108,7 @@ public class ProsecutionEventProcessor {
     private List<GroupProsecutions> getGroupProsecutionsForOthers(final ZonedDateTime dateReceived,
                                                                   final OtherCaseReceived otherCaseReceived,
                                                                   final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(otherCaseReceived.getProsecutionCases(), otherCaseReceived.getProsecutingAuthority()));
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getCaseReferences(otherCaseReceived.getProsecutionCases()), otherCaseReceived.getProsecutingAuthority());
         final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverter
                 = new ProsecutionCaseToGroupProsecutionConverterForOthers(dateReceived, otherCaseReceived, groupId, caseRefToCaseId);
 
@@ -123,7 +121,7 @@ public class ProsecutionEventProcessor {
     private List<GroupProsecutions> getGroupProsecutionsForSummons(final ZonedDateTime dateReceived,
                                                                    final SummonsReceived summonsReceived,
                                                                    final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(summonsReceived.getProsecutionCases(), summonsReceived.getProsecutingAuthority()));
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(summonsReceived.getProsecutionCases(), summonsReceived.getProsecutingAuthority()), null);
         final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverterForSummons
                 = new ProsecutionCaseToGroupProsecutionConverterForSummons(dateReceived, summonsReceived, groupId, caseRefToCaseId);
 
@@ -290,8 +288,8 @@ public class ProsecutionEventProcessor {
         updateSubmitionStatus(event, jsonObjectBuilder);
     }
 
-    private List<String> getProsecutorCaseReferences(final List<ProsecutionCase> prosecutionCases, final String prosecutingAuthority) {
+    private List<String> getCaseReferences(final List<ProsecutionCase> prosecutionCases) {
         return prosecutionCases.stream()
-                .map(pc -> ProsecutorCaseReferenceUtil.getProsecutorCaseReference(prosecutingAuthority, pc.getUrn())).collect(Collectors.toList());
+                .map(pc -> pc.getUrn()).collect(Collectors.toList());
     }
 }

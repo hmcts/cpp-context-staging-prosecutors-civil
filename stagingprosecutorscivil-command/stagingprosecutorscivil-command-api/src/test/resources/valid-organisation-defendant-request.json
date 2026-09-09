@@ -1,0 +1,37 @@
+{
+  "prosecutingAuthority": "GAEAA01",
+  "prosecutionCases": [
+    {
+      "informant": "John Doe",
+      "urn": "SCIV12345",
+      "defendants": [
+        {
+          "organisation": {
+            "organisationName": "Test Organisation Ltd"
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "offenceWording": "Application for a slavery and trafficking risk order",
+                "cjsOffenceCode": "MS15503",
+                "offenceSequenceNo": 1,
+                "laidDate": "2011-11-02"
+              }
+            }
+          ],
+          "defendantDetails": {
+            "prosecutorDefendantId": "123e4567-e89b-12d3-a456-426614174000",
+            "documentationLanguage": "E",
+            "address": { "address1": "849 Akeem Stravenue", "postcode": "CR0 1XG" },
+            "hearingLanguage": "E"
+          }
+        }
+      ]
+    }
+  ],
+  "hearingDetails": {
+    "timeOfHearing": "10:30:00",
+    "courtHearingLocation": "B01LY01",
+    "dateOfHearing": "2011-11-17"
+  }
+}

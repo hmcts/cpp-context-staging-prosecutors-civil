@@ -61,12 +61,12 @@ public class Prosecutors {
     public static final String INFORMANT = "informant";
     public static final String CASE_MARKER = "ABC";
     public static final String PAYMENT_REFERENCE = "ref_number";
+    public static final String RELATED_REFERENCE_NUMBER = "RELREF-100";
     public static final String ASN = "asn";
     public static final String CRO_NUMBER = "CroNumber";
     public static final String PNC_IDENTIFIER = "PnCidentifier";
     public static final String ORGANISATION_NAME = "Organisation Name";
     public static final String COMPANY_TELEPHONE_NUMBER = "12323453456";
-    public static final String RELATED_REFERENCE_NUMBER = "GOB123456789";
     public static final LocalDate START_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 12);
     public static final LocalDate END_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 14);
     public static final String ENFORCEMENT_COURT_HEARING_LOCATION = "B01LY01";
@@ -212,7 +212,9 @@ public class Prosecutors {
                 .withCustodyStatus(("E"))
                 .withLanguageRequirement(("languageNeeds"))
                 .withSpecificRequirements(("specialNeeds"))
-                .withOccupationCode((1));
+                .withOccupationCode((1))
+                .withNationality("GBR")
+                .withAdditionalNationality("POL");
     }
 
     private static NameDetails prosecutorsNameDetails() {
@@ -325,6 +327,18 @@ public class Prosecutors {
                 .build();
     }
 
+    public static SummonsReceived groupSummonsReceived() {
+        return SummonsReceived.summonsReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(summonsCaseDetail(), summonsCaseDetail()))
+                .withHearingDetails(hearingDetails()
+                        .withDateOfHearing(LocalDate.now())
+                        .withTimeOfHearing(TIME_OF_HEARING)
+                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
+                        .build())
+                .build();
+    }
+
     public static OtherCaseReceived enforcementOtherCaseReceived() {
         return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
@@ -335,18 +349,6 @@ public class Prosecutors {
                         .withCourtHearingLocation(ENFORCEMENT_COURT_HEARING_LOCATION)
                         .build())
                 .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
-                .build();
-    }
-
-    public static SummonsReceived groupSummonsReceived() {
-        return SummonsReceived.summonsReceived()
-                .withSubmissionId(SUBMISSION_ID)
-                .withProsecutionCases(Arrays.asList(summonsCaseDetail(), summonsCaseDetail()))
-                .withHearingDetails(hearingDetails()
-                        .withDateOfHearing(LocalDate.now())
-                        .withTimeOfHearing(TIME_OF_HEARING)
-                        .withCourtHearingLocation(COURT_HEARING_LOCATION)
-                        .build())
                 .build();
     }
 
@@ -381,6 +383,7 @@ public class Prosecutors {
                 .withCaseMarker(CASE_MARKER)
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 
@@ -392,6 +395,7 @@ public class Prosecutors {
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
                 .withSummonsCode("summons_code")
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 

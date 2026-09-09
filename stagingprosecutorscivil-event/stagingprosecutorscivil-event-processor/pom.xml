@@ -44,6 +44,12 @@
             <groupId>net.minidev</groupId>
             <artifactId>json-smart</artifactId>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+            <artifactId>stagingprosecutorscivil-viewstore-persistance</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
         <!-- test dependencies -->
         <dependency>
             <groupId>org.hamcrest</groupId>

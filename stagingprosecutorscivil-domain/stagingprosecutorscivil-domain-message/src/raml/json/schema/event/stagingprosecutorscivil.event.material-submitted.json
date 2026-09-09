@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/material-submitted.json",
+  "type": "object",
+  "properties": {
+    "submissionId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "materialId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "submissionStatus": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/submissionStatus"
+    },
+    "caseUrn": {
+      "type": "string",
+      "maxLength": 36
+    },
+    "prosecutingAuthority": {
+      "type": "string",
+      "description": "Identifies the Prosecuting Organisation responsible for initiating the case. Valid CJS OU Code.",
+      "maxLength": 7
+    },
+    "materialType": {
+      "type": "string"
+    },
+    "defendantId": {
+      "type": "string",
+      "maxLength": 36
+    }
+  },
+  "required": [
+    "submissionId",
+    "materialId",
+    "submissionStatus",
+    "caseUrn",
+    "materialType"
+  ],
+  "additionalProperties": false
+}
