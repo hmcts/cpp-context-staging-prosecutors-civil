@@ -147,6 +147,11 @@ public class CivilProsecutionApi {
         final LocalDate startDateRangeOfHearing = hearingDateRangeDetails.getStartDateRangeOfHearing();
         final LocalDate endDateRangeOfHearing = hearingDateRangeDetails.getEndDateRangeOfHearing();
 
+        if (startDateRangeOfHearing.isBefore(LocalDate.now())) {
+            throw new BadRequestException(format(
+                    "startDateRangeOfHearing %s must not be before today's date", startDateRangeOfHearing));
+        }
+
         if (endDateRangeOfHearing.isBefore(startDateRangeOfHearing)) {
             throw new BadRequestException(format(
                     "endDateRangeOfHearing %s must not be before startDateRangeOfHearing %s",

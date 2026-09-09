@@ -205,6 +205,8 @@ public class Prosecutors {
                 .withGender(Gender.NUMBER_1)
                 .withNameDetails(prosecutorsNameDetails())
                 .withNationalInsuranceNumber(("National Insurance Number"))
+                .withNationality(("GBR"))
+                .withAdditionalNationality(("FRA"))
                 .withObservedEthnicity((BigDecimal.ONE))
                 .withOccupation(("Occupation"))
                 .withCustodyStatus(("E"))
