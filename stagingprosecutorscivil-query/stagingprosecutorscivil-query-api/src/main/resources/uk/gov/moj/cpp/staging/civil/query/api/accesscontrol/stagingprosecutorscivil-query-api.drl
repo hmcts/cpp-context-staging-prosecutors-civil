@@ -14,6 +14,15 @@ rule "Command - Rule for getting submission details"
     $outcome.setSuccess(true);
 end
 
+rule "Command - Rule for getting submission error details CSV"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "stagingprosecutorscivil.submission-error-details");
+    eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
+  then
+    $outcome.setSuccess(true);
+end
+
 rule "Query - Rule for getting complaints files template"
   when
     $outcome: Outcome();

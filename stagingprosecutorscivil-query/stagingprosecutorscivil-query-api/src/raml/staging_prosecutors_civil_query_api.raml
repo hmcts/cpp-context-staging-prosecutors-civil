@@ -11,6 +11,9 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         responseType: application/vnd.stagingprosecutorscivil.submission-details+json
         name: stagingprosecutorscivil.submission-details
+      (mapping):
+        responseType: text/csv
+        name: stagingprosecutorscivil.submission-error-details
       ...
     queryParameters:
       additionalInfo:
@@ -24,6 +27,7 @@ protocols: [ HTTP, HTTPS ]
             application/vnd.stagingprosecutorscivil.submission-details+json:
               example:  !include json/stagingprosecutorscivil.submission-details.json
               schema:  !include json/schema/stagingprosecutorscivil.submission-details.json
+            text/csv:
 
 /complaints-files-template:
   get:

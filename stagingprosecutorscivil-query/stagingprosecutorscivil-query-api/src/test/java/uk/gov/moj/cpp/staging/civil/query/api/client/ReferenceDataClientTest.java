@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.staging.civil.handler.command.api.client;
+package uk.gov.moj.cpp.staging.civil.query.api.client;
 
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;

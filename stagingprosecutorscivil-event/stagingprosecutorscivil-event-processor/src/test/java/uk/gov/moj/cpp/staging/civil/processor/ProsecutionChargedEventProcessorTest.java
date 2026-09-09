@@ -165,6 +165,7 @@ public class ProsecutionChargedEventProcessorTest {
         JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(parkedForApproval.getExternalId().toString()));
         assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.PENDING_COURT_DECISION.name()));
+        assertThat(payload.getString("summonsApplicationId"), is(parkedForApproval.getApplicationId().toString()));
     }
 
     @Test
@@ -182,6 +183,7 @@ public class ProsecutionChargedEventProcessorTest {
         JsonObject payload = (JsonObject) captor.getValue().payload();
         assertThat(payload.getString("submissionId"), is(groupParkedForApproval.getExternalId().toString()));
         assertThat(payload.getString("submissionStatus"), is(SubmissionStatus.PENDING_COURT_DECISION.name()));
+        assertThat(payload.getString("summonsApplicationId"), is(groupParkedForApproval.getApplicationId().toString()));
     }
 
     @Test

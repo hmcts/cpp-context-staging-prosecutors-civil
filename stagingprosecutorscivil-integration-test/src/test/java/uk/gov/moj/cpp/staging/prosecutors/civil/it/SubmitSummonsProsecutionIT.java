@@ -111,9 +111,10 @@ public class SubmitSummonsProsecutionIT {
         final UUID submissionId = urlResponse.getSubmissionId();
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
+        final UUID applicationId = randomUUID();
         JsonObject parkedForApprovalEvent = createObjectBuilder()
                 .add("caseId", randomUUID().toString())
-                .add("applicationId", randomUUID().toString())
+                .add("applicationId", applicationId.toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
                 .build();
@@ -123,6 +124,7 @@ public class SubmitSummonsProsecutionIT {
 
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING_COURT_DECISION);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+        assertThat(submission.getSummonsApplicationId(), Matchers.is(applicationId));
     }
 
     @Test
@@ -266,9 +268,10 @@ public class SubmitSummonsProsecutionIT {
         final UUID submissionId = urlResponse.getSubmissionId();
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
+        final UUID applicationId = randomUUID();
         final JsonObject groupParkedForApprovalEvent = createObjectBuilder()
                 .add("groupId", randomUUID().toString())
-                .add("applicationId", randomUUID().toString())
+                .add("applicationId", applicationId.toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
                 .build();
@@ -278,6 +281,7 @@ public class SubmitSummonsProsecutionIT {
 
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING_COURT_DECISION);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+        assertThat(submission.getSummonsApplicationId(), Matchers.is(applicationId));
     }
 
     @Test

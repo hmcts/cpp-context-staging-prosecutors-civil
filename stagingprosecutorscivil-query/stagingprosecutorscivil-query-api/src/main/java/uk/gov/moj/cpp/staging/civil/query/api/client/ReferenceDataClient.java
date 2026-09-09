@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.staging.civil.handler.command.api.client;
+package uk.gov.moj.cpp.staging.civil.query.api.client;
 
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
@@ -22,7 +22,7 @@ public class ReferenceDataClient {
     private static final String SHORT_NAME_FIELD = "shortName";
 
     @Inject
-    @ServiceComponent(Component.COMMAND_API)
+    @ServiceComponent(Component.QUERY_API)
     private Requester requester;
 
     public String getProsecutorShortNameForOuCode(final String ouCode) {

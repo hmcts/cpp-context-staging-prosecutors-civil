@@ -167,6 +167,23 @@ public class StagingProsecutorsCivilUtils {
         return restClient.query(READ_BASE_URI + "/complaints-files-template", CSV_CONTENT_TYPE);
     }
 
+    public static Response getSubmissionErrorDetailsCsv(final UUID submissionId) {
+        return getSubmissionErrorDetailsCsv(submissionId, randomUUID().toString());
+    }
+
+    public static Response getSubmissionErrorDetailsCsv(final UUID submissionId, final String userId) {
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, userId);
+        return restClient.query(READ_BASE_URI + "/submissions/" + submissionId, CSV_CONTENT_TYPE, headers);
+    }
+
+    public static Response getSubmissionDetailsRaw(final UUID submissionId, final String userId) {
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, userId);
+        return restClient.query(READ_BASE_URI + "/submissions/" + submissionId,
+                "application/vnd.stagingprosecutorscivil.submission-details+json", headers);
+    }
+
     private static RequestParams getRequestParams(final UUID submissionId, final boolean additionalInfo) {
         final String url = READ_BASE_URI + "/submissions/" + submissionId
                 + (additionalInfo ? "?additionalInfo=true" : "");

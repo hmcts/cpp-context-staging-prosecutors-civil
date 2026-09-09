@@ -176,6 +176,56 @@ public class SubmissionEventListenerTest {
     }
 
     @Test
+    void shouldSetSummonsApplicationIdWhenTransitioningToPendingCourtDecision() {
+        final UUID submissionId = randomUUID();
+        final UUID summonsApplicationId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING_COURT_DECISION)
+                .withSummonsApplicationId(summonsApplicationId)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionStatus(), is(PENDING_COURT_DECISION.name()));
+        assertThat(submission.getSummonsApplicationId(), is(summonsApplicationId));
+    }
+
+    @Test
+    void shouldNotOverwriteSummonsApplicationIdWhenAbsentOnSubsequentTransition() {
+        final UUID submissionId = randomUUID();
+        final UUID existingSummonsApplicationId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(ACCEPTED)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING_COURT_DECISION.name())
+                .withSummonsApplicationId(existingSummonsApplicationId)
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionStatus(), is(ACCEPTED.name()));
+        assertThat(submission.getSummonsApplicationId(), is(existingSummonsApplicationId));
+    }
+
+    @Test
     void shouldIgnoreAcceptedWhenCurrentStatusIsNotPendingCourtDecision() {
         // PCF sends submission-approved from the same trigger as, and immediately after,
         // civil.prosecution-submission-succeeded/group-submission-succeeded for every successful

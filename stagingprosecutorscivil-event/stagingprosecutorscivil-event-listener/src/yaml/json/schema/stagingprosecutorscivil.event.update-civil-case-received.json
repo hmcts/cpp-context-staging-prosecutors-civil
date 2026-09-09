@@ -9,6 +9,9 @@
     "submissionStatus": {
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/submissionStatus"
     },
+    "summonsApplicationId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
     "groupCaseErrors": {
       "type": "array",
       "items": {
