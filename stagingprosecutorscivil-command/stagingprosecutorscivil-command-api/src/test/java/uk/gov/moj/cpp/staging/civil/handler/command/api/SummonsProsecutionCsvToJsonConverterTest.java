@@ -273,6 +273,33 @@ class SummonsProsecutionCsvToJsonConverterTest {
     }
 
     @Test
+    void acceptsExactlyTheConfiguredMaxRowsLimit() throws IOException {
+        converter.maxRows = "3";
+        final String csv = buildCsvWithRows(3);
+
+        final SummonsProsecution summonsProsecution = converter.convertToObject(new StringReader(csv));
+
+        assertEquals(3, summonsProsecution.getProsecutionCases().size());
+    }
+
+    @Test
+    void throwsWhenRowCountExceedsConfiguredMaxRowsLimit() {
+        converter.maxRows = "2";
+        final String csv = buildCsvWithRows(3);
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains("exceeds the maximum allowed number of rows"));
+        assertTrue(exception.getMessage().contains("2"));
+    }
+
+    @Test
+    void defaultMaxRowsLimitIs1000() {
+        assertEquals("1000", new SummonsProsecutionCsvToJsonConverter().maxRows);
+    }
+
+    @Test
     void throwsWhenDefendantTypeIsInvalid() {
         final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.DEFENDANT_TYPE, "UNKNOWN"));
 
@@ -426,6 +453,17 @@ class SummonsProsecutionCsvToJsonConverterTest {
     private static String buildCsv(final Map<String, String> overrides) {
         final String header = String.join(",", SummonsProsecutionCsvColumns.HEADERS);
         return header + "\n" + buildCsvRow(overrides) + "\n";
+    }
+
+    private static String buildCsvWithRows(final int rowCount) {
+        final StringBuilder csv = new StringBuilder(String.join(",", SummonsProsecutionCsvColumns.HEADERS)).append('\n');
+        for (int i = 1; i <= rowCount; i++) {
+            csv.append(buildCsvRow(Map.of(
+                    SummonsProsecutionCsvColumns.CASE_URN, "SCIV" + i,
+                    SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "DEF" + i)))
+                    .append('\n');
+        }
+        return csv.toString();
     }
 
     private static String buildCsvRow(final Map<String, String> overrides) {
