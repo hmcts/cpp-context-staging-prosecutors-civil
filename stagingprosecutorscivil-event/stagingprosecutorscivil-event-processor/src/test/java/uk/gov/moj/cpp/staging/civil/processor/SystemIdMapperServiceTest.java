@@ -291,4 +291,73 @@ public class SystemIdMapperServiceTest {
         assertThat(ref2Map.getTargetId(), is(notNullValue()));
         assertThat(ref2Map.getTargetId(), is(not(existingCaseId)));
     }
+
+    @Test
+    void shouldNotThrowDuplicateKeyExceptionWhenDuplicateProsecutorCaseReferencesProvidedAndMappingExists() {
+        final UUID userId = randomUUID();
+        final UUID existingCaseId = randomUUID();
+        final SystemIdMapping existingMapping = new SystemIdMapping(randomUUID(), "ref1", SOURCE_TYPE, existingCaseId, TARGET_TYPE, ZonedDateTime.now());
+        final ArgumentCaptor<SystemidMapList> captor = ArgumentCaptor.forClass(SystemidMapList.class);
+        final AdditionResponses responses = new AdditionResponses(List.of(
+                new SystemIdMappings(null, false, randomUUID(), "ref1", existingCaseId)));
+
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
+        when(systemIdMapperClient.findBy("ref1", SOURCE_TYPE, TARGET_TYPE, userId)).thenReturn(Optional.of(existingMapping));
+        when(systemIdMapperClient.addMany(captor.capture(), eq(userId))).thenReturn(responses);
+
+        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1", "ref1", "ref1"), null);
+
+        final List<SystemIdMap> systemIdMaps = captor.getValue().getSystemIds();
+        assertThat(systemIdMaps.size(), is(3));
+        systemIdMaps.forEach(map -> assertThat(map.getTargetId(), is(existingCaseId)));
+        assertThat(result.size(), is(1));
+        assertThat(result.get("ref1"), is(existingCaseId));
+    }
+
+    @Test
+    void shouldKeepFirstResolvedTargetIdForDuplicateProsecutorCaseReferencesWhenNoExistingMappingFound() {
+        final UUID userId = randomUUID();
+        final ArgumentCaptor<SystemidMapList> captor = ArgumentCaptor.forClass(SystemidMapList.class);
+
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
+        when(systemIdMapperClient.findBy("ref1", SOURCE_TYPE, TARGET_TYPE, userId)).thenReturn(Optional.empty());
+        when(systemIdMapperClient.addMany(captor.capture(), eq(userId))).thenAnswer(invocation -> {
+            final UUID capturedTargetId = ((SystemidMapList) invocation.getArgument(0)).getSystemIds().get(0).getTargetId();
+            return new AdditionResponses(List.of(new SystemIdMappings(null, false, randomUUID(), "ref1", capturedTargetId)));
+        });
+
+        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1", "ref1"), null);
+
+        final List<SystemIdMap> systemIdMaps = captor.getValue().getSystemIds();
+        assertThat(systemIdMaps.size(), is(2));
+        assertThat(systemIdMaps.get(0).getTargetId(), is(systemIdMaps.get(1).getTargetId()));
+        assertThat(result.get("ref1"), is(systemIdMaps.get(0).getTargetId()));
+    }
+
+    @Test
+    void shouldNotThrowDuplicateKeyExceptionWhenDuplicateAndUniqueProsecutorCaseReferencesMixed() {
+        final UUID userId = randomUUID();
+        final UUID caseId1 = randomUUID();
+        final UUID caseId2 = randomUUID();
+        final SystemIdMappings mapping1 = new SystemIdMappings(null, false, randomUUID(), "ref1", caseId1);
+        final SystemIdMappings mapping2 = new SystemIdMappings(null, false, randomUUID(), "ref2", caseId2);
+        final AdditionResponses responses = new AdditionResponses(List.of(mapping1, mapping2));
+        final ArgumentCaptor<SystemidMapList> captor = ArgumentCaptor.forClass(SystemidMapList.class);
+
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(userId));
+        when(systemIdMapperClient.findBy("ref1", SOURCE_TYPE, TARGET_TYPE, userId)).thenReturn(Optional.empty());
+        when(systemIdMapperClient.findBy("ref2", SOURCE_TYPE, TARGET_TYPE, userId)).thenReturn(Optional.empty());
+        when(systemIdMapperClient.addMany(captor.capture(), eq(userId))).thenReturn(responses);
+
+        final Map<String, UUID> result = target.getCppCaseIdMapFor(List.of("ref1", "ref2", "ref1"), null);
+
+        final List<SystemIdMap> systemIdMaps = captor.getValue().getSystemIds();
+        assertThat(systemIdMaps.size(), is(3));
+        final UUID ref1TargetIdFirst = systemIdMaps.get(0).getTargetId();
+        final UUID ref1TargetIdSecond = systemIdMaps.get(2).getTargetId();
+        assertThat(ref1TargetIdFirst, is(ref1TargetIdSecond));
+        assertThat(result.size(), is(2));
+        assertThat(result.get("ref1"), is(caseId1));
+        assertThat(result.get("ref2"), is(caseId2));
+    }
 }

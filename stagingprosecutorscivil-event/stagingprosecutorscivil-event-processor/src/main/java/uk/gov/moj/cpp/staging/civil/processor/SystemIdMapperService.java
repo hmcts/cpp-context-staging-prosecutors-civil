@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -99,12 +100,11 @@ public class SystemIdMapperService {
     public Map<String, UUID> getCppCaseIdMapFor(List<String> prosecutorCaseReferences, final String prosecutingAuthority) {
         final UUID contextSystemUserId = systemUserProvider.getContextSystemUserId().orElseThrow(() -> new AccessControlViolationException("System user not found"));
 
-        final Map<String, UUID> caseRefToNewUuid = prosecutorCaseReferences.stream().collect(Collectors.toMap(
-                ref -> ref,
-                ref -> {
-                    final Optional<SystemIdMapping> existingMapping = getSystemIdMappingFor(ref);
-                    return existingMapping.isPresent() ? existingMapping.get().getTargetId() : randomUUID();
-                }));
+        final Map<String, UUID> caseRefToNewUuid = prosecutorCaseReferences.stream()
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        this::resolveTargetIdFor,
+                        (existingCaseId, duplicateCaseId) -> existingCaseId));
 
         final List<SystemIdMap> systemIdMapList = prosecutorCaseReferences.stream().map(ref -> new SystemIdMap(ref, SOURCE_TYPE, caseRefToNewUuid.get(ref), TARGET_TYPE)).collect(Collectors.toList());
         AdditionResponses additionResponses = systemIdMapperClient.addMany(new SystemidMapList(systemIdMapList), contextSystemUserId);
@@ -123,5 +123,11 @@ public class SystemIdMapperService {
             }
         });
         return caseRefToCaseId;
+    }
+
+    private UUID resolveTargetIdFor(final String prosecutorCaseReference) {
+        return getSystemIdMappingFor(prosecutorCaseReference)
+                .map(SystemIdMapping::getTargetId)
+                .orElseGet(UUID::randomUUID);
     }
 }
