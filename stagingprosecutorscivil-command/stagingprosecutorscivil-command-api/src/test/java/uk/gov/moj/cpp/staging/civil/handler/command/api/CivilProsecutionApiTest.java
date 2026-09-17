@@ -18,10 +18,13 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.validators.OffenceValidator;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.OffenceDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 
 import java.time.LocalDate;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,11 +63,14 @@ public class CivilProsecutionApiTest {
     @Captor
     private ArgumentCaptor<DefaultEnvelope> envelopeCaptor;
 
+    private final OffenceValidator offenceValidator = new OffenceValidator();
+
     @BeforeEach
     public void setup() {
         api.baseResponseURL = "test-base-url/";
         setField(api, "uuidProducer", uuidProducer);
         setField(api, "jsonSchemaValidator", jsonSchemaValidator);
+        setField(api, "offenceValidator", offenceValidator);
     }
 
     @Test
@@ -77,6 +84,7 @@ public class CivilProsecutionApiTest {
                                         .withAsn("GAAAA01")
                                         .build()
                         )
+                        .withOffences(new ArrayList<>())
                         .build()
         );
         List<ProsecutionCase> prosecutionCaseList = new ArrayList();
@@ -184,6 +192,97 @@ public class CivilProsecutionApiTest {
                 () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
 
         verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldRejectOtherCaseWhenDefendantHasOffencesWithDuplicateOffenceSequenceNumbers() {
+        final Offence offence1 = Offence.offence()
+                .withOffenceDetails(OffenceDetails.offenceDetails()
+                        .withCjsOffenceCode("CA03013")
+                        .withOffenceSequenceNo(1)
+                        .build())
+                .build();
+        final Offence offence2 = Offence.offence()
+                .withOffenceDetails(OffenceDetails.offenceDetails()
+                        .withCjsOffenceCode("CA03014")
+                        .withOffenceSequenceNo(1)
+                        .build())
+                .build();
+
+        final List<Defendant> defendants = new ArrayList<>();
+        defendants.add(Defendant.defendant()
+                .withDefendantDetails(DefendantDetails.defendantDetails().withAsn("GAAAA01").build())
+                .withOffences(asList(offence1, offence2))
+                .build());
+
+        final List<ProsecutionCase> prosecutionCaseList = new ArrayList<>();
+        prosecutionCaseList.add(ProsecutionCase.prosecutionCase()
+                .withUrn("urn-duplicate-offence-seq")
+                .withInformant("Adam")
+                .withDefendants(defendants)
+                .build());
+
+        final OtherCase otherCase = OtherCase
+                .otherCase()
+                .withProsecutionCases(prosecutionCaseList)
+                .withProsecutingAuthority("GAAAA01")
+                .build();
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        assertThrows(BadRequestException.class,
+                () -> api.otherCase(Envelope.envelopeFrom(metadata, otherCase)));
+
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldHandleOtherCaseWhenDefendantHasOffencesWithUniqueOffenceSequenceNumbers() {
+        final Offence offence1 = Offence.offence()
+                .withOffenceDetails(OffenceDetails.offenceDetails()
+                        .withCjsOffenceCode("CA03013")
+                        .withOffenceSequenceNo(1)
+                        .build())
+                .build();
+        final Offence offence2 = Offence.offence()
+                .withOffenceDetails(OffenceDetails.offenceDetails()
+                        .withCjsOffenceCode("CA03014")
+                        .withOffenceSequenceNo(2)
+                        .build())
+                .build();
+
+        final List<Defendant> defendants = new ArrayList<>();
+        defendants.add(Defendant.defendant()
+                .withDefendantDetails(DefendantDetails.defendantDetails().withAsn("GAAAA01").build())
+                .withOffences(asList(offence1, offence2))
+                .build());
+
+        final List<ProsecutionCase> prosecutionCaseList = new ArrayList<>();
+        prosecutionCaseList.add(ProsecutionCase.prosecutionCase()
+                .withUrn("urn-unique-offence-seq")
+                .withInformant("Adam")
+                .withDefendants(defendants)
+                .build());
+
+        final OtherCase otherCase = OtherCase
+                .otherCase()
+                .withProsecutionCases(prosecutionCaseList)
+                .withProsecutingAuthority("GAAAA01")
+                .build();
+
+        final Metadata metadata = metadataBuilder()
+                .withName("stagingcivil.other-case")
+                .withId(randomUUID())
+                .withUserId(randomUUID().toString())
+                .build();
+
+        api.otherCase(Envelope.envelopeFrom(metadata, otherCase));
+
+        verify(sender).send(envelopeCaptor.capture());
     }
 
     private OtherCase otherCaseWithHearingDateRange(final LocalDate startDate, final LocalDate endDate) {

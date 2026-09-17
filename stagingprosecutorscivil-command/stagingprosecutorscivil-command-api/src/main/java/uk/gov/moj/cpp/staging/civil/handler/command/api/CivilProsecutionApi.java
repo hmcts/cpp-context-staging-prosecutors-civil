@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,15 +15,21 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.validators.OffenceValidator;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
@@ -44,6 +52,11 @@ public class CivilProsecutionApi {
     private JsonSchemaValidator jsonSchemaValidator;
 
     @Inject
+    private OffenceValidator offenceValidator;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Inject
     public CivilProsecutionApi(final Sender sender) {
         this.sender = sender;
     }
@@ -54,6 +67,7 @@ public class CivilProsecutionApi {
         final OtherCase otherCase = envelope.payload();
 
         validateHearingDateRangeDetails(otherCase.getHearingDateRangeDetails());
+        validateOffences(otherCase);
 
         final OtherCaseWithSubmissionId otherCaseWithSubmissionId
                 = OtherCaseWithSubmissionId.otherCaseWithSubmissionId()
@@ -156,6 +170,31 @@ public class CivilProsecutionApi {
             throw new BadRequestException(format(
                     "endDateRangeOfHearing %s must not be before startDateRangeOfHearing %s",
                     endDateRangeOfHearing, startDateRangeOfHearing));
+        }
+    }
+
+    private void validateOffences(final OtherCase otherCase) {
+        final Map<String, List<String>> violations = new HashMap<>();
+
+        otherCase.getProsecutionCases().forEach(prosecutionCase ->
+                prosecutionCase.getDefendants().forEach(defendant ->
+                        offenceValidator.validate(
+                                defendant.getOffences().stream()
+                                        .map(Offence::getOffenceDetails)
+                                        .collect(toList()),
+                                violations)));
+
+        if (!violations.isEmpty()) {
+            throwBadRequestException(violations);
+        }
+    }
+
+    private void throwBadRequestException(final Map<String, List<String>> violations) {
+        try {
+            throw new BadRequestException(objectMapper.writeValueAsString(violations));
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Unable to serialize violations json object", e);
+            throw new BadRequestException("Business validations failed");
         }
     }
 
