@@ -88,13 +88,13 @@ public class DefaultQueryApiSubmissionsSubmissionIdResourceTest {
     public void shouldUseCsvResponseStrategyForCsvAction() {
         final String submissionId = UUID.randomUUID().toString();
         when(actionMapper.actionOf("getSubmissionsBySubmissionId", "GET", headers))
-                .thenReturn("stagingprosecutorscivil.submission-error-details");
-        when(restProcessor.process(eq("SubmissionErrorDetailsCsvResponseStrategy"), any(), eq("stagingprosecutorscivil.submission-error-details"), eq(headers), anyCollection()))
+                .thenReturn("stagingcivil.submission-error-details");
+        when(restProcessor.process(eq("SubmissionErrorDetailsCsvResponseStrategy"), any(), eq("stagingcivil.submission-error-details"), eq(headers), anyCollection()))
                 .thenReturn(expectedResponse);
 
         final Response response = resource.getSubmissionsBySubmissionId(submissionId, null);
 
         assertThat(response, is(expectedResponse));
-        verify(restProcessor).process(eq("SubmissionErrorDetailsCsvResponseStrategy"), any(), eq("stagingprosecutorscivil.submission-error-details"), eq(headers), anyCollection());
+        verify(restProcessor).process(eq("SubmissionErrorDetailsCsvResponseStrategy"), any(), eq("stagingcivil.submission-error-details"), eq(headers), anyCollection());
     }
 }

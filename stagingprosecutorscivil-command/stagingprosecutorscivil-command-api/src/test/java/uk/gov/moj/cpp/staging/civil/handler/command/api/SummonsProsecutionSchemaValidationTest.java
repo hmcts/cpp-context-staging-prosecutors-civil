@@ -31,6 +31,15 @@ class SummonsProsecutionSchemaValidationTest extends AbstractProsecutionSchemaVa
     }
 
     @Test
+    @DisplayName("missing top-level mandatory field: hearingDetails absent — required for summons only, unlike charge-prosecution")
+    void testMissingHearingDetailsIsRejected() {
+        final JSONObject request = JsonRequestBuilder.from(VALID_SUMMONS_PROSECUTION_REQUEST)
+                .remove("hearingDetails")
+                .build();
+        assertViolations(schema, "missing top-level mandatory field: hearingDetails absent", request, List.of("hearingDetails"));
+    }
+
+    @Test
     @DisplayName("summonsCode 'E' is a valid value")
     void testSummonsCodeE() {
         assertDoesNotThrow(() -> schema.validate(baseSummons().set("E", PROSECUTION_CASE + ".summonsCode").build()));

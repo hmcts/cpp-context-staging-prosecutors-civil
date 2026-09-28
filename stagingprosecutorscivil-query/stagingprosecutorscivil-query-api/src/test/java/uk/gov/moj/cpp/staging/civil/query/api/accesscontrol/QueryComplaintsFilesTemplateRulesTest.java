@@ -40,7 +40,7 @@ public class QueryComplaintsFilesTemplateRulesTest extends BaseDroolsAccessContr
     public void shouldAllowAuthorisedUserToGetComplaintsFilesTemplate() throws JsonProcessingException {
         final Map<String, String> metadata = new HashMap<>();
         metadata.putIfAbsent("id", UUID.randomUUID().toString());
-        metadata.putIfAbsent("name", "stagingprosecutorscivil.complaints-files-template");
+        metadata.putIfAbsent("name", "stagingcivil.complaints-files-template");
         action = createActionFor(metadata);
         given(userAndGroupProvider.hasPermission(action, RuleConstants.getBulkCasePermission())).willReturn(true);
 

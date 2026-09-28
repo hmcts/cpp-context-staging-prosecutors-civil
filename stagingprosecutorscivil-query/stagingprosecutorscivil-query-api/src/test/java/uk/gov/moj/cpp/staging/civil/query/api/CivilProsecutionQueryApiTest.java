@@ -65,11 +65,11 @@ public class CivilProsecutionQueryApiTest {
                 .thenReturn(true);
 
         civilProsecutionQueryApi.getSubmissionDetails(envelopeWithSubmissionId(
-                "stagingprosecutorscivil.submission-details", submissionId, USER_ID));
+                "stagingcivil.submission-details", submissionId, USER_ID));
 
         verify(civilProsecutionQueryView).buildSubmissionDetailsResponse(jsonEnvelopeArgumentCaptor.capture(),
                 submissionOptionalArgumentCaptor.capture());
-        assertThat(jsonEnvelopeArgumentCaptor.getValue().metadata().name(), is("stagingprosecutorscivil.query.submission-details"));
+        assertThat(jsonEnvelopeArgumentCaptor.getValue().metadata().name(), is("stagingcivil.query.submission-details"));
         assertThat(submissionOptionalArgumentCaptor.getValue(), is(Optional.of(submission)));
     }
 
@@ -84,7 +84,7 @@ public class CivilProsecutionQueryApiTest {
                 .thenReturn(false);
 
         final JsonEnvelope envelope = envelopeWithSubmissionId(
-                "stagingprosecutorscivil.submission-details", submissionId, USER_ID);
+                "stagingcivil.submission-details", submissionId, USER_ID);
 
         assertThrows(BadRequestException.class, () -> civilProsecutionQueryApi.getSubmissionDetails(envelope));
         verify(civilProsecutionQueryView, never()).buildSubmissionDetailsResponse(any(), any());
@@ -115,11 +115,11 @@ public class CivilProsecutionQueryApiTest {
                 .thenReturn(true);
 
         civilProsecutionQueryApi.getSubmissionErrorDetailsCsv(envelopeWithSubmissionId(
-                "stagingprosecutorscivil.submission-error-details", submissionId, USER_ID));
+                "stagingcivil.submission-error-details", submissionId, USER_ID));
 
         verify(civilProsecutionQueryView).buildSubmissionErrorDetailsCsvResponse(jsonEnvelopeArgumentCaptor.capture(),
                 submissionOptionalArgumentCaptor.capture());
-        assertThat(jsonEnvelopeArgumentCaptor.getValue().metadata().name(), is("stagingprosecutorscivil.query.submission-error-details-csv"));
+        assertThat(jsonEnvelopeArgumentCaptor.getValue().metadata().name(), is("stagingcivil.query.submission-error-details-csv"));
         assertThat(submissionOptionalArgumentCaptor.getValue(), is(Optional.of(submission)));
     }
 
@@ -134,7 +134,7 @@ public class CivilProsecutionQueryApiTest {
                 .thenReturn(false);
 
         final JsonEnvelope envelope = envelopeWithSubmissionId(
-                "stagingprosecutorscivil.submission-error-details", submissionId, USER_ID);
+                "stagingcivil.submission-error-details", submissionId, USER_ID);
 
         assertThrows(BadRequestException.class, () -> civilProsecutionQueryApi.getSubmissionErrorDetailsCsv(envelope));
         verify(civilProsecutionQueryView, never()).buildSubmissionErrorDetailsCsvResponse(any(), any());
@@ -155,7 +155,7 @@ public class CivilProsecutionQueryApiTest {
     public void shouldRejectSubmissionIdThatIsNotAValidUuid() {
 
         final JsonEnvelope envelope = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("stagingprosecutorscivil.submission-details")
+                metadataBuilder().withId(randomUUID()).withName("stagingcivil.submission-details")
                         .withUserId(USER_ID).build(),
                 createObjectBuilder().add("submissionId", "not-a-uuid").build());
 

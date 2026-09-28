@@ -21,7 +21,7 @@ import org.json.JSONTokener;
 import org.junit.jupiter.api.Test;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Gender;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Language;
@@ -56,7 +56,7 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
     @Test
     void convertsEachRowIntoADistinctCaseWithASingleDefendant() throws IOException {
-        final SummonsProsecution summonsProsecution = convertTemplateToObject();
+        final Summons summonsProsecution = convertTemplateToObject();
 
         assertEquals("GAAAA01", summonsProsecution.getProsecutingAuthority());
         assertEquals("B01LY01", summonsProsecution.getHearingDetails().getCourtHearingLocation());
@@ -103,7 +103,7 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
     @Test
     void convertsFullyPopulatedCsvWithEveryFieldSet() throws IOException {
-        final SummonsProsecution summonsProsecution = convertToObject(FULLY_POPULATED_CSV);
+        final Summons summonsProsecution = convertToObject(FULLY_POPULATED_CSV);
 
         assertEquals("GAAAA01", summonsProsecution.getProsecutingAuthority());
         assertEquals("B01LY01", summonsProsecution.getHearingDetails().getCourtHearingLocation());
@@ -277,7 +277,7 @@ class SummonsProsecutionCsvToJsonConverterTest {
         converter.maxRows = "3";
         final String csv = buildCsvWithRows(3);
 
-        final SummonsProsecution summonsProsecution = converter.convertToObject(new StringReader(csv));
+        final Summons summonsProsecution = converter.convertToObject(new StringReader(csv));
 
         assertEquals(3, summonsProsecution.getProsecutionCases().size());
     }
@@ -424,7 +424,7 @@ class SummonsProsecutionCsvToJsonConverterTest {
         return convertToJson(TEMPLATE_CSV);
     }
 
-    private SummonsProsecution convertTemplateToObject() throws IOException {
+    private Summons convertTemplateToObject() throws IOException {
         return convertToObject(TEMPLATE_CSV);
     }
 
@@ -434,7 +434,7 @@ class SummonsProsecutionCsvToJsonConverterTest {
         }
     }
 
-    private SummonsProsecution convertToObject(final String resourcePath) throws IOException {
+    private Summons convertToObject(final String resourcePath) throws IOException {
         try (Reader reader = resourceReader(resourcePath)) {
             return converter.convertToObject(reader);
         }

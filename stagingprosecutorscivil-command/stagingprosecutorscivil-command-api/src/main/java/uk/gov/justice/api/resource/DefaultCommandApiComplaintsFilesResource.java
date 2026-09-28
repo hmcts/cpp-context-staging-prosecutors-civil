@@ -20,7 +20,7 @@ import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityVali
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 
 import uk.gov.justice.services.core.accesscontrol.AccessControlService;
 import uk.gov.justice.services.core.accesscontrol.AccessControlViolation;
@@ -66,8 +66,8 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandApiComplaintsFilesResource.class);
 
     private static final String FILE_PART_NAME = "file";
-    private static final String SUMMONS_PROSECUTION_SCHEMA_NAME = "stagingprosecutorscivil.summons-prosecution";
-    private static final String SUMMONS_PROSECUTION_CSV_ACTION_NAME = "stagingprosecutorscivil.summons-prosecution-csv";
+    private static final String SUMMONS_PROSECUTION_SCHEMA_NAME = "stagingcivil.summons";
+    private static final String SUMMONS_PROSECUTION_CSV_ACTION_NAME = "stagingcivil.summons-prosecution-csv";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     private static final Pattern FILENAME_PATTERN = Pattern.compile("filename=\"?([^\";]+)\"?");
 
@@ -101,10 +101,10 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
     private HttpHeaders headers;
 
     @Override
-    public Response postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(
+    public Response postStagingcivilSummonsProsecutionCsvComplaintsFiles(
             final MultipartFormDataInput multipartFormDataInput) {
 
-        final SummonsProsecution summonsProsecution = convertCsvToSummonsProsecution(multipartFormDataInput);
+        final Summons summonsProsecution = convertCsvToSummonsProsecution(multipartFormDataInput);
         validateAgainstSummonsProsecutionSchema(summonsProsecution);
 
         final String userId = requireUserIdHeader();
@@ -174,7 +174,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         return userId;
     }
 
-    private SummonsProsecution convertCsvToSummonsProsecution(final MultipartFormDataInput multipartFormDataInput) {
+    private Summons convertCsvToSummonsProsecution(final MultipartFormDataInput multipartFormDataInput) {
         final Map<String, List<InputPart>> formParts = multipartFormDataInput.getFormDataMap();
         final List<InputPart> fileParts = formParts.get(FILE_PART_NAME);
 
@@ -191,7 +191,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         }
     }
 
-    private void validateAgainstSummonsProsecutionSchema(final SummonsProsecution summonsProsecution) {
+    private void validateAgainstSummonsProsecutionSchema(final Summons summonsProsecution) {
         try {
             final String json = objectMapper.writeValueAsString(summonsProsecution);
             jsonSchemaValidator.validate(json, SUMMONS_PROSECUTION_SCHEMA_NAME);
@@ -202,7 +202,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         }
     }
 
-    private JsonObject summonsProsecutionAsJsonObject(final SummonsProsecution summonsProsecution) {
+    private JsonObject summonsProsecutionAsJsonObject(final Summons summonsProsecution) {
         try {
             final String summonsProsecutionJson = objectMapper.writeValueAsString(summonsProsecution);
 

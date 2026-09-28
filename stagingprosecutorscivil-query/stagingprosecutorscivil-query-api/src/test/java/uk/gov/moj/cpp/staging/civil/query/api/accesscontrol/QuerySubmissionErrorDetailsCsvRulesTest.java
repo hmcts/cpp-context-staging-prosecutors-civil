@@ -40,7 +40,7 @@ public class QuerySubmissionErrorDetailsCsvRulesTest extends BaseDroolsAccessCon
     public void shouldAllowAuthorisedUserToGetSubmissionErrorDetailsCsv() throws JsonProcessingException {
         final Map<String, String> metadata = new HashMap<>();
         metadata.putIfAbsent("id", UUID.randomUUID().toString());
-        metadata.putIfAbsent("name", "stagingprosecutorscivil.submission-error-details");
+        metadata.putIfAbsent("name", "stagingcivil.submission-error-details");
         action = createActionFor(metadata);
         given(userAndGroupProvider.hasPermission(action, RuleConstants.getCivilCasePermission())).willReturn(true);
 

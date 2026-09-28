@@ -8,7 +8,7 @@ global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAn
 rule "Command - Rule for getting submission details"
   when
     $outcome: Outcome();
-    $action: Action(name == "stagingprosecutorscivil.submission-details");
+    $action: Action(name == "stagingcivil.submission-details");
     eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
   then
     $outcome.setSuccess(true);
@@ -17,7 +17,7 @@ end
 rule "Command - Rule for getting submission error details CSV"
   when
     $outcome: Outcome();
-    $action: Action(name == "stagingprosecutorscivil.submission-error-details");
+    $action: Action(name == "stagingcivil.submission-error-details");
     eval(userAndGroupProvider.hasPermission($action, RuleConstants.getCivilCasePermission()));
   then
     $outcome.setSuccess(true);
@@ -26,7 +26,7 @@ end
 rule "Query - Rule for getting complaints files template"
   when
     $outcome: Outcome();
-    $action: Action(name == "stagingprosecutorscivil.complaints-files-template");
+    $action: Action(name == "stagingcivil.complaints-files-template");
     eval(userAndGroupProvider.hasPermission($action, RuleConstants.getBulkCasePermission()));
   then
     $outcome.setSuccess(true);

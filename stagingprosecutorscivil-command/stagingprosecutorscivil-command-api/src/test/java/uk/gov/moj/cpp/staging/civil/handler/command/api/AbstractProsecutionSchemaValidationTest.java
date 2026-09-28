@@ -25,8 +25,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Common schema validation tests shared by both charge-prosecution and summons-prosecution.
- * Both schemas are structurally identical — same properties, required fields and constraints.
- * Concrete subclasses supply only the schema under test and the valid request fixture.
+ * Both schemas share the same properties and constraints, with one exception: hearingDetails
+ * is mandatory for summons but optional for charge-prosecution (see SummonsProsecutionSchemaValidationTest
+ * for the summons-only hearingDetails-required case). Concrete subclasses supply only the schema
+ * under test and the valid request fixture.
  */
 abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationTestUtils {
 
@@ -203,10 +205,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         "missing top-level mandatory field: prosecutingAuthority absent",
                         base().remove("prosecutingAuthority").build(),
                         List.of("prosecutingAuthority")),
-                Arguments.of(
-                        "missing top-level mandatory field: hearingDetails absent",
-                        base().remove("hearingDetails").build(),
-                        List.of("hearingDetails")),
                 Arguments.of(
                         "prosecutingAuthority too short: 'GAEAA0' has 6 characters (must be exactly 7)",
                         base().set("GAEAA0", "prosecutingAuthority").build(),

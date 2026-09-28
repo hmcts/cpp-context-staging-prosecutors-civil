@@ -54,7 +54,7 @@ public class ProgressionPublicEventProcessor {
                 final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                         .add(SUBMISSION_ID, submissionId.get().toString());
 
-                final Metadata metadata = Envelope.metadataFrom(courtDocumentAdded.metadata()).withName("stagingprosecutorscivil.command.receive-material-submission-successful").build();
+                final Metadata metadata = Envelope.metadataFrom(courtDocumentAdded.metadata()).withName("stagingcivil.command.receive-material-submission-successful").build();
                 sender.send(envelopeFrom(
                         metadata,
                         jsonObjectBuilder.build()));

@@ -10,13 +10,13 @@
     {
       "informant": "Adam",
       "caseMarker": "Case mark",
-      "urn": "case-urn-value-1",
+      "urn": "case-urn-value-other-1",
       "relatedReferenceNumber": "RELREF-001",
       "defendants": [
         {
           "defendantDetails": {
             "prosecutorDefendantId": "TFLDEF001",
-            "asn": "SummonsNumber001",
+            "asn": "OtherCaseNumber001",
             "pncIdentifier": "2099/1234567L",
             "croNumber": "123456/10L",
             "documentationLanguage": "E",

@@ -30,7 +30,7 @@ import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityVali
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsProsecution;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -101,7 +101,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     private ReferenceDataClient referenceDataClient;
 
     @Captor
-    private ArgumentCaptor<Envelope<SummonsProsecution>> envelopeCaptor;
+    private ArgumentCaptor<Envelope<Summons>> envelopeCaptor;
 
     @Captor
     private ArgumentCaptor<String> fileNameCaptor;
@@ -125,14 +125,14 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))
                 .thenReturn(envelopeFrom(metadataBuilder().withId(randomUUID()).withName("x").build(), urlResponse));
 
-        final Response response = resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+        final Response response = resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
 
         assertThat(response.getStatus(), is(Response.Status.ACCEPTED.getStatusCode()));
         assertThat(response.getEntity(), is(urlResponse));
 
         verify(civilProsecutionApi).summonsProsecution(envelopeCaptor.capture(),
                 fileNameCaptor.capture(), submittedByUserNameCaptor.capture(), prosecutorShortNameCaptor.capture());
-        final SummonsProsecution submitted = envelopeCaptor.getValue().payload();
+        final Summons submitted = envelopeCaptor.getValue().payload();
         assertThat(submitted.getProsecutingAuthority(), is("GAAAA01"));
         assertThat(submitted.getProsecutionCases().size(), is(3));
         assertThat(fileNameCaptor.getValue(), is("summons-batch.csv"));
@@ -157,7 +157,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))
                 .thenReturn(envelopeFrom(metadataBuilder().withId(randomUUID()).withName("x").build(), urlResponse));
 
-        final Response response = resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+        final Response response = resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
 
         assertThat(response.getStatus(), is(Response.Status.ACCEPTED.getStatusCode()));
 
@@ -179,7 +179,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))
                 .thenReturn(envelopeFrom(metadataBuilder().withId(randomUUID()).withName("x").build(), urlResponse));
 
-        resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+        resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
 
         verify(civilProsecutionApi).summonsProsecution(any(),
                 any(), submittedByUserNameCaptor.capture(), any());
@@ -202,7 +202,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(civilProsecutionApi.summonsProsecution(any(), any(), any(), any()))
                 .thenReturn(envelopeFrom(metadataBuilder().withId(randomUUID()).withName("x").build(), urlResponse));
 
-        resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+        resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
 
         verify(civilProsecutionApi).summonsProsecution(any(),
                 any(), any(), prosecutorShortNameCaptor.capture());
@@ -219,7 +219,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
                 .when(prosecutingAuthorityValidationService).validateCallingUserBelongsToProsecutingAuthority(any(), any(), any());
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
 
         // CAD-1613: the audit call is ordered before this check, so a rejected upload still leaves
         // an audit record of the attempt.
@@ -231,7 +231,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(multipartFormDataInput.getFormDataMap()).thenReturn(emptyMap());
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
     }
 
     @Test
@@ -241,7 +241,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(multipartFormDataInput.getFormDataMap()).thenReturn(formDataMap);
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
     }
 
     @Test
@@ -250,7 +250,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         formDataMapWithFilePart();
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
     }
 
     @Test
@@ -260,7 +260,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         formDataMapWithFilePart();
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
     }
 
     @Test
@@ -269,7 +269,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         formDataMapWithFilePart();
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
     }
 
     @Test
@@ -279,7 +279,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn("   ");
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
     }
 
     @Test
@@ -290,12 +290,12 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(accessControlService.checkAccessControl(any(), any()))
                 .thenReturn(Optional.of(new AccessControlViolation("user not permitted")));
 
-        final Response response = resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+        final Response response = resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
 
         assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
         assertThat(response.getEntity().toString(), org.hamcrest.Matchers.containsString("user not permitted"));
         assertThat(response.getEntity().toString(),
-                org.hamcrest.Matchers.containsString("stagingprosecutorscivil.summons-prosecution"));
+                org.hamcrest.Matchers.containsString("stagingcivil.summons-prosecution-csv"));
     }
 
     @Test
@@ -303,10 +303,10 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
         formDataMapWithFilePart();
         doThrow(new JsonSchemaValidationException("Schema validation failed"))
-                .when(jsonSchemaValidator).validate(any(), eq("stagingprosecutorscivil.summons-prosecution"));
+                .when(jsonSchemaValidator).validate(any(), eq("stagingcivil.summons"));
 
         assertThrows(BadRequestException.class,
-                () -> resource.postStagingprosecutorscivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
     }
 
     private void formDataMapWithFilePart() {

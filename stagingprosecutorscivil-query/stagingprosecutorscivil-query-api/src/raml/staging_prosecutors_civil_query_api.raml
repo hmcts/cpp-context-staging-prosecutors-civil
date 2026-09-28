@@ -1,6 +1,6 @@
 #%RAML 0.8
 title: Case Management Query API
-baseUri: http://localhost:8080/stagingprosecutorscivil-query-api/query/api/rest/stagingprosecutors-civil
+baseUri: http://localhost:8080/stagingprosecutorscivil-query-api/query/api/rest/staging-civil
 protocols: [ HTTP, HTTPS ]
 
 /submissions/{submissionId}:
@@ -9,11 +9,11 @@ protocols: [ HTTP, HTTPS ]
       Gets the Civil Prosecution submission details
       ...
       (mapping):
-        responseType: application/vnd.stagingprosecutorscivil.submission-details+json
-        name: stagingprosecutorscivil.submission-details
+        responseType: application/vnd.stagingcivil.submission-details+json
+        name: stagingcivil.submission-details
       (mapping):
         responseType: text/csv
-        name: stagingprosecutorscivil.submission-error-details
+        name: stagingcivil.submission-error-details
       ...
     queryParameters:
       additionalInfo:
@@ -24,9 +24,9 @@ protocols: [ HTTP, HTTPS ]
         200:
           description: OK
           body:
-            application/vnd.stagingprosecutorscivil.submission-details+json:
-              example:  !include json/stagingprosecutorscivil.submission-details.json
-              schema:  !include json/schema/stagingprosecutorscivil.submission-details.json
+            application/vnd.stagingcivil.submission-details+json:
+              example:  !include json/stagingcivil.submission-details.json
+              schema:  !include json/schema/stagingcivil.submission-details.json
             text/csv:
 
 /complaints-files-template:
@@ -36,7 +36,7 @@ protocols: [ HTTP, HTTPS ]
       ...
       (mapping):
         responseType: text/csv
-        name: stagingprosecutorscivil.complaints-files-template
+        name: stagingcivil.complaints-files-template
       ...
     responses:
         200:
