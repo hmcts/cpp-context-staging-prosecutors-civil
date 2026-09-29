@@ -334,7 +334,7 @@ public class SubmissionEventListenerTest {
         when(objectToJsonObjectConverter.convert(groupCaseError)).thenReturn(groupCaseErrorJson);
         when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());
@@ -369,7 +369,7 @@ public class SubmissionEventListenerTest {
         final javax.json.JsonObject caseErrorJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
         when(objectToJsonObjectConverter.convert(caseError)).thenReturn(caseErrorJson);
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", updateCivilCaseReceived);
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());
@@ -392,7 +392,7 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(FAILED.name())
                 .build();
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", updateCivilCaseReceived);
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());
@@ -430,7 +430,7 @@ public class SubmissionEventListenerTest {
         final javax.json.JsonObject caseWarningJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
         when(objectToJsonObjectConverter.convert(caseWarning)).thenReturn(caseWarningJson);
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
         submissionEventListener.updatedCivilCaseReceived(envelope);
@@ -458,7 +458,7 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(PENDING.name())
                 .build();
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", updateCivilCaseReceived);
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
         submissionEventListener.updatedCivilCaseReceived(envelope);

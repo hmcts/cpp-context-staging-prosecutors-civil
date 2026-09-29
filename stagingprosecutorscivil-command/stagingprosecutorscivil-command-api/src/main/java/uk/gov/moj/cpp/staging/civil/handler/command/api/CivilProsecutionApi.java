@@ -86,8 +86,9 @@ public class CivilProsecutionApi {
      * Overload taking {@code fileName}, {@code submittedByUserName} and {@code prosecutorShortName}
      * — called directly by {@code DefaultCommandApiComplaintsFilesResource} for the complaints CSV
      * upload path, which resolves those values server-side (they are never part of the public
-     * {@code stagingprosecutorscivil.summons-prosecution} request schema). The framework's
-     * reflection-based dispatch of the direct JSON {@code stagingprosecutorscivil.summons-prosecution}
+     * {@code stagingcivil.summons} request schema). The framework's
+     * reflection-based dispatch of the direct JSON {@code stagingcivil.summons}
+     * submission still finds the single-{@code Envelope}-parameter {@link #summons(Envelope)}
      * via its {@code @Handles} annotation, so this overload is invisible to it.
      */
     public Envelope<UrlResponse> summonsProsecution(final Envelope<Summons> envelope,
@@ -106,8 +107,7 @@ public class CivilProsecutionApi {
                 .withSubmittedByUserName(submittedByUserName)
                 .withProsecutorShortName(prosecutorShortName)
                 .build();
-        LOGGER.info("Received submission at stagingcivil.summons-prosecution with submissionId {}", submissionId);
-        LOGGER.info("Received submission at  stagingcivil.summons with submissionId {}",submissionId);
+        LOGGER.info("Received submission at stagingcivil.summons with submissionId {}", submissionId);
         sender.send(envelop(summonsWithSubmissionId)
                 .withName("stagingcivil.command.summons")
                 .withMetadataFrom(envelope));

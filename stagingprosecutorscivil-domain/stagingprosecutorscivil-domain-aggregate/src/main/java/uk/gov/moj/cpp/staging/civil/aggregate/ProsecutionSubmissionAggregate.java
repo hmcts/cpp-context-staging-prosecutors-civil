@@ -59,7 +59,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                                     final String fileName,
                                                     final String submittedByUserName,
                                                     final String prosecutorShortName) {
-        LOGGER.info("Raising private event stagingprosecutorscivil.event.summons-prosecution-received for submission id {}", submissionId);
+        LOGGER.info("Raising private event stagingprosecutorscivil.event.summons-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
                         SummonsReceived.summonsReceived()

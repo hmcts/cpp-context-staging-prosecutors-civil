@@ -24,9 +24,6 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
@@ -130,7 +127,7 @@ public class SubmissionEventListener {
         }
 
         if (!isValidTransition(submission.getSubmissionStatus(), updatedCivilCaseReceived.getSubmissionStatus())) {
-            LOGGER.info("Ignoring submissionStatus transition to {} for SubmissionId {} - current status is {}, not PENDING_COURT_DECISION",
+            LOGGER.info("Ignoring submissionStatus transition to {} for SubmissionId {} - current status is {}, which does not allow this transition",
                     updatedCivilCaseReceived.getSubmissionStatus(), updatedCivilCaseReceived.getSubmissionId(), submission.getSubmissionStatus());
             return;
         }
