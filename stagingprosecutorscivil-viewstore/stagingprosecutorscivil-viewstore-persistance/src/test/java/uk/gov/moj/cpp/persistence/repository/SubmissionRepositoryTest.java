@@ -27,7 +27,7 @@ public class SubmissionRepositoryTest extends BaseTransactionalJunit4Test {
     private SubmissionRepository repository;
 
     @Test
-    public void shouldSaveAndReadChargeProsecution() {
+    public void shouldSaveAndReadOtherCase() {
         final UUID key = randomUUID();
         final UUID caseId = randomUUID();
         final Submission submission = Submission.builder()

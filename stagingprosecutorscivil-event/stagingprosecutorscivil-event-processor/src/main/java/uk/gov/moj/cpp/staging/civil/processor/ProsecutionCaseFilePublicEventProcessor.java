@@ -29,7 +29,7 @@ public class ProsecutionCaseFilePublicEventProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProsecutionCaseFilePublicEventProcessor.class);
     private static final String SUBMISSION_ID_NOT_FOUND = "Submission ID not found. Material rejected event ignored";
-    private static final String STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL = "stagingprosecutorscivil.command.reject-material";
+    private static final String STAGING_PROSECUTORS_COMMAND_REJECT_MATERIAL = "stagingcivil.command.reject-material";
     private static final String SUBMISSION_ID = "submissionId";
     @Inject
     private Sender sender;

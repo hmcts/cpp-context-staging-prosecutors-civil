@@ -10,7 +10,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.SUMMONS_PROSECUTION_CONTENT_TYPE;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.SUMMONS_CONTENT_TYPE;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.buildMetadata;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
 
@@ -56,8 +56,8 @@ public class SubmissionErrorDetailsCsvIT {
 
     @Test
     public void shouldReturnCsvOfCaseAndDefendantErrorsWhenSubmissionFailed() {
-        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummonsProsecution(
-                "payload/summons/stagingprosecutors.submit-summons-prosecution-all-fields.json", SUMMONS_PROSECUTION_CONTENT_TYPE);
+        final UrlResponse urlResponse = StagingProsecutorsCivilUtils.submitSummons(
+                "payload/summons/stagingcivil.submit-summons-prosecution-all-fields.json", SUMMONS_CONTENT_TYPE);
         final UUID submissionId = urlResponse.getSubmissionId();
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 

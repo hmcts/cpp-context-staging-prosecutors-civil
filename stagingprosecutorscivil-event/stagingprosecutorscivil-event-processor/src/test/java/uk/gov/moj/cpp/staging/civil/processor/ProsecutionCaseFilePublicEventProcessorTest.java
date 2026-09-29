@@ -120,7 +120,7 @@ public class ProsecutionCaseFilePublicEventProcessorTest {
         final ArgumentCaptor<Envelope> captor = ArgumentCaptor.forClass(Envelope.class);
         verify(sender).send(captor.capture());
 
-        assertThat(captor.getValue().metadata().name(), is("stagingprosecutorscivil.command.reject-material"));
+        assertThat(captor.getValue().metadata().name(), is("stagingcivil.command.reject-material"));
         final JsonObject sentPayload = (JsonObject) captor.getValue().payload();
         assertThat(sentPayload.getString("submissionId"), is(submissionId.toString()));
         assertThat(sentPayload.getJsonArray("errors"), is(errors));

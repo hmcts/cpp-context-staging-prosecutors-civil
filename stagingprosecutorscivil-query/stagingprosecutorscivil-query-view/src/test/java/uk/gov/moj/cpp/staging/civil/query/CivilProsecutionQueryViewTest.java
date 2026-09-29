@@ -87,7 +87,7 @@ public class CivilProsecutionQueryViewTest {
         final JsonObject payload = createObjectBuilder()
                 .add("submissionId", submissionId.toString())
                 .build();
-        final JsonEnvelope requestEnvelope = createEnvelope("stagingprosecutorscivil.query.submission-details", payload);
+        final JsonEnvelope requestEnvelope = createEnvelope("stagingcivil.query.submission-details", payload);
 
         final JsonEnvelope jsonEnvelope = civilProsecutionQueryView.querySubmission(requestEnvelope);
 
@@ -357,13 +357,13 @@ public class CivilProsecutionQueryViewTest {
         when(submissionRepository.findBy(any())).thenReturn(null);
 
         final JsonEnvelope responseEnvelope = civilProsecutionQueryView
-                .querySubmission(createEnvelope("stagingprosecutorscivil.query.submission-details",
+                .querySubmission(createEnvelope("stagingcivil.query.submission-details",
                         createObjectBuilder()
                                 .add("submissionId", UUID.randomUUID().toString())
                                 .build())
                 );
 
-        assertThat(responseEnvelope.metadata().name(), Is.is("stagingprosecutorscivil.query.submission-details"));
+        assertThat(responseEnvelope.metadata().name(), Is.is("stagingcivil.query.submission-details"));
         assertEquals(JsonValue.NULL, responseEnvelope.payload());
     }
 
@@ -392,11 +392,11 @@ public class CivilProsecutionQueryViewTest {
         // exercises the same "not found" shape a caller (e.g. the query-api prosecuting-authority
         // check) relies on when passing Optional.empty() for an authority mismatch
         final JsonEnvelope responseEnvelope = civilProsecutionQueryView.buildSubmissionDetailsResponse(
-                createEnvelope("stagingprosecutorscivil.query.submission-details",
+                createEnvelope("stagingcivil.query.submission-details",
                         createObjectBuilder().add("submissionId", UUID.randomUUID().toString()).build()),
                 Optional.empty());
 
-        assertThat(responseEnvelope.metadata().name(), Is.is("stagingprosecutorscivil.query.submission-details"));
+        assertThat(responseEnvelope.metadata().name(), Is.is("stagingcivil.query.submission-details"));
         assertEquals(JsonValue.NULL, responseEnvelope.payload());
     }
 

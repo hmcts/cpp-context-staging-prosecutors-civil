@@ -42,7 +42,7 @@ public class QueryCivilCaseRulesTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToQuerySubmissionWithPermissionCivilAccess() throws JsonProcessingException {
         final Map<String, String> metadata = new HashMap();
         metadata.putIfAbsent("id", UUID.randomUUID().toString());
-        metadata.putIfAbsent("name", "stagingprosecutorscivil.submission-details");
+        metadata.putIfAbsent("name", "stagingcivil.submission-details");
         action = createActionFor(metadata);
         given(userAndGroupProvider.hasPermission(action, RuleConstants.getCivilCasePermission())).willReturn(true);
 

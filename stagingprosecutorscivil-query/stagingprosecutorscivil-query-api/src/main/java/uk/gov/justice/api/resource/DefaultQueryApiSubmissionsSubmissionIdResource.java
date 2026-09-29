@@ -36,7 +36,7 @@ public class DefaultQueryApiSubmissionsSubmissionIdResource implements QueryApiS
 
     private static final String JSON_RESPONSE_STRATEGY = "OkStatusEnvelopePayloadEntityResponseStrategy";
     private static final String CSV_RESPONSE_STRATEGY = "SubmissionErrorDetailsCsvResponseStrategy";
-    private static final String CSV_ACTION_NAME = "stagingprosecutorscivil.submission-error-details";
+    private static final String CSV_ACTION_NAME = "stagingcivil.submission-error-details";
 
     @Inject
     RestProcessor restProcessor;

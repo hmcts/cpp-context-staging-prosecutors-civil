@@ -18,10 +18,10 @@
         <set-variable name="submissionId" value="@(context.Request.MatchedParameters["submissionId"])" />
         <!-- set Accept header -->
         <set-header name="Accept" exists-action="override">
-            <value>application/vnd.stagingprosecutorscivil.submission-details+json</value>
+            <value>application/vnd.stagingcivil.submission-details+json</value>
         </set-header>
         <rewrite-uri template="@{
-            return "/stagingprosecutorscivil-query-api/query/api/rest/stagingprosecutors-civil/submissions/" + context.Variables.GetValueOrDefault<string>("submissionId");
+            return "/stagingprosecutorscivil-query-api/query/api/rest/staging-civil/submissions/" + context.Variables.GetValueOrDefault<string>("submissionId");
         }" />
     </inbound>
     <backend>

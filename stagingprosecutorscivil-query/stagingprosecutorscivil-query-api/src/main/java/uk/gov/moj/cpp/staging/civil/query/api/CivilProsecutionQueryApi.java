@@ -35,27 +35,27 @@ public class CivilProsecutionQueryApi {
     @Inject
     private ProsecutingAuthorityValidationService prosecutingAuthorityValidationService;
 
-    @Handles("stagingprosecutorscivil.submission-details")
+    @Handles("stagingcivil.submission-details")
     public JsonEnvelope getSubmissionDetails(final JsonEnvelope envelope) {
 
         final String userId = requireUserId(envelope);
         final Optional<Submission> submissionOptional = validateSubmissionId(envelope, userId);
 
         final JsonEnvelope queryEnvelop = envelopeFrom(metadataFrom(envelope.metadata())
-                .withName("stagingprosecutorscivil.query.submission-details"), envelope.payloadAsJsonObject());
+                .withName("stagingcivil.query.submission-details"), envelope.payloadAsJsonObject());
 
         return civilProsecutionQueryView.buildSubmissionDetailsResponse(queryEnvelop, submissionOptional);
 
     }
 
-    @Handles("stagingprosecutorscivil.submission-error-details")
+    @Handles("stagingcivil.submission-error-details")
     public JsonEnvelope getSubmissionErrorDetailsCsv(final JsonEnvelope envelope) {
 
         final String userId = requireUserId(envelope);
         final Optional<Submission> submissionOptional = validateSubmissionId(envelope, userId);
 
         final JsonEnvelope queryEnvelop = envelopeFrom(metadataFrom(envelope.metadata())
-                .withName("stagingprosecutorscivil.query.submission-error-details-csv"), envelope.payloadAsJsonObject());
+                .withName("stagingcivil.query.submission-error-details-csv"), envelope.payloadAsJsonObject());
 
         return civilProsecutionQueryView.buildSubmissionErrorDetailsCsvResponse(queryEnvelop, submissionOptional);
 
