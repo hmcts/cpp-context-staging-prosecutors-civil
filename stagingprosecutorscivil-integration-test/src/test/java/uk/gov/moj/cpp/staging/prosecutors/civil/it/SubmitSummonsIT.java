@@ -33,7 +33,7 @@ import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class submitSummonsIT {
+public class SubmitSummonsIT {
 
     private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED         = "public.prosecutioncasefile.civil.prosecution-submission-succeeded";
     private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED                     = "public.prosecutioncasefile.civil-prosecution-rejected";
