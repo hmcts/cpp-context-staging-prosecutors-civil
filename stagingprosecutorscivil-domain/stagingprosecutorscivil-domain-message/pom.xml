@@ -3,7 +3,7 @@
     <parent>
         <artifactId>stagingprosecutorscivil-domain</artifactId>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-        <version>17.104.15-SNAPSHOT</version>
+        <version>25.104.0-M1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -23,8 +23,8 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
+            <groupId>org.eclipse.parsson</groupId>
+            <artifactId>parsson</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -152,7 +152,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.6.1</version>
 
                 <executions>
 

@@ -37,7 +37,7 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.UUID;
 
-import javax.json.Json;
+import jakarta.json.Json;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

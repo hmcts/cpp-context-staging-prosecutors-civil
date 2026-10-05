@@ -14,9 +14,9 @@ import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import jakarta.inject.Inject;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.slf4j.Logger;
 

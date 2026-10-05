@@ -22,8 +22,8 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissio
 
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.json.JsonObject;
+import jakarta.inject.Inject;
+import jakarta.json.JsonObject;
 
 import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
 import org.slf4j.Logger;
