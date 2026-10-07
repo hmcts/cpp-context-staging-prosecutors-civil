@@ -20,12 +20,7 @@ import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.validators.OffenceValidator;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.OffenceDetails;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
