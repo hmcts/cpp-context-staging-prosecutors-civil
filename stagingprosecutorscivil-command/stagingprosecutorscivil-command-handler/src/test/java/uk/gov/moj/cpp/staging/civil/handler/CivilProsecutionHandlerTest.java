@@ -95,6 +95,15 @@ public class CivilProsecutionHandlerTest {
     }
 
     @Test
+    public void shouldHandleSummonsCommand() {
+
+        assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
+                .with(method("handleSummons")
+                        .thatHandles(PRIVATE_COMMAND_SUMMONS)));
+
+    }
+
+    @Test
     public void shouldRaiseOtherCaseReceivedPrivateEventWithEnforcementFields() throws Exception {
 
         final Envelope<OtherCase> envelope = buildEnforcementOtherCaseEnvelope();
@@ -104,15 +113,6 @@ public class CivilProsecutionHandlerTest {
         civilProsecutionHandler.handleOtherCase(envelope);
 
         verifyEnforcementOtherCaseReceivedPrivateEvent();
-
-    }
-
-    @Test
-    public void shouldHandleSummonsCommand() {
-
-        assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
-                .with(method("handleSummons")
-                        .thatHandles(PRIVATE_COMMAND_SUMMONS)));
 
     }
 
@@ -330,5 +330,4 @@ public class CivilProsecutionHandlerTest {
                 .withMetadataFrom(requestEnvelope);
 
     }
-
 }

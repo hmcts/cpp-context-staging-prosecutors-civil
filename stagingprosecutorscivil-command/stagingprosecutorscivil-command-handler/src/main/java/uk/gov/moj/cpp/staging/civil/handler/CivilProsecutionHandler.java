@@ -66,5 +66,4 @@ public class CivilProsecutionHandler {
                 update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings());
         appendEventsToStream(envelope, eventStream, events);
     }
-
 }

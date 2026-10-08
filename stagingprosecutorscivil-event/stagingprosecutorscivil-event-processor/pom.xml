@@ -76,6 +76,12 @@
             <artifactId>org.everit.json.schema</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+            <artifactId>stagingprosecutorscivil-viewstore-persistance</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
