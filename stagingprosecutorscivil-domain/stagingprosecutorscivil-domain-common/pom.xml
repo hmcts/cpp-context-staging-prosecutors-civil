@@ -3,7 +3,7 @@
     <parent>
         <artifactId>stagingprosecutorscivil-domain</artifactId>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-        <version>17.104.15-SNAPSHOT</version>
+        <version>25.104.15-CIMD-4077-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -20,8 +20,8 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.json</groupId>
-            <artifactId>javax.json-api</artifactId>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
         </dependency>
     </dependencies>
 </project>
