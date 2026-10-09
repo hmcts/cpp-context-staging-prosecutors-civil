@@ -5,12 +5,12 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>25.104.3</version>
+        <version>25.104.4</version>
     </parent>
 
     <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
     <artifactId>stagingprosecutorscivil</artifactId>
-    <version>25.104.0-M1-SNAPSHOT</version>
+    <version>25.104.15-CIMD-4077-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>stagingprosecutorscivil</name>
 
@@ -22,7 +22,7 @@
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <prosecutioncasefile.version>17.0.95</prosecutioncasefile.version>
         <referencedata.version>17.104.137</referencedata.version>
-        <coredomain.version>25.104.3</coredomain.version>
+        <coredomain.version>25.104.4</coredomain.version>
         <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
     </properties>
 
