@@ -24,7 +24,7 @@
         <prosecutioncasefile.version>17.0.100-CIVIL-T3-SNAPSHOT</prosecutioncasefile.version>
         <referencedata.version>17.104.137</referencedata.version>
         <usersgroups.version>17.104.50</usersgroups.version>
-        <coredomain.version>17.104.3</coredomain.version>
+        <coredomain.version>17.104.5-CIVIL-T3-SNAPSHOT</coredomain.version>
         <liquibase.core.version>3.6.1</liquibase.core.version>
         <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
     </properties>
