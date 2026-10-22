@@ -68,7 +68,9 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
         return CaseDetails.caseDetails()
                 .withDateReceived(dateReceived.toLocalDate())
                 .withProsecutorCaseReference(prosecutionCase.getUrn())
-                .withRelatedUrn(prosecutionCase.getRelatedReferenceNumber())
+                .withRelatedUrn(otherCaseReceived.getRelatedReferenceNumber() != null
+                        ? otherCaseReceived.getRelatedReferenceNumber()
+                        : prosecutionCase.getRelatedReferenceNumber())
                 .withOtherPartyOfficerInCase(null)
                 .withCaseId(caseFileId)
                 .withSummonsCode(prosecutionCase.getSummonsCode())
