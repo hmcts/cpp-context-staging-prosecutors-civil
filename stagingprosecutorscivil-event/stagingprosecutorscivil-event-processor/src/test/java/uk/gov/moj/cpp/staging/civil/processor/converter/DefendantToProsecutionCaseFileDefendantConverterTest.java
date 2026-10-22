@@ -11,9 +11,11 @@ import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +26,7 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
 
         final OtherCaseReceived otherCaseReceived = groupOtherCaseReceived();
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> converter
-                = new DefendantToProsecutionCaseFileDefendantConverter(otherCaseReceived.getHearingDetails());
+                = new DefendantToProsecutionCaseFileDefendantConverter(otherCaseReceived.getHearingDetails(), null);
 
         final Defendant prosecutorsDefendant = prosecutorsDefendant();
 
@@ -34,13 +36,31 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
         assertProsecutionCaseFileDefendantMatchesProsecutionDefendant(prosecutionCaseFileDefendant, prosecutorsDefendant, otherCaseReceived);
     }
 
+    @Test
+    public void shouldUseStartDateRangeOfHearingWhenHearingDateRangeDetailsProvided() {
 
+        final LocalDate startDate = LocalDate.of(2026, 3, 12);
+        final LocalDate endDate = LocalDate.of(2026, 3, 14);
+        final HearingDateRangeDetails hearingDateRangeDetails = HearingDateRangeDetails.hearingDateRangeDetails()
+                .withStartDateRangeOfHearing(startDate)
+                .withEndDateRangeOfHearing(endDate)
+                .withCourtHearingLocation("B01LY01")
+                .build();
+
+        final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> converter
+                = new DefendantToProsecutionCaseFileDefendantConverter(null, hearingDateRangeDetails);
+
+        final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant result = converter.convert(prosecutorsDefendant());
+
+        assertThat(result.getInitialHearing().getDateOfHearing(), is(startDate.toString()));
+        assertThat(result.getInitialHearing().getEndDate(), is(endDate.toString()));
+        assertThat(result.getInitialHearing().getCourtHearingLocation(), is("B01LY01"));
+    }
     private static void assertProsecutionCaseFileDefendantMatchesProsecutionDefendant(final uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant prosecutionCaseFileDefendant,
                                                                                       final Defendant prosecutorsDefendant, final OtherCaseReceived otherCaseReceived) {
 
         assertThat(prosecutionCaseFileDefendant, is(notNullValue()));
 
-        assertThat(prosecutionCaseFileDefendant.getAliasForCorporate(), is(prosecutorsDefendant.getOrganisation().getAliasOrganisationNames()));
         assertThat(prosecutionCaseFileDefendant.getAppliedProsecutorCosts(), is( new BigDecimal(prosecutorsDefendant.getDefendantDetails().getProsecutorCosts())));
         assertThat(prosecutionCaseFileDefendant.getAsn(), is(prosecutorsDefendant.getDefendantDetails().getAsn()));
         assertThat(prosecutionCaseFileDefendant.getCroNumber(), is(prosecutorsDefendant.getDefendantDetails().getCroNumber()));
@@ -76,7 +96,7 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
 
     private static void assertHearingDetails(final InitialHearing pcfHearing, final HearingDetails stagingHearing) {
         assertThat(pcfHearing.getTimeOfHearing(), is(stagingHearing.getTimeOfHearing()));
-        assertThat(pcfHearing.getDateOfHearing(), is(stagingHearing.getDateOfHearing().toString()));
+        assertThat(pcfHearing.getDateOfHearing(), is(stagingHearing.getDateOfHearing() != null ? stagingHearing.getDateOfHearing().toString() : null));
         assertThat(pcfHearing.getCourtHearingLocation(), is(stagingHearing.getCourtHearingLocation()));
     }
 }

@@ -39,7 +39,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForSummons implements Con
     public GroupProsecutions convert(final ProsecutionCase prosecutionCase) {
 
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> defendantToProsecutionCaseFileDefendantConverter
-                = new DefendantToProsecutionCaseFileDefendantConverter(summonsReceived.getHearingDetails());
+                = new DefendantToProsecutionCaseFileDefendantConverter(summonsReceived.getHearingDetails(), null);
 
         return GroupProsecutions.groupProsecutions()
                 .withCaseDetails(buildCaseDetails(prosecutionCase))

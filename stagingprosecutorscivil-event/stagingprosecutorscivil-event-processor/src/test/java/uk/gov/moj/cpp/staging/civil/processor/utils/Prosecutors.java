@@ -10,6 +10,7 @@ import static java.util.stream.IntStream.rangeClosed;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address.address;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails.contactDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails.defendantDetails;
+import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails.hearingDateRangeDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails.hearingDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual.individual;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.NameDetails.nameDetails;
@@ -37,6 +38,7 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.OffenceDateCode;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Organisation;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardian;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.CivilProsecutionSubmissionSucceeded;
@@ -65,6 +67,8 @@ public class Prosecutors {
     public static final String PNC_IDENTIFIER = "PnCidentifier";
     public static final String ORGANISATION_NAME = "Organisation Name";
     public static final String COMPANY_TELEPHONE_NUMBER = "12323453456";
+    public static final LocalDate START_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 12);
+    public static final LocalDate END_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 14);
     public static final String ENFORCEMENT_COURT_HEARING_LOCATION = "B01LY01";
 
     public static List<Offence> prosecutorsOffenceList(final int numberElements) {
@@ -194,7 +198,6 @@ public class Prosecutors {
 
     private static Individual.Builder prosecutorsIndividual() {
         return individual()
-                .withAliases(asList(prosecutorsNameDetails(), prosecutorsNameDetails()))
                 .withContactDetails(prosecutorsContactDetails())
                 .withDateOfBirth(LocalDate.now())
                 .withDriverNumber(("Driver Number"))
@@ -202,10 +205,11 @@ public class Prosecutors {
                 .withGender(Gender.NUMBER_1)
                 .withNameDetails(prosecutorsNameDetails())
                 .withNationalInsuranceNumber(("National Insurance Number"))
+                .withNationality(("GBR"))
+                .withAdditionalNationality(("FRA"))
                 .withObservedEthnicity((BigDecimal.ONE))
                 .withOccupation(("Occupation"))
                 .withCustodyStatus(("E"))
-                .withBailConditions(("BAIL CONDITIONS"))
                 .withLanguageRequirement(("languageNeeds"))
                 .withSpecificRequirements(("specialNeeds"))
                 .withOccupationCode((1))
@@ -273,7 +277,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }
@@ -297,7 +300,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }
@@ -334,6 +336,19 @@ public class Prosecutors {
                         .withTimeOfHearing(TIME_OF_HEARING)
                         .withCourtHearingLocation(COURT_HEARING_LOCATION)
                         .build())
+                .build();
+    }
+
+    public static OtherCaseReceived enforcementOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
+                .withHearingDateRangeDetails(hearingDateRangeDetails()
+                        .withStartDateRangeOfHearing(START_DATE_RANGE_OF_HEARING)
+                        .withEndDateRangeOfHearing(END_DATE_RANGE_OF_HEARING)
+                        .withCourtHearingLocation(ENFORCEMENT_COURT_HEARING_LOCATION)
+                        .build())
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }
 

@@ -40,6 +40,7 @@ import javax.json.JsonReader;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
@@ -53,6 +54,8 @@ public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_CONTENT_TYPE = "application/vnd.stagingcivil.summons+json";
     public static final String OTHER_CASE_CONTENT_TYPE = "application/vnd.stagingcivil.other-case+json";
+    public static final String SUBMISSION_DETAILS_MEDIA_TYPE = "application/vnd.stagingcivil.submission-details+json";
+    public static final String CJSOUCODE_HEADER = "CJSOUCODE";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/staging-civil";
     private static final String TOPIC_NAME = "jms.topic.stagingprosecutorscivil.event";
@@ -73,6 +76,12 @@ public class StagingProsecutorsCivilUtils {
     public static UrlResponse submitOtherCase(final String inputFileName, final String contentType) {
 
         return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.other-case-received");
+
+    }
+
+    public static Response submitOtherCaseExpectingRejection(final String inputFileName, final String contentType) {
+
+        return postCommand(inputFileName, contentType);
 
     }
 
@@ -116,6 +125,10 @@ public class StagingProsecutorsCivilUtils {
         return getSubmission(submissionId, withJsonPath("status", is(expectedSubmissionStatus.name())));
     }
 
+    public static Submission pollForSubmission(final UUID submissionId, final SubmissionStatus expectedSubmissionStatus, final String ouCode) {
+        return getSubmission(submissionId, ouCode, withJsonPath("status", is(expectedSubmissionStatus.name())));
+    }
+
     public static Submission getSubmission(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
         final String payload = poll(getRequestParams(submissionId))
                 .pollDelay(0, MILLISECONDS)
@@ -135,12 +148,58 @@ public class StagingProsecutorsCivilUtils {
         }
     }
 
+    public static Submission getSubmission(final UUID submissionId, final String ouCode, final Matcher<? super ReadContext> matcher) {
+        final String payload = poll(getRequestParamsWithOuCode(submissionId, ouCode))
+                .pollDelay(0, MILLISECONDS)
+                .pollInterval(100, MILLISECONDS)
+                .timeout(10, SECONDS)
+                .until(
+                        status().is(OK),
+                        payload().isJson(matcher)
+                )
+                .getPayload();
+
+        try {
+            return mapper.readValue(payload, Submission.class);
+        } catch (final IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Response queryRaw(final String submissionIdPath) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionIdPath;
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, UUID.randomUUID());
+        return restClient.query(url, SUBMISSION_DETAILS_MEDIA_TYPE, headers);
+    }
+
+    public static Response queryRawNoAuth(final UUID submissionId) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+        return restClient.query(url, SUBMISSION_DETAILS_MEDIA_TYPE, new MultivaluedHashMap<>());
+    }
+
+    public static Response queryRawWrongMediaType(final UUID submissionId) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, UUID.randomUUID());
+        return restClient.query(url, MediaType.APPLICATION_JSON, headers);
+    }
+
     private static RequestParams getRequestParams(final UUID submissionId) {
         final String url = READ_BASE_URI + "/submissions/" + submissionId;
-        final String mediaType = "application/vnd.stagingcivil.submission-details+json";
 
-        return requestParams(url, mediaType)
+        return requestParams(url, SUBMISSION_DETAILS_MEDIA_TYPE)
                 .withHeader(USER_ID, UUID.randomUUID())
+                .build();
+    }
+
+    private static RequestParams getRequestParamsWithOuCode(final UUID submissionId, final String ouCode) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+
+        return requestParams(url, SUBMISSION_DETAILS_MEDIA_TYPE)
+                .withHeader(USER_ID, UUID.randomUUID())
+                .withHeader(CJSOUCODE_HEADER, ouCode)
                 .build();
     }
 
