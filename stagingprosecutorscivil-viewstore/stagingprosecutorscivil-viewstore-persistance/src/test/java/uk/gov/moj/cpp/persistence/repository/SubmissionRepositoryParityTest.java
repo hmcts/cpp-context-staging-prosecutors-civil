@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.samePropertyValuesAs;
 
 import uk.gov.justice.services.test.utils.persistence.HibernateTestEntityManagerProvider;
 import uk.gov.moj.cpp.persistence.entity.CaseDetail;
@@ -25,6 +26,7 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonReader;
 import jakarta.persistence.EntityManager;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,24 +77,34 @@ public class SubmissionRepositoryParityTest {
         assertThat(submissionRepository.findBy(randomUUID()), is(nullValue()));
     }
 
-    // SC-P02: the framework EntityManagerProducer sets the JVM default time zone to UTC when it creates the
-    // EntityManager the DeltaSpike repository uses. J25 repositories no longer go through that producer.
+    // SC-P02: on J17 the framework EntityManagerProducer set the JVM default time zone to UTC when it created the
+    // EntityManager the DeltaSpike repository used.
+    // J25 repositories no longer go through that producer, so using the repository leaves the JVM default time zone as it is.
     @Test
-    public void scP02_shouldSetJvmDefaultTimeZoneToUtcWhenRepositoryIsUsed() {
+    public void scP02_repositoryUseShouldLeaveTheJvmDefaultTimeZoneUnchanged() {
         TimeZone.setDefault(TimeZone.getTimeZone(LONDON));
+        final String defaultTimeZoneId = TimeZone.getDefault().getID();
 
         submissionRepository.save(submission("OU-P02", "URN-P02"));
 
-        assertThat(TimeZone.getDefault().getID(), is("UTC"));
+        assertThat(TimeZone.getDefault().getID(), is(defaultTimeZoneId));
     }
 
-    // SC-P03: DeltaSpike save() of a new submission returns the same, now managed, instance.
+    // SC-P03: save() of a new submission returns a managed submission with the same field values and case details.
+    // DeltaSpike (J17) returned the same instance; the J25 merge() returns a managed copy. No caller relies on the identity.
     @Test
-    public void scP03_saveOfNewSubmissionShouldReturnTheSameManagedInstance() {
-        final Submission submission = submission("OU-P03", "URN-P03");
+    public void scP03_saveOfNewSubmissionShouldReturnAManagedSubmissionWithTheSameFields() {
+        final Submission submission = submission("OU-P03", "URN-P03-A", "URN-P03-B");
+        final List<Matcher<? super CaseDetail>> sameCaseDetails = submission.getCaseDetail().stream()
+                .<Matcher<? super CaseDetail>>map(caseDetail -> samePropertyValuesAs(caseDetail, "submission"))
+                .toList();
 
-        assertThat(submissionRepository.save(submission), sameInstance(submission));
-        assertThat(entityManager.contains(submission), is(true));
+        final Submission saved = submissionRepository.save(submission);
+
+        assertThat(saved, samePropertyValuesAs(submission, "caseDetail"));
+        assertThat(saved.getCaseDetail(), containsInAnyOrder(sameCaseDetails));
+        saved.getCaseDetail().forEach(caseDetail -> assertThat(caseDetail.getSubmission(), sameInstance(saved)));
+        assertThat(entityManager.contains(saved), is(true));
     }
 
     // SC-P04: the received handlers save a submission with errors/warnings null. The query view adds both to the
