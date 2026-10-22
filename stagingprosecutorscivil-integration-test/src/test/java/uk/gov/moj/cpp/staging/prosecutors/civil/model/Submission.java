@@ -62,4 +62,20 @@ public class Submission {
     public UUID getSubmissionId() {
         return submissionId;
     }
+
+    public List<Problem> getErrors() {
+        return errors;
+    }
+
+    public List<Problem> getWarnings() {
+        return warnings;
+    }
+
+    public ZonedDateTime getReceivedAt() {
+        return receivedAt;
+    }
+
+    public ZonedDateTime getCompletedAt() {
+        return completedAt;
+    }
 }

@@ -129,6 +129,10 @@ public class SubmissionEventListener {
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
 
+        if (!SubmissionStatus.PENDING.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
+            submission.setCompletedAt(extractCreatedAt(event.metadata()));
+        }
+
         submission.setSubmissionStatus(updatedCivilCaseReceived.getSubmissionStatus().name());
         submissionRepository.save(submission);
     }
@@ -206,23 +210,23 @@ public class SubmissionEventListener {
         return metadata.createdAt().orElseThrow(() -> new IllegalArgumentException("metadata createdAt is not present"));
     }
 
-    private JsonArray transformErrorsToJsonArray(final Collection<Problem> errorsOrWarnings) {
-        if (errorsOrWarnings == null) {
+    private JsonArray transformErrorsToJsonArray(final Collection<Problem> problems) {
+        if (problems == null) {
             return null;
         }
         final JsonArrayBuilder arrayBuilder = createArrayBuilder();
-        errorsOrWarnings.stream()
+        problems.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
         return arrayBuilder.build();
     }
 
-    private JsonArray transformDefendantProblemsToJsonArray(final Collection<DefendantProblem> errors) {
-        if (errors == null) {
+    private JsonArray transformDefendantProblemsToJsonArray(final Collection<DefendantProblem> problems) {
+        if (problems == null) {
             return null;
         }
         final JsonArrayBuilder arrayBuilder = createArrayBuilder();
-        errors.stream()
+        problems.stream()
                 .map(objectToJsonObjectConverter::convert)
                 .forEach(arrayBuilder::add);
         return arrayBuilder.build();

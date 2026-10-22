@@ -78,15 +78,6 @@
                 "postcode": "PG0 1XX"
               }
             },
-            "aliases": [
-              {
-                "title": "Mr",
-                "forename": "AliasJack",
-                "forename2": "AliasAaron",
-                "forename3": "Sr",
-                "surname": "AliasReaper"
-              }
-            ],
             "nationality": "GBR",
             "additionalNationality": "POL",
             "dateOfBirth": "1970-02-03",
@@ -194,15 +185,6 @@
                 "postcode": "PG0 1XX"
               }
             },
-            "aliases": [
-              {
-                "title": "Mr",
-                "forename": "AliasJack",
-                "forename2": "AliasAaron",
-                "forename3": "Sr",
-                "surname": "AliasReaper"
-              }
-            ],
             "nationality": "GBR",
             "additionalNationality": "POL",
             "dateOfBirth": "1970-02-03",

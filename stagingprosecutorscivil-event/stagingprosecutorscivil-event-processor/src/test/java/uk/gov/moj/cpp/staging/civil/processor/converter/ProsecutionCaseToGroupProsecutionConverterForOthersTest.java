@@ -7,6 +7,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseMarker.caseMarker;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.RELATED_REFERENCE_NUMBER;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.enforcementOtherCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.groupOtherCaseReceived;
 import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.summonsCaseDetail;
 
@@ -76,5 +78,21 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthersTest {
 
         assertThat(pcfCaseDetails.getOtherPartyOfficerInCase(), is(nullValue()));
         assertThat(pcfCaseDetails.getCpsOrganisation(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldMapRelatedReferenceNumberToRelatedUrnForEnforcementCase() {
+        final UUID caseFileId = UUID.randomUUID();
+        final UUID groupId = UUID.randomUUID();
+        final ZonedDateTime dateReceived = clock.now();
+        final Map<String, UUID> caseRefToCaseId = new HashMap<>();
+        final OtherCaseReceived otherCaseReceived = enforcementOtherCaseReceived();
+        caseRefToCaseId.put(otherCaseReceived.getProsecutionCases().get(0).getUrn(), caseFileId);
+        final ProsecutionCaseToGroupProsecutionConverterForOthers converter = new ProsecutionCaseToGroupProsecutionConverterForOthers(dateReceived, otherCaseReceived, groupId, caseRefToCaseId);
+        final ProsecutionCase prosecutionCase = summonsCaseDetail();
+
+        final GroupProsecutions result = converter.convert(prosecutionCase);
+
+        assertThat(result.getCaseDetails().getRelatedUrn(), is(RELATED_REFERENCE_NUMBER));
     }
 }
