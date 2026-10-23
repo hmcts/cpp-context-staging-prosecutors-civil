@@ -40,10 +40,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * always merges. Submission has an eager, cascading, orphan-removing set of CaseDetail children and JsonArray columns
  * mapped through JsonArrayConverter. Every assertion below encodes the J17 result.
  *
- * Harness note: under HSQLDialect on H2 (J17) a UUID value does not bind, so nothing here looks an entity up by id
- * or loads the case-detail collection after the persistence context is cleared: the tests read back by ou_code and
- * check case details with a native join. The update path (load, change, save, keep the case details) is checked
- * against PostgreSQL in JavaUpgradeParityIT instead.
+ * Harness note: under HSQLDialect on H2 (J17) a UUID value does not bind, so the J17 copy of these tests reads back by
+ * ou_code and checks case details with a native join. The J25 harness binds UUIDs, so the update path (load by id,
+ * change, save, keep the case details) is checked here too, in SC-P07.
  */
 public class SubmissionRepositoryParityTest {
 
@@ -151,6 +150,36 @@ public class SubmissionRepositoryParityTest {
         assertThat(caseUrns, containsInAnyOrder("URN-A", "URN-B"));
     }
 
+    // SC-P07 (was SC-I03): the update handlers load a stored submission, change its status and save it again in a new
+    // transaction (J25: always merge, with orphanRemoval on the case details). The case_detail rows must be kept as
+    // they are, same ids, not replaced or dropped.
+    @Test
+    public void scP07_statusUpdateShouldKeepTheCaseDetailRows() {
+        final Submission submission = submission("OU-P07", "URN-P07-A", "URN-P07-B");
+        submissionRepository.save(submission);
+        entityManager.flush();
+        entityManager.clear();
+        final List<String> caseDetailsWhenPending = caseDetailRows("OU-P07");
+
+        final Submission stored = submissionRepository.findBy(submission.getSubmissionId());
+        stored.setSubmissionStatus("SUCCESS");
+        submissionRepository.save(stored);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(caseDetailsWhenPending.size(), is(2));
+        assertThat(caseDetailRows("OU-P07"), is(caseDetailsWhenPending));
+        assertThat(reloadByOuCode("OU-P07").getSubmissionStatus(), is("SUCCESS"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> caseDetailRows(final String ouCode) {
+        final List<Object[]> rows = entityManager
+                .createNativeQuery("select cast(cd.id as varchar), cd.case_urn from case_detail cd join submission s on cd.submission_id = s.submission_id where s.ou_code = ?1 order by cd.case_urn")
+                .setParameter(1, ouCode)
+                .getResultList();
+        return rows.stream().map(row -> row[0] + "|" + row[1]).toList();
+    }
 
     private Submission reloadByOuCode(final String ouCode) {
         return entityManager
