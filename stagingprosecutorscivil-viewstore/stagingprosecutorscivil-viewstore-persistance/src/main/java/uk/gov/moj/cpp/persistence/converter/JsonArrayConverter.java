@@ -6,11 +6,11 @@ import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 
 import java.io.StringReader;
 
-import javax.json.JsonArray;
-import javax.json.JsonReader;
-import javax.json.JsonValue;
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 @Converter
 public class JsonArrayConverter implements AttributeConverter<JsonArray, String> {

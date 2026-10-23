@@ -3,10 +3,11 @@ package uk.gov.moj.cpp.persistence.repository;
 import static java.time.ZonedDateTime.now;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-import uk.gov.justice.services.test.utils.persistence.BaseTransactionalJunit4Test;
+import uk.gov.justice.services.test.utils.persistence.HibernateTestEntityManagerProvider;
 import uk.gov.moj.cpp.persistence.entity.CaseDetail;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.entity.SubmissionType;
@@ -14,29 +15,32 @@ import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import java.util.Collections;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+class SubmissionRepositoryTest {
 
-@RunWith(CdiTestRunner.class)
-public class SubmissionRepositoryTest extends BaseTransactionalJunit4Test {
+    private static final String PERSISTENCE_UNIT = "stagingprosecutorscivil-test-persistence-unit";
 
-    @Inject
+    @RegisterExtension
+    static HibernateTestEntityManagerProvider hibernateTestEntityManagerProvider =
+            new HibernateTestEntityManagerProvider(PERSISTENCE_UNIT);
+
     private SubmissionRepository repository;
 
+    @BeforeEach
+    void createRepository() {
+        repository = new SubmissionRepository();
+        hibernateTestEntityManagerProvider.injectEntityManagerInto(repository);
+    }
+
     @Test
-    public void shouldSaveAndReadOtherCase() {
+    void shouldSaveAndReadOtherCase() {
         final UUID key = randomUUID();
         final UUID caseId = randomUUID();
-        final Submission submission = Submission.builder()
-                .withSubmissionId(key)
-                .withCaseDetail(Collections.singleton(CaseDetail.builder().withId(caseId).build()))
-                .withReceivedAt(now())
-                .withType(SubmissionType.PROSECUTION)
-                .build();
-        repository.save(submission);
+        repository.save(aSubmission(key, caseId, SubmissionType.PROSECUTION));
+        flushAndClear();
 
         final Submission result = repository.findBy(key);
         assertThat(result, is(notNullValue()));
@@ -46,21 +50,53 @@ public class SubmissionRepositoryTest extends BaseTransactionalJunit4Test {
     }
 
     @Test
-    public void shouldSaveAndReadMaterialSubmission() {
+    void shouldSaveAndReadMaterialSubmission() {
         final UUID key = randomUUID();
         final UUID caseId = randomUUID();
-        final Submission submission = Submission.builder()
-                .withSubmissionId(key)
-                .withCaseDetail(Collections.singleton(CaseDetail.builder().withId(caseId).build()))
-                .withReceivedAt(now())
-                .withType(SubmissionType.MATERIAL)
-                .build();
-        repository.save(submission);
+        repository.save(aSubmission(key, caseId, SubmissionType.MATERIAL));
+        flushAndClear();
 
         final Submission result = repository.findBy(key);
         assertThat(result, is(notNullValue()));
         assertThat(result.getSubmissionId(), is(key));
         assertThat(result.getCaseDetail().stream().findFirst().get().getId(), is(caseId));
         assertThat(result.getType(), is(SubmissionType.MATERIAL));
+    }
+
+    @Test
+    void shouldUpdateExistingSubmissionOnSave() {
+        final UUID key = randomUUID();
+        repository.save(aSubmission(key, randomUUID(), SubmissionType.PROSECUTION));
+        flushAndClear();
+
+        final Submission existing = repository.findBy(key);
+        existing.setSubmissionStatus("SUCCESS");
+        existing.setCompletedAt(now());
+        repository.save(existing);
+        flushAndClear();
+
+        final Submission result = repository.findBy(key);
+        assertThat(result.getSubmissionStatus(), is("SUCCESS"));
+        assertThat(result.getCompletedAt(), is(notNullValue()));
+        assertThat(result.getCaseDetail().size(), is(1));
+    }
+
+    @Test
+    void shouldReturnNullWhenSubmissionNotFound() {
+        assertThat(repository.findBy(randomUUID()), is(nullValue()));
+    }
+
+    private Submission aSubmission(final UUID key, final UUID caseId, final SubmissionType type) {
+        return Submission.builder()
+                .withSubmissionId(key)
+                .withCaseDetail(Collections.singleton(CaseDetail.builder().withId(caseId).build()))
+                .withReceivedAt(now())
+                .withType(type)
+                .build();
+    }
+
+    private void flushAndClear() {
+        repository.entityManager.flush();
+        repository.entityManager.clear();
     }
 }

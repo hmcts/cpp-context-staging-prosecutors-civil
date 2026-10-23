@@ -5,7 +5,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.apache.commons.io.IOUtils;
 

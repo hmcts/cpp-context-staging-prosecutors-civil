@@ -4,15 +4,15 @@
     <parent>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
         <artifactId>stagingprosecutorscivil</artifactId>
-        <version>17.104.15-SNAPSHOT</version>
+        <version>25.104.15-CIMD-4077-SNAPSHOT</version>
     </parent>
 
     <artifactId>stagingprosecutorscivil-healthchecks</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>javax</groupId>
-            <artifactId>javaee-api</artifactId>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

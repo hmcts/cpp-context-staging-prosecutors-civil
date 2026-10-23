@@ -47,7 +47,7 @@ class SchemaValidationTestUtils {
 
     static Schema buildSchema(String schemaPath) {
         return SchemaLoader.builder()
-                .schemaClient(buildSchemaClient())
+                .httpClient(buildSchemaClient())
                 .schemaJson(loadJson(schemaPath))
                 .build()
                 .load()
