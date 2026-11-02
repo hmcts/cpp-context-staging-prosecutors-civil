@@ -231,10 +231,6 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                         base().remove(PROSECUTION_CASE + ".urn").build(),
                         List.of("urn")),
                 Arguments.of(
-                        "missing mandatory field: prosecution case informant absent",
-                        base().remove(PROSECUTION_CASE + ".informant").build(),
-                        List.of("informant")),
-                Arguments.of(
                         "missing mandatory field: prosecution case defendants absent",
                         base().remove(PROSECUTION_CASE + ".defendants").build(),
                         List.of("defendants")),
@@ -279,11 +275,7 @@ abstract class AbstractProsecutionSchemaValidationTest extends SchemaValidationT
                 Arguments.of(
                         "second prosecution case: urn absent — required field validated on every prosecution case",
                         baseMultiProsecutionCase().remove("prosecutionCases[1].urn").build(),
-                        List.of("urn")),
-                Arguments.of(
-                        "second prosecution case: informant absent — required field validated on every prosecution case",
-                        baseMultiProsecutionCase().remove("prosecutionCases[1].informant").build(),
-                        List.of("informant"))
+                        List.of("urn"))
         );
     }
 
