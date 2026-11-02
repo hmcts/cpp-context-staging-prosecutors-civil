@@ -48,7 +48,6 @@
   "required": [
     "defendants",
     "urn",
-    "informant",
     "summonsCode"
   ],
   "additionalProperties": false

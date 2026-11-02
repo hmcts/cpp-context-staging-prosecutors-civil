@@ -225,7 +225,7 @@ public class SummonsProsecutionCsvToJsonConverter {
     private static SummonsProsecutionCase.Builder newCaseBuilder(final CSVRecord record) {
         return SummonsProsecutionCase.summonsProsecutionCase()
                 .withUrn(requireNonBlank(record, CASE_URN))
-                .withInformant(requireNonBlank(record, CASE_INFORMANT))
+                .withInformant(nullIfBlank(record.get(CASE_INFORMANT)))
                 .withSummonsCode(requireNonBlank(record, CASE_SUMMONS_CODE))
                 .withCaseMarker(nullIfBlank(record.get(CASE_CASE_MARKER)))
                 .withRelatedReferenceNumber(nullIfBlank(record.get(CASE_RELATED_REFERENCE_NUMBER)))

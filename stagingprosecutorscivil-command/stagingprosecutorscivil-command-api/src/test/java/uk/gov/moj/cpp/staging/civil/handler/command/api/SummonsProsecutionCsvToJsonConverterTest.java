@@ -325,13 +325,22 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
     @Test
     void throwsWhenRequiredColumnIsBlank() {
-        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.CASE_INFORMANT, ""));
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.CASE_URN, ""));
 
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> converter.convertToObject(new StringReader(csv)));
 
-        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.CASE_INFORMANT));
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.CASE_URN));
         assertTrue(exception.getMessage().contains("is blank"));
+    }
+
+    @Test
+    void convertsCsvWithBlankInformantToCaseWithoutInformant() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.CASE_INFORMANT, ""));
+
+        final Summons summonsProsecution = converter.convertToObject(new StringReader(csv));
+
+        assertNull(summonsProsecution.getProsecutionCases().get(0).getInformant());
     }
 
     @Test

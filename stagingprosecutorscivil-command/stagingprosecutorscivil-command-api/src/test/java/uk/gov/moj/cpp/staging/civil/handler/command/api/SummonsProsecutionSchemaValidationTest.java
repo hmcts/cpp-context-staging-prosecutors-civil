@@ -40,6 +40,12 @@ class SummonsProsecutionSchemaValidationTest extends AbstractProsecutionSchemaVa
     }
 
     @Test
+    @DisplayName("informant is optional — request without informant passes schema validation")
+    void testMissingInformantIsAccepted() {
+        assertDoesNotThrow(() -> schema.validate(baseSummons().remove(PROSECUTION_CASE + ".informant").build()));
+    }
+
+    @Test
     @DisplayName("summonsCode 'E' is a valid value")
     void testSummonsCodeE() {
         assertDoesNotThrow(() -> schema.validate(baseSummons().set("E", PROSECUTION_CASE + ".summonsCode").build()));
