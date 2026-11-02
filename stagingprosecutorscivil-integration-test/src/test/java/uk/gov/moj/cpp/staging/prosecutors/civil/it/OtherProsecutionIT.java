@@ -30,6 +30,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.util.UUID;
 
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -45,6 +46,7 @@ public class OtherProsecutionIT {
     private static final String PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED                   = "public.prosecutioncasefile.group-prosecution-rejected";
     private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED                   = "public.prosecutioncasefile.civil-prosecution-rejected";
     private static final String PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS = "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings";
+    private static final String PROSECUTOR_DEFENDANT_REFERENCE = "TFL-DEF-REF-1";
 
     private final JmsMessageProducerClient messageProducerClientPublic = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
 
@@ -251,7 +253,6 @@ public class OtherProsecutionIT {
         assertThat(submission.getCompletedAt(), is(notNullValue()));
     }
 
-    //@Disabled("This is disabled since the warning and error structured is changed in civil branch and enrocement still has old type of warning and errors from PCF")
     @Test
     public void shouldReturnSuccessWithWarningsResponseWithWarningObjectsForAC3() {
         final String ouCode = "GAAAA01";
@@ -268,19 +269,13 @@ public class OtherProsecutionIT {
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
-                .add("warnings", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("code", "DEFENDANT_DOB_IN_FUTURE")
-                                .add("values", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("key", "dob")
-                                                .add("value", "2050-01-01")))))
+                .add("defendantWarnings", defendantDobInFutureProblems())
                 .build();
         final JsonEnvelope warningsEventEnvelope = envelopeFrom(
-                buildMetadata("public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings", randomUUID().toString()),
+                buildMetadata(PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS, randomUUID().toString()),
                 warningsEvent);
         messageProducerClientPublic.sendMessage(
-                "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
+                PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS,
                 warningsEventEnvelope);
 
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS_WITH_WARNINGS, ouCode);
@@ -289,6 +284,7 @@ public class OtherProsecutionIT {
         assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.SUCCESS_WITH_WARNINGS.name()));
         assertThat(submission.getDefendantWarnings(), hasSize(greaterThanOrEqualTo(1)));
         final DefendantProblem firstWarning = submission.getDefendantWarnings().get(0);
+        assertThat(firstWarning.getProsecutorDefendantReference(), is(PROSECUTOR_DEFENDANT_REFERENCE));
         final Problem defendantProblem = firstWarning.getProblems().get(0);
         assertThat(defendantProblem.getCode(), is("DEFENDANT_DOB_IN_FUTURE"));
         assertThat(defendantProblem.getValues(), hasSize(greaterThanOrEqualTo(1)));
@@ -296,7 +292,6 @@ public class OtherProsecutionIT {
         assertThat(defendantProblem.getValues().get(0).getValue(), is("2050-01-01"));
     }
 
-    @Disabled("This is disabled since the warning and error structured is changed in civil branch and enrocement still has old type of warning and errors from PCF")
     @Test
     public void shouldReturnRejectedResponseWithErrorCodesForAC4() {
         final String ouCode = "GAAAA01";
@@ -313,32 +308,44 @@ public class OtherProsecutionIT {
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("code", "DEFENDANT_DOB_IN_FUTURE")
-                                .add("values", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("key", "dob")
-                                                .add("value", "2050-01-01")))))
+                .add("caseErrors", createArrayBuilder().build())
+                .add("defendantErrors", defendantDobInFutureProblems())
                 .build();
         final JsonEnvelope rejectionEventEnvelope = envelopeFrom(
-                buildMetadata("public.prosecutioncasefile.civil-prosecution-rejected", randomUUID().toString()),
+                buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()),
                 rejectionEvent);
         messageProducerClientPublic.sendMessage(
-                "public.prosecutioncasefile.civil-prosecution-rejected",
+                PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 rejectionEventEnvelope);
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED, ouCode);
+        // civil-prosecution-rejected (business-validation failure at initial submission) maps to FAILED
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.FAILED, ouCode);
 
         assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
-        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.REJECTED.name()));
+        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.FAILED.name()));
         assertThat(submission.getDefendantErrors(), hasSize(greaterThanOrEqualTo(1)));
         final DefendantProblem firstError = submission.getDefendantErrors().get(0);
+        assertThat(firstError.getProsecutorDefendantReference(), is(PROSECUTOR_DEFENDANT_REFERENCE));
         final Problem defendantProblem = firstError.getProblems().get(0);
         assertThat(defendantProblem.getCode(), is("DEFENDANT_DOB_IN_FUTURE"));
         assertThat(defendantProblem.getValues(), hasSize(greaterThanOrEqualTo(1)));
         assertThat(defendantProblem.getValues().get(0).getKey(), is("dob"));
     }
+
+    private JsonArray defendantDobInFutureProblems() {
+        return createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorDefendantReference", PROSECUTOR_DEFENDANT_REFERENCE)
+                        .add("problems", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("code", "DEFENDANT_DOB_IN_FUTURE")
+                                        .add("values", createArrayBuilder()
+                                                .add(createObjectBuilder()
+                                                        .add("key", "dob")
+                                                        .add("value", "2050-01-01"))))))
+                .build();
+    }
+
     @Test
     public void shouldRejectOtherCaseWithMalformedHearingDateRangeDate() {
         // AC9 (CIMD-3539): startDateRangeOfHearing/endDateRangeOfHearing not in YYYY-MM-DD format
