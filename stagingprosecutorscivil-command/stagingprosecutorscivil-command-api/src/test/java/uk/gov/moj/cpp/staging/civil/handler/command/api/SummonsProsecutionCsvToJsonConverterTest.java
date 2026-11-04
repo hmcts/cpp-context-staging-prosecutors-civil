@@ -19,6 +19,8 @@ import java.util.Map;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
@@ -321,6 +323,40 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
         assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.PARENT_GUARDIAN_TYPE));
         assertTrue(exception.getMessage().contains("UNKNOWN"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"04/02/2022", "2022/02/04", "04-02-2022", "2022-2-4", "22-02-04", "20220204",
+            "2022-02-30", "2022-13-01", "+12022-01-01", "tomorrow"})
+    void throwsWhenRequiredDateIsNotIsoFormat(final String invalidDate) {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, invalidDate));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("Row 1: '" + SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE + "' has invalid date '"
+                + invalidDate + "' - expected ISO date format YYYY-MM-DD", exception.getMessage());
+    }
+
+    @Test
+    void throwsWhenOptionalDateIsNotIsoFormat() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.OFFENCE_ARREST_DATE, "28/01/2022"));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("Row 1: '" + SummonsProsecutionCsvColumns.OFFENCE_ARREST_DATE + "' has invalid date "
+                + "'28/01/2022' - expected ISO date format YYYY-MM-DD", exception.getMessage());
+    }
+
+    @Test
+    void acceptsLeapDayInIsoFormat() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, "2024-02-29"));
+
+        final Summons summonsProsecution = converter.convertToObject(new StringReader(csv));
+
+        assertEquals(LocalDate.of(2024, 2, 29), summonsProsecution.getProsecutionCases().get(0).getDefendants().get(0)
+                .getOffences().get(0).getOffenceDetails().getLaidDate());
     }
 
     @Test
