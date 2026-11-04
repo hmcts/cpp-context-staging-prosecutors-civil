@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
         <artifactId>stagingprosecutorscivil</artifactId>
-        <version>17.103.66-CIVIL-BULK-SNAPSHOT</version>
+        <version>17.103.67-CIVIL-BULK-SNAPSHOT</version>
     </parent>
 
     <artifactId>stagingprosecutorscivil-healthchecks</artifactId>
