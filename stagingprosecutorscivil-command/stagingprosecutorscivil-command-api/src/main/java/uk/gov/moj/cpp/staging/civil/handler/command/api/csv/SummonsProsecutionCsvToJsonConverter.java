@@ -93,10 +93,12 @@ import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
@@ -139,6 +141,13 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
  * be set per environment); a file with more rows than the configured limit is rejected.
  */
 public class SummonsProsecutionCsvToJsonConverter {
+
+    /**
+     * CSV dates must be ISO {@code YYYY-MM-DD}: exactly four year digits, two month digits and two
+     * day digits. {@link LocalDate#parse(CharSequence)} alone also accepts signed, expanded years
+     * such as {@code +12022-01-01}, so the shape is checked first.
+     */
+    private static final Pattern ISO_DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
 
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.builder()
             .setDelimiter(DELIMITER)
@@ -416,11 +425,23 @@ public class SummonsProsecutionCsvToJsonConverter {
 
     private static LocalDate parseDate(final CSVRecord record, final String column) {
         final String value = nullIfBlank(record.get(column));
-        return value == null ? null : LocalDate.parse(value);
+        return value == null ? null : toIsoDate(record, column, value);
     }
 
     private static LocalDate requireDate(final CSVRecord record, final String column) {
-        return LocalDate.parse(requireNonBlank(record, column));
+        return toIsoDate(record, column, requireNonBlank(record, column));
+    }
+
+    private static LocalDate toIsoDate(final CSVRecord record, final String column, final String value) {
+        if (ISO_DATE_PATTERN.matcher(value).matches()) {
+            try {
+                return LocalDate.parse(value);
+            } catch (DateTimeParseException e) {
+                // well-formed but not a real calendar date, e.g. 2022-02-30 - reported below
+            }
+        }
+        throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
+                + value + "' - expected ISO date format YYYY-MM-DD");
     }
 
     private static Integer requireInteger(final CSVRecord record, final String column) {

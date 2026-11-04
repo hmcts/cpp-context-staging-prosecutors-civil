@@ -264,6 +264,22 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     }
 
     @Test
+    void shouldThrowBadRequestWithReasonWhenCsvContainsNonIsoDate() throws Exception {
+        final String csv = new String(csvStream(FULLY_POPULATED_CSV).readAllBytes(), StandardCharsets.UTF_8)
+                .replace("2022-03-10", "10/03/2022");
+        when(filePart.getBody(eq(InputStream.class), isNull()))
+                .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        formDataMapWithFilePart();
+
+        final BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+
+        assertThat(exception.getMessage(),
+                is("Unable to parse complaints CSV file: Row 1: 'hearingDetails.dateOfHearing' has invalid date "
+                        + "'10/03/2022' - expected ISO date format YYYY-MM-DD"));
+    }
+
+    @Test
     void shouldThrowBadRequestWhenUserIdHeaderMissing() throws Exception {
         when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
         formDataMapWithFilePart();
