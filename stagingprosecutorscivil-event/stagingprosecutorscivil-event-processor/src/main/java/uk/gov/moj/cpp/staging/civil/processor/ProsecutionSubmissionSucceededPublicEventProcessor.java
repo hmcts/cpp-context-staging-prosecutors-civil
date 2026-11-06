@@ -1,24 +1,23 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
 import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
 
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.ProblemValue;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.CivilProsecutionSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.ProsecutionSubmissionSucceededWithWarnings;
 
-import java.util.List;
+import java.util.Collection;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
@@ -35,6 +34,9 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
 
     @Inject
     private Sender sender;
+
+    @Inject
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @Handles("public.prosecutioncasefile.civil.prosecution-submission-succeeded")
     public void prosecutionSubmissionSucceeded(final Envelope<CivilProsecutionSubmissionSucceeded> envelope) {
@@ -68,15 +70,15 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
             final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                     .add("submissionId", submissionId)
                     .add("submissionStatus", SubmissionStatus.SUCCESS_WITH_WARNINGS.name());
-            if (payload.getWarnings() != null) {
-                jsonObjectBuilder.add("warnings", problemsToJsonArray(payload.getWarnings()));
-            }
-            if (payload.getCaseWarnings() != null) {
-                jsonObjectBuilder.add("caseWarnings", problemsToJsonArray(payload.getCaseWarnings()));
-            }
-            if (payload.getDefendantWarnings() != null) {
-                jsonObjectBuilder.add("defendantWarnings", defendantProblemsToJsonArray(payload.getDefendantWarnings()));
-            }
+            ofNullable(toJsonArray(payload.getWarnings()))
+                    .ifPresent(warnings -> jsonObjectBuilder.add("warnings", warnings));
+            // the case-level list is sourced from civilCaseWarnings (CaseProblem[]); the event's
+            // legacy caseWarnings (flat Problem[]) is never populated and must not be read
+            ofNullable(toJsonArray(payload.getCivilCaseWarnings()))
+                    .ifPresent(caseWarnings -> jsonObjectBuilder.add("caseWarnings", caseWarnings));
+            ofNullable(toJsonArray(payload.getDefendantWarnings()))
+                    .ifPresent(defendantWarnings -> jsonObjectBuilder.add("defendantWarnings", defendantWarnings));
+
             sender.send(envelop(jsonObjectBuilder.build())
                     .withName("stagingcivil.command.update-civil-case")
                     .withMetadataFrom(prosecutionSubmissionSucceededWithWarningsEnvelope));
@@ -85,35 +87,14 @@ public class ProsecutionSubmissionSucceededPublicEventProcessor {
         }
     }
 
-    private JsonArray problemsToJsonArray(final List<Problem> problems) {
-        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
-        if (problems != null) {
-            for (Problem problem : problems) {
-                final JsonArrayBuilder valuesBuilder = createArrayBuilder();
-                if (problem.getValues() != null) {
-                    for (ProblemValue pv : problem.getValues()) {
-                        valuesBuilder.add(createObjectBuilder()
-                                .add("key", pv.getKey())
-                                .add("value", pv.getValue()));
-                    }
-                }
-                arrayBuilder.add(createObjectBuilder()
-                        .add("code", problem.getCode())
-                        .add("values", valuesBuilder));
-            }
+    private JsonArray toJsonArray(final Collection<?> problems) {
+        if (problems == null) {
+            return null;
         }
-        return arrayBuilder.build();
-    }
-
-    private JsonArray defendantProblemsToJsonArray(final List<DefendantProblem> defendantProblems) {
         final JsonArrayBuilder arrayBuilder = createArrayBuilder();
-        if (defendantProblems != null) {
-            for (DefendantProblem dp : defendantProblems) {
-                arrayBuilder.add(createObjectBuilder()
-                        .add("prosecutorDefendantReference", dp.getProsecutorDefendantReference() != null ? dp.getProsecutorDefendantReference() : "")
-                        .add("problems", problemsToJsonArray(dp.getProblems())));
-            }
-        }
+        problems.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
         return arrayBuilder.build();
     }
 }

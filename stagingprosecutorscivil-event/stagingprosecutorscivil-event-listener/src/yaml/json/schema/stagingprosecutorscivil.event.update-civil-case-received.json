@@ -9,16 +9,19 @@
     "submissionStatus": {
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/submissionStatus"
     },
+    "summonsApplicationId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
     "groupCaseErrors": {
       "type": "array",
       "items": {
-        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/problem.json"
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
       }
     },
     "caseErrors": {
       "type": "array",
       "items": {
-        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/problem.json"
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
       }
     },
     "defendantErrors": {
@@ -36,7 +39,7 @@
     "caseWarnings": {
       "type": "array",
       "items": {
-        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/problem.json"
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
       }
     },
     "defendantWarnings": {

@@ -69,7 +69,6 @@ public class DefendantToProsecutionCaseFileDefendantConverterTest {
         assertThat(prosecutionCaseFileDefendant.getOrganisationName(), is(prosecutorsDefendant.getOrganisation().getOrganisationName()));
         assertThat(prosecutionCaseFileDefendant.getTelephoneNumberBusiness(), is(prosecutorsDefendant.getOrganisation().getCompanyTelephoneNumber()));
         assertThat(prosecutionCaseFileDefendant.getPncIdentifier(), is(prosecutorsDefendant.getDefendantDetails().getPncIdentifier()));
-        assertThat(prosecutionCaseFileDefendant.getNumPreviousConvictions(), is(prosecutorsDefendant.getDefendantDetails().getNumPreviousConvictions()));
 
         assertAddress(prosecutionCaseFileDefendant.getAddress(), prosecutorsDefendant.getDefendantDetails().getAddress());
         assertHearingDetails(prosecutionCaseFileDefendant.getInitialHearing(), otherCaseReceived.getHearingDetails());

@@ -5,6 +5,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
@@ -14,6 +15,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.util.List;
 import java.util.UUID;
@@ -58,7 +60,10 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
     public Stream<Object> receiveSummons(final UUID submissionId,
                                                     final HearingDetails hearingDetails,
                                                     final String prosecutingAuthority,
-                                                    final List<ProsecutionCase> prosecutionCases) {
+                                                    final List<SummonsProsecutionCase> prosecutionCases,
+                                                    final String fileName,
+                                                    final String submittedByUserName,
+                                                    final String prosecutorShortName) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.summons-received for submission id {}", submissionId);
         return apply(
                 Stream.of(
@@ -68,14 +73,18 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                 .withProsecutingAuthority(prosecutingAuthority)
                                 .withHearingDetails(hearingDetails)
                                 .withProsecutionCases(prosecutionCases)
+                                .withFileName(fileName)
+                                .withSubmittedByUserName(submittedByUserName)
+                                .withProsecutorShortName(prosecutorShortName)
                                 .build()
                 )
         );
     }
 
-    public Stream<Object> receiveCivilCaseUpdate(final UUID submissionId, final String submissionStatus, final List<Problem> caseErrors,
-                                                 final List<DefendantProblem> defendantErrors, final List<Problem> groupCaseErrors,
-                                                 final List<Problem> warnings, final List<Problem> caseWarnings, final List<DefendantProblem> defendantWarnings) {
+    public Stream<Object> receiveCivilCaseUpdate(final UUID submissionId, final String submissionStatus, final List<CaseProblem> caseErrors,
+                                                 final List<DefendantProblem> defendantErrors, final List<CaseProblem> groupCaseErrors,
+                                                 final List<Problem> warnings, final List<CaseProblem> caseWarnings, final List<DefendantProblem> defendantWarnings,
+                                                 final UUID summonsApplicationId) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.update-civil-case-received for submission id {} and status {}", submissionId, submissionStatus);
         return apply(
                 Stream.of(
@@ -88,6 +97,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                 .withWarnings(warnings)
                                 .withCaseWarnings(caseWarnings)
                                 .withDefendantWarnings(defendantWarnings)
+                                .withSummonsApplicationId(summonsApplicationId)
                                 .build()
                 )
         );

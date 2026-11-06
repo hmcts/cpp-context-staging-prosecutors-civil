@@ -1,33 +1,44 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.time.ZonedDateTime.now;
+import static java.util.Optional.ofNullable;
+import static java.util.UUID.randomUUID;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
+import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getSummonsProsecutorCaseReferences;
+
 import uk.gov.justice.services.common.converter.Converter;
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseDetails;
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
-import uk.gov.moj.cpp.prosecution.casefile.json.schemas.ProblemValue;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForOthers;
 import uk.gov.moj.cpp.staging.civil.processor.converter.ProsecutionCaseToGroupProsecutionConverterForSummons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.GroupProsecutions;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateGroupProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicCivilProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupParkedForSummonsApplicationApproval;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicParkedForSummonsApplicationApproval;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionRejected;
 
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -35,19 +46,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static java.time.ZonedDateTime.now;
-import static java.util.Optional.ofNullable;
-import static java.util.UUID.randomUUID;
-import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
-import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
-import static uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel.CIVIL;
-import static uk.gov.moj.cpp.staging.civil.processor.util.ProsecutorCaseReferenceUtil.getProsecutorCaseReferences;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
-import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
+import javax.inject.Inject;
+import javax.json.JsonObject;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(EVENT_PROCESSOR)
 public class ProsecutionEventProcessor {
@@ -59,6 +64,9 @@ public class ProsecutionEventProcessor {
 
     @Inject
     private SystemIdMapperService systemIdMapperService;
+
+    @Inject
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @Handles("stagingprosecutorscivil.event.other-case-received")
     public void processProsecutionOthers(final Envelope<OtherCaseReceived> event) {
@@ -75,13 +83,80 @@ public class ProsecutionEventProcessor {
 
     @Handles("public.prosecutioncasefile.group-prosecution-rejected")
     public void handleGroupProsecutionRejected(final Envelope<PublicGroupProsecutionRejected> event) {
-        LOGGER.info("Received public.prosecutioncasefile.group-prosecution-rejected event with payload for submission id {} ", event.payload().getExternalId());
-        updateCivilCaseStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
+        final PublicGroupProsecutionRejected rejected = event.payload();
+        LOGGER.info("Received public.prosecutioncasefile.group-prosecution-rejected event with payload for submission id {} ", rejected.getExternalId());
+        final JsonObjectBuilder update = updateBuilder(rejected.getExternalId().toString(), SubmissionStatus.FAILED, null);
+        addProblems(update, "caseErrors", rejected.getCaseErrors());
+        addProblems(update, "groupCaseErrors", rejected.getGroupCaseErrors());
+        addProblems(update, "defendantErrors", rejected.getDefendantErrors());
+        sendUpdate(event, update);
     }
 
     @Handles("public.prosecutioncasefile.civil-prosecution-rejected")
     public void handleCivilProsecutionRejected(final Envelope<PublicCivilProsecutionRejected> event) {
-        LOGGER.info("Received public.prosecutioncasefile.group-prosecution-rejected event with payload for submission id {} ", event.payload().getExternalId());
+        final PublicCivilProsecutionRejected rejected = event.payload();
+        LOGGER.info("Received public.prosecutioncasefile.civil-prosecution-rejected event with payload for submission id {} ", rejected.getExternalId());
+        final JsonObjectBuilder update = updateBuilder(rejected.getExternalId().toString(), SubmissionStatus.FAILED, null);
+        addProblems(update, "caseErrors", rejected.getCaseErrors());
+        addProblems(update, "defendantErrors", rejected.getDefendantErrors());
+        sendUpdate(event, update);
+    }
+
+    @Handles("public.prosecutioncasefile.parked-for-summons-application-approval")
+    public void handleParkedForSummonsApplicationApproval(final Envelope<PublicParkedForSummonsApplicationApproval> event) {
+        LOGGER.info("Received public.prosecutioncasefile.parked-for-summons-application-approval event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION, event.payload().getApplicationId());
+    }
+
+    @Handles("public.prosecutioncasefile.group-parked-for-summons-application-approval")
+    public void handleGroupParkedForSummonsApplicationApproval(final Envelope<PublicGroupParkedForSummonsApplicationApproval> event) {
+        LOGGER.info("Received public.prosecutioncasefile.group-parked-for-summons-application-approval event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.PENDING_COURT_DECISION, event.payload().getApplicationId());
+    }
+
+    /**
+     * PCF sends this from the same trigger, and immediately after, {@code
+     * civil.prosecution-submission-succeeded}/{@code group-submission-succeeded} for every
+     * successful CIVIL case creation — not only ones that were previously parked pending SA
+     * approval. {@code SubmissionEventListener#updatedCivilCaseReceived} only applies an incoming
+     * {@code ACCEPTED} when the submission's current status is {@code PENDING_COURT_DECISION}, so
+     * a submission that never went through the summons-approval flow (or whose SUCCESS event was
+     * already processed) is left untouched by this event.
+     */
+    @Handles("public.prosecutioncasefile.submission-approved")
+    public void handleSubmissionApproved(final Envelope<PublicSubmissionApproved> event) {
+        LOGGER.info("Received public.prosecutioncasefile.submission-approved event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.ACCEPTED);
+    }
+
+    /** Group counterpart of {@link #handleSubmissionApproved} — same guard applies downstream. */
+    @Handles("public.prosecutioncasefile.group-submission-approved")
+    public void handleGroupSubmissionApproved(final Envelope<PublicGroupSubmissionApproved> event) {
+        LOGGER.info("Received public.prosecutioncasefile.group-submission-approved event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.ACCEPTED);
+    }
+
+    /**
+     * PCF only raises this from its genuine summons-application (SA) rejection path — a case
+     * that was previously parked pending an SA court decision and has now been rejected. It no
+     * longer pairs with {@code civil-prosecution-rejected} for CIVIL (that pairing was removed on
+     * PCF's side; {@code civil-prosecution-rejected} is now reserved for business-validation
+     * failures at initial submission, always while a submission is still PENDING). {@code
+     * SubmissionEventListener#updatedCivilCaseReceived} still only applies an incoming {@code
+     * REJECTED} when the submission's current status is {@code PENDING_COURT_DECISION} — kept as
+     * defence in depth against out-of-order or replayed delivery, not because this event is
+     * expected against any other status.
+     */
+    @Handles("public.prosecutioncasefile.submission-rejected")
+    public void handleSubmissionRejected(final Envelope<PublicSubmissionRejected> event) {
+        LOGGER.info("Received public.prosecutioncasefile.submission-rejected event with payload for submission id {} ", event.payload().getExternalId());
+        updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
+    }
+
+    /** Group counterpart of {@link #handleSubmissionRejected} — same guard applies downstream. */
+    @Handles("public.prosecutioncasefile.group-submission-rejected")
+    public void handleGroupSubmissionRejected(final Envelope<PublicGroupSubmissionRejected> event) {
+        LOGGER.info("Received public.prosecutioncasefile.group-submission-rejected event with payload for submission id {} ", event.payload().getExternalId());
         updateCivilStatus(event, event.payload().getExternalId().toString(), SubmissionStatus.REJECTED);
     }
 
@@ -91,7 +166,6 @@ public class ProsecutionEventProcessor {
         final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForOthers(dateReceived, otherCaseReceived, randomUUID());
 
         initiatePCFCommand(groupProsecutions, otherCaseReceived.getSubmissionId(), event.metadata());
-        updateCivilCaseStatus(event, otherCaseReceived.getSubmissionId().toString(), PENDING);
 
     }
 
@@ -101,7 +175,6 @@ public class ProsecutionEventProcessor {
         final List<GroupProsecutions> groupProsecutions = getGroupProsecutionsForSummons(dateReceived, summonsReceived, randomUUID());
 
         initiatePCFCommand(groupProsecutions, summonsReceived.getSubmissionId(), event.metadata());
-        updateCivilCaseStatus(event, summonsReceived.getSubmissionId().toString(), PENDING);
 
     }
 
@@ -121,8 +194,8 @@ public class ProsecutionEventProcessor {
     private List<GroupProsecutions> getGroupProsecutionsForSummons(final ZonedDateTime dateReceived,
                                                                    final SummonsReceived summonsReceived,
                                                                    final UUID groupId) {
-        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getProsecutorCaseReferences(summonsReceived.getProsecutionCases(), summonsReceived.getProsecutingAuthority()), null);
-        final Converter<ProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverterForSummons
+        final Map<String, UUID> caseRefToCaseId = systemIdMapperService.getCppCaseIdMapFor(getSummonsProsecutorCaseReferences(summonsReceived.getProsecutionCases(), summonsReceived.getProsecutingAuthority()), null);
+        final Converter<SummonsProsecutionCase, GroupProsecutions> prosecutionCaseToGroupProsecutionConverterForSummons
                 = new ProsecutionCaseToGroupProsecutionConverterForSummons(dateReceived, summonsReceived, groupId, caseRefToCaseId);
 
         return summonsReceived.getProsecutionCases()
@@ -197,99 +270,44 @@ public class ProsecutionEventProcessor {
     }
 
 
-    private JsonArray transformErrorsToJsonArray(final Collection<Problem> problems) {
+    private void addProblems(final JsonObjectBuilder builder, final String fieldName, final Collection<?> problems) {
         if (problems == null) {
-            return null;
+            return;
         }
         final JsonArrayBuilder arrayBuilder = createArrayBuilder();
-        for (final Problem problem : problems) {
-            final JsonArrayBuilder valuesBuilder = createArrayBuilder();
-            if (problem.getValues() != null) {
-                for (final ProblemValue pv : problem.getValues()) {
-                    final JsonObjectBuilder pvBuilder = createObjectBuilder();
-                    if (pv.getId() != null) {
-                        pvBuilder.add("id", pv.getId());
-                    }
-                    pvBuilder.add("key", ofNullable(pv.getKey()).orElse(""));
-                    pvBuilder.add("value", ofNullable(pv.getValue()).orElse(""));
-                    valuesBuilder.add(pvBuilder);
-                }
-            }
-            arrayBuilder.add(createObjectBuilder()
-                    .add("code", ofNullable(problem.getCode()).orElse(""))
-                    .add("values", valuesBuilder));
-        }
-        return arrayBuilder.build();
+        problems.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
+        builder.add(fieldName, arrayBuilder.build());
     }
-
-    private JsonArray transformDefendantProblemsToJsonArray(final Collection<DefendantProblem> errors) {
-        if (errors == null) {
-            return null;
-        }
-        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
-        for (final DefendantProblem dp : errors) {
-            final JsonObjectBuilder dpBuilder = createObjectBuilder();
-            if (dp.getProsecutorDefendantReference() != null) {
-                dpBuilder.add("prosecutorDefendantReference", dp.getProsecutorDefendantReference());
-            }
-            final JsonArray nestedProblems = transformErrorsToJsonArray(dp.getProblems());
-            dpBuilder.add("problems", nestedProblems != null ? nestedProblems : createArrayBuilder().build());
-            arrayBuilder.add(dpBuilder);
-        }
-        return arrayBuilder.build();
-    }
-
 
     private void updateCivilStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status) {
+        updateCivilStatus(event, submissionId, status, null);
+    }
 
+    private void updateCivilStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status, final UUID summonsApplicationId) {
+        sendUpdate(event, updateBuilder(submissionId, status, summonsApplicationId));
+    }
+
+    private JsonObjectBuilder updateBuilder(final String submissionId, final SubmissionStatus status, final UUID summonsApplicationId) {
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                 .add("submissionId", submissionId)
                 .add("submissionStatus", status.name());
 
-        if (status == REJECTED) {
-            final PublicCivilProsecutionRejected prosecutionRejected = (PublicCivilProsecutionRejected) event.payload();
-            final JsonArray caseErrors = transformErrorsToJsonArray(prosecutionRejected.getCaseErrors());
-            final JsonArray defendantErrors = transformDefendantProblemsToJsonArray(prosecutionRejected.getDefendantErrors());
-            ofNullable(caseErrors).ifPresent(e -> jsonObjectBuilder.add("caseErrors", e));
-            ofNullable(defendantErrors).ifPresent(e -> jsonObjectBuilder.add("defendantErrors", e));
-        }
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Calling stagingcivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
-        }
-        updateSubmitionStatus(event, jsonObjectBuilder);
+        ofNullable(summonsApplicationId).ifPresent(id -> jsonObjectBuilder.add("summonsApplicationId", id.toString()));
+        return jsonObjectBuilder;
     }
 
-    private void updateSubmitionStatus(final Envelope<?> event, final JsonObjectBuilder jsonObjectBuilder) {
-        sender.send(envelop(jsonObjectBuilder.build())
+    private void sendUpdate(final Envelope<?> event, final JsonObjectBuilder jsonObjectBuilder) {
+        final JsonObject update = jsonObjectBuilder.build();
+        LOGGER.info("Calling stagingcivil.command.update-civil-case for submission id {} and status {}", update.getString("submissionId"), update.getString("submissionStatus"));
+        sender.send(envelop(update)
                 .withName("stagingcivil.command.update-civil-case")
                 .withMetadataFrom(event));
     }
 
-    private void updateCivilCaseStatus(final Envelope<?> event, final String submissionId, final SubmissionStatus status) {
-
-        final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
-                .add("submissionId", submissionId)
-                .add("submissionStatus", status.name());
-
-        if (status == REJECTED) {
-            final PublicGroupProsecutionRejected prosecutionRejected = (PublicGroupProsecutionRejected) event.payload();
-            final JsonArray caseErrors = transformErrorsToJsonArray(prosecutionRejected.getCaseErrors());
-            final JsonArray groupCaseErrors = transformErrorsToJsonArray(prosecutionRejected.getGroupCaseErrors());
-            final JsonArray defendantErrors = transformDefendantProblemsToJsonArray(prosecutionRejected.getDefendantErrors());
-
-            ofNullable(caseErrors).ifPresent(e -> jsonObjectBuilder.add("caseErrors", e));
-            ofNullable(groupCaseErrors).ifPresent(e -> jsonObjectBuilder.add("groupCaseErrors", e));
-            ofNullable(defendantErrors).ifPresent(e -> jsonObjectBuilder.add("defendantErrors", e));
-        }
-
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Calling stagingcivil.command.update-civil-case for submission id {} and status {}", submissionId, status);
-        }
-        updateSubmitionStatus(event, jsonObjectBuilder);
-    }
-
     private List<String> getCaseReferences(final List<ProsecutionCase> prosecutionCases) {
         return prosecutionCases.stream()
-                .map(pc -> pc.getUrn()).collect(Collectors.toList());
+                .map(ProsecutionCase::getUrn).toList();
     }
 }

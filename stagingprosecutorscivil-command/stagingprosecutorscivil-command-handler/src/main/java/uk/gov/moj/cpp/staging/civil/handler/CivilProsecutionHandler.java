@@ -50,7 +50,7 @@ public class CivilProsecutionHandler {
         final Summons summons = envelope.payload();
         final EventStream eventStream = eventSource.getStreamById(summons.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
-        final Stream<Object> events = aggregate.receiveSummons(summons.getSubmissionId(), summons.getHearingDetails(), summons.getProsecutingAuthority(), summons.getProsecutionCases());
+        final Stream<Object> events = aggregate.receiveSummons(summons.getSubmissionId(), summons.getHearingDetails(), summons.getProsecutingAuthority(), summons.getProsecutionCases(), summons.getFileName(), summons.getSubmittedByUserName(), summons.getProsecutorShortName());
 
         appendEventsToStream(envelope, eventStream, events);
     }
@@ -63,7 +63,7 @@ public class CivilProsecutionHandler {
         final EventStream eventStream = eventSource.getStreamById(update.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
         final Stream<Object> events = aggregate.receiveCivilCaseUpdate(update.getSubmissionId(), update.getSubmissionStatus(), update.getCaseErrors(),
-                update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings());
+                update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings(), update.getSummonsApplicationId());
         appendEventsToStream(envelope, eventStream, events);
     }
 }

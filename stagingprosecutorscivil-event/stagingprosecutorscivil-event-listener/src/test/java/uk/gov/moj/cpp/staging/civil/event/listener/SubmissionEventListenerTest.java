@@ -3,24 +3,31 @@ package uk.gov.moj.cpp.staging.civil.event.listener;
 import static java.time.ZoneOffset.UTC;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.ACCEPTED;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.FAILED;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.PENDING_COURT_DECISION;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.REJECTED;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS_WITH_WARNINGS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
@@ -29,6 +36,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -36,6 +44,7 @@ import java.util.UUID;
 
 import javax.json.Json;
 
+import liquibase.repackaged.net.sf.jsqlparser.expression.NullValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -52,6 +61,9 @@ public class SubmissionEventListenerTest {
 
     @Mock
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Mock
+    private UtcClock utcClock;
 
     @InjectMocks
     private SubmissionEventListener submissionEventListener;
@@ -96,7 +108,10 @@ public class SubmissionEventListenerTest {
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(PENDING)
                 .withProsecutingAuthority(prosecutingAuthority)
-                .withProsecutionCases(Collections.singletonList(ProsecutionCase.prosecutionCase().withUrn(urn).build()))
+                .withProsecutionCases(Collections.singletonList(SummonsProsecutionCase.summonsProsecutionCase().withUrn(urn).build()))
+                .withFileName("summons-batch.csv")
+                .withSubmittedByUserName("Richard Chapman")
+                .withProsecutorShortName("CPS")
                 .build();
 
         final Envelope<SummonsReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-received", summonsReceived);
@@ -111,6 +126,10 @@ public class SubmissionEventListenerTest {
         assertThat(submission.getSubmissionStatus(), is(PENDING.name()));
         assertThat(submission.getOuCode(), is(prosecutingAuthority));
         assertThat(submission.getCaseDetail().stream().findFirst().get().getCaseUrn(), is(urn));
+        assertThat(submission.getType(), is(SubmissionType.PROSECUTION));
+        assertThat(submission.getFileName(), is("summons-batch.csv"));
+        assertThat(submission.getSubmittedByUserName(), is("Richard Chapman"));
+        assertThat(submission.getProsecutorShortName(), is("CPS"));
     }
 
     @Test
@@ -136,38 +155,266 @@ public class SubmissionEventListenerTest {
     }
 
     @Test
-    void shouldUpdateCaseFileForRejectedStatus() {
+    void shouldTransitionToAcceptedWhenCurrentStatusIsPendingCourtDecision() {
         final UUID submissionId = randomUUID();
-        final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(ACCEPTED)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING_COURT_DECISION.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        assertThat(argumentCaptor.getValue().getSubmissionStatus(), is(ACCEPTED.name()));
+    }
+
+    @Test
+    void shouldSetSummonsApplicationIdWhenTransitioningToPendingCourtDecision() {
+        final UUID submissionId = randomUUID();
+        final UUID summonsApplicationId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING_COURT_DECISION)
+                .withSummonsApplicationId(summonsApplicationId)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionStatus(), is(PENDING_COURT_DECISION.name()));
+        assertThat(submission.getSummonsApplicationId(), is(summonsApplicationId));
+    }
+
+    @Test
+    void shouldNotOverwriteSummonsApplicationIdWhenAbsentOnSubsequentTransition() {
+        final UUID submissionId = randomUUID();
+        final UUID existingSummonsApplicationId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(ACCEPTED)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING_COURT_DECISION.name())
+                .withSummonsApplicationId(existingSummonsApplicationId)
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionStatus(), is(ACCEPTED.name()));
+        assertThat(submission.getSummonsApplicationId(), is(existingSummonsApplicationId));
+    }
+
+    @Test
+    void shouldIgnoreAcceptedWhenCurrentStatusIsNotPendingCourtDecision() {
+        // PCF sends submission-approved from the same trigger as, and immediately after,
+        // civil.prosecution-submission-succeeded/group-submission-succeeded for every successful
+        // CIVIL case - not only ones that were parked pending SA approval. A submission whose
+        // SUCCESS has already been recorded (or that never went through PENDING_COURT_DECISION at
+        // all) must not be downgraded back to ACCEPTED.
+        final UUID submissionId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(ACCEPTED)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(SUCCESS.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldTransitionToRejectedWhenCurrentStatusIsPendingCourtDecision() {
+        final UUID submissionId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(REJECTED)
-                .withCaseErrors(Collections.EMPTY_LIST)
-                .withGroupCaseErrors(Collections.EMPTY_LIST)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING_COURT_DECISION.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        assertThat(argumentCaptor.getValue().getSubmissionStatus(), is(REJECTED.name()));
+        assertThat(argumentCaptor.getValue().getCompletedAt(), is(notNullValue()));
+    }
+
+    @Test
+    void shouldIgnoreRejectedWhenCurrentStatusIsNotPendingCourtDecision() {
+        // PCF sends submission-rejected from the same trigger as, and immediately after,
+        // civil-prosecution-rejected/group-prosecution-rejected for every single-case/group CIVIL
+        // rejection - not only ones rejected via SA court decision after parking. A submission
+        // already correctly recorded as FAILED (an SR-box-work rejection that never went through
+        // parking) must not be overwritten with REJECTED.
+        final UUID submissionId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(REJECTED)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(FAILED.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+
+        verify(submissionRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldUpdateCaseFileForFailedStatus() {
+        final UUID submissionId = randomUUID();
+        final CaseProblem caseError = CaseProblem.caseProblem()
+                .withProsecutorCaseReference("URN01")
+                .withProblems(Collections.singletonList(uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem.problem().withCode("CASE_ERR").build()))
+                .build();
+        final CaseProblem groupCaseError = CaseProblem.caseProblem()
+                .withProsecutorCaseReference(null)
+                .withProblems(Collections.singletonList(uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem.problem().withCode("GROUP_ERR").build()))
+                .build();
+
+        final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(FAILED)
+                .withCaseErrors(Collections.singletonList(caseError))
+                .withGroupCaseErrors(Collections.singletonList(groupCaseError))
                 .withDefendantErrors(Collections.EMPTY_LIST)
                 .build();
 
         Submission inputSubmission = Submission.builder()
                 .withSubmissionId(submissionId)
-                .withSubmissionStatus(REJECTED.name())
+                .withSubmissionStatus(FAILED.name())
                 .build();
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        final javax.json.JsonObject caseErrorJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
+        // no prosecutorCaseReference key: group-level problems aren't tied to one case, and the real
+        // converter (NON_ABSENT inclusion) omits the field entirely rather than emitting null
+        final javax.json.JsonObject groupCaseErrorJson = Json.createObjectBuilder().add("problems", Json.createArrayBuilder()).build();
+        when(objectToJsonObjectConverter.convert(caseError)).thenReturn(caseErrorJson);
+        when(objectToJsonObjectConverter.convert(groupCaseError)).thenReturn(groupCaseErrorJson);
+        when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());
         final Submission submission = argumentCaptor.getValue();
         assertThat(submission.getSubmissionId(), is(submissionId));
-        assertThat(submission.getSubmissionStatus(), is(REJECTED.name()));
+        assertThat(submission.getSubmissionStatus(), is(FAILED.name()));
+        assertThat(submission.getErrors(), is(nullValue()));
+        assertThat(submission.getGroupCaseErrors(), contains(caseErrorJson, groupCaseErrorJson));
+        assertThat(submission.getCompletedAt(), is(notNullValue()));
+    }
+
+    @Test
+    void shouldUpdateCaseFileForFailedStatusWithOnlyCaseLevelErrors() {
+        final UUID submissionId = randomUUID();
+        final CaseProblem caseError = CaseProblem.caseProblem()
+                .withProsecutorCaseReference("URN01")
+                .withProblems(Collections.singletonList(uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem.problem().withCode("CASE_ERR").build()))
+                .build();
+
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(FAILED)
+                .withCaseErrors(Collections.singletonList(caseError))
+                .withDefendantErrors(Collections.EMPTY_LIST)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(FAILED.name())
+                .build();
+
+        final javax.json.JsonObject caseErrorJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
+        when(objectToJsonObjectConverter.convert(caseError)).thenReturn(caseErrorJson);
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getGroupCaseErrors(), contains(caseErrorJson));
+    }
+
+    @Test
+    void shouldPersistEmptyGroupCaseErrorsWhenFailedWithNeitherCaseNorGroupLevelErrors() {
+        final UUID submissionId = randomUUID();
+
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(FAILED)
+                .withDefendantErrors(Collections.EMPTY_LIST)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(FAILED.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+
+        // deliberate: an empty JsonArray, not null — the JsonArrayConverter normalises a null column
+        // to an empty array on read anyway, so null vs [] is not a distinct wire shape downstream
+        assertThat(submission.getGroupCaseErrors(), is(notNullValue()));
+        assertThat(submission.getGroupCaseErrors().isEmpty(), is(true));
     }
 
     @Test
     void shouldUpdateCaseFileForSuccessWithWarningsStatus() {
         final UUID submissionId = randomUUID();
+        final CaseProblem caseWarning = CaseProblem.caseProblem()
+                .withProsecutorCaseReference("URN01")
+                .withProblems(Collections.singletonList(
+                        uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem.problem().withCode("CASE_WARN").build()))
+                .build();
+
         final UpdateCivilCaseReceived summonsProsecutionReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
                 .withSubmissionId(submissionId)
                 .withSubmissionStatus(SUCCESS_WITH_WARNINGS)
                 .withWarnings(Collections.EMPTY_LIST)
-                .withCaseWarnings(Collections.EMPTY_LIST)
+                .withCaseWarnings(Collections.singletonList(caseWarning))
                 .withDefendantWarnings(Collections.EMPTY_LIST)
                 .build();
 
@@ -176,13 +423,47 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(SUCCESS_WITH_WARNINGS.name())
                 .build();
 
-        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.summons-prosecution-received", summonsProsecutionReceived);
+        // caseWarnings is CaseProblem-shaped, exactly like caseErrors/groupCaseErrors
+        final javax.json.JsonObject caseWarningJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
+        when(objectToJsonObjectConverter.convert(caseWarning)).thenReturn(caseWarningJson);
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", summonsProsecutionReceived);
         when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
         submissionEventListener.updatedCivilCaseReceived(envelope);
         verify(submissionRepository).save(argumentCaptor.capture());
         final Submission submission = argumentCaptor.getValue();
         assertThat(submission.getSubmissionId(), is(submissionId));
         assertThat(submission.getSubmissionStatus(), is(SUCCESS_WITH_WARNINGS.name()));
+        assertThat(submission.getCompletedAt(), is(notNullValue()));
+        assertThat(submission.getCaseWarnings(), contains(caseWarningJson));
+        assertThat(submission.getWarnings(), is(nullValue()));
+        assertThat(submission.getDefendantWarnings(), is(notNullValue()));
+        assertThat(submission.getDefendantWarnings().isEmpty(), is(true));
+    }
+
+    @Test
+    void shouldUpdateCaseFileForSuccessStatus() {
+        final UUID submissionId = randomUUID();
+        final UpdateCivilCaseReceived updateCivilCaseReceived = UpdateCivilCaseReceived.updateCivilCaseReceived()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(SUCCESS)
+                .build();
+
+        final Submission inputSubmission = Submission.builder()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(PENDING.name())
+                .build();
+
+        final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
+        when(submissionRepository.findBy(any())).thenReturn(inputSubmission);
+        when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
+        submissionEventListener.updatedCivilCaseReceived(envelope);
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionId(), is(submissionId));
+        assertThat(submission.getSubmissionStatus(), is(SUCCESS.name()));
+        assertThat(submission.getCompletedAt(), is(notNullValue()));
     }
 
     @Test
@@ -258,7 +539,7 @@ public class SubmissionEventListenerTest {
 
         submissionEventListener.materialSubmissionRejected(envelope);
 
-        assertThat(existingSubmission.getSubmissionStatus(), is(REJECTED.toString()));
+        assertThat(existingSubmission.getSubmissionStatus(), is(FAILED.toString()));
         assertThat(existingSubmission.getCompletedAt(), is(notNullValue()));
         assertThat(existingSubmission.getErrors(), is(notNullValue()));
         assertThat(existingSubmission.getWarnings(), is(notNullValue()));
@@ -285,7 +566,7 @@ public class SubmissionEventListenerTest {
 
         submissionEventListener.materialSubmissionRejected(envelope);
 
-        assertThat(existingSubmission.getSubmissionStatus(), is(REJECTED.toString()));
+        assertThat(existingSubmission.getSubmissionStatus(), is(FAILED.toString()));
         assertThat(existingSubmission.getCompletedAt(), is(notNullValue()));
         assertThat(existingSubmission.getErrors(), is(nullValue()));
         assertThat(existingSubmission.getWarnings(), is(nullValue()));

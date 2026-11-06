@@ -16,11 +16,11 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCi
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupLoggedInUsersPermissionQueryStub;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.staging.prosecutors.civil.common.Problem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.model.Submission;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.ProsecutionCaseFileApi;
@@ -30,6 +30,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.util.UUID;
 
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -45,6 +46,7 @@ public class OtherProsecutionIT {
     private static final String PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED                   = "public.prosecutioncasefile.group-prosecution-rejected";
     private static final String PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED                   = "public.prosecutioncasefile.civil-prosecution-rejected";
     private static final String PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS = "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings";
+    private static final String PROSECUTOR_DEFENDANT_REFERENCE = "TFL-DEF-REF-1";
 
     private final JmsMessageProducerClient messageProducerClientPublic = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
 
@@ -125,7 +127,7 @@ public class OtherProsecutionIT {
                 PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_GROUP_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.FAILED);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
@@ -149,7 +151,7 @@ public class OtherProsecutionIT {
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED);
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.FAILED);
         assertThat(submission.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
     }
 
@@ -241,8 +243,12 @@ public class OtherProsecutionIT {
         assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
         assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.SUCCESS.name()));
         assertThat(submission.getType(), is("PROSECUTION"));
-        assertThat(submission.getErrors(), is(empty()));
-        assertThat(submission.getWarnings(), is(empty()));
+        assertThat(submission.getCaseErrors(), is(empty()));
+        assertThat(submission.getCaseWarnings(), is(empty()));
+        assertThat(submission.getDefendantErrors(), is(empty()));
+        assertThat(submission.getDefendantWarnings(), is(empty()));
+        assertThat(submission.getMaterialErrors(), is(empty()));
+        assertThat(submission.getMaterialWarnings(), is(empty()));
         assertThat(submission.getReceivedAt(), is(notNullValue()));
         assertThat(submission.getCompletedAt(), is(notNullValue()));
     }
@@ -263,31 +269,27 @@ public class OtherProsecutionIT {
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
-                .add("warnings", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("code", "DEFENDANT_DOB_IN_FUTURE")
-                                .add("values", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("key", "dob")
-                                                .add("value", "2050-01-01")))))
+                .add("defendantWarnings", defendantDobInFutureProblems())
                 .build();
         final JsonEnvelope warningsEventEnvelope = envelopeFrom(
-                buildMetadata("public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings", randomUUID().toString()),
+                buildMetadata(PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS, randomUUID().toString()),
                 warningsEvent);
         messageProducerClientPublic.sendMessage(
-                "public.prosecutioncasefile.prosecution-submission-succeeded-with-warnings",
+                PUBLIC_EVENT_PCF_PROSECUTION_SUBMISSION_SUCCEEDED_WITH_WARNINGS,
                 warningsEventEnvelope);
 
         final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS_WITH_WARNINGS, ouCode);
 
         assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
         assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.SUCCESS_WITH_WARNINGS.name()));
-        assertThat(submission.getWarnings(), hasSize(greaterThanOrEqualTo(1)));
-        final Problem firstWarning = submission.getWarnings().get(0);
-        assertThat(firstWarning.code, is("DEFENDANT_DOB_IN_FUTURE"));
-        assertThat(firstWarning.values, hasSize(greaterThanOrEqualTo(1)));
-        assertThat(firstWarning.values.get(0).key, is("dob"));
-        assertThat(firstWarning.values.get(0).value, is("2050-01-01"));
+        assertThat(submission.getDefendantWarnings(), hasSize(greaterThanOrEqualTo(1)));
+        final DefendantProblem firstWarning = submission.getDefendantWarnings().get(0);
+        assertThat(firstWarning.getProsecutorDefendantReference(), is(PROSECUTOR_DEFENDANT_REFERENCE));
+        final Problem defendantProblem = firstWarning.getProblems().get(0);
+        assertThat(defendantProblem.getCode(), is("DEFENDANT_DOB_IN_FUTURE"));
+        assertThat(defendantProblem.getValues(), hasSize(greaterThanOrEqualTo(1)));
+        assertThat(defendantProblem.getValues().get(0).getKey(), is("dob"));
+        assertThat(defendantProblem.getValues().get(0).getValue(), is("2050-01-01"));
     }
 
     @Test
@@ -306,31 +308,44 @@ public class OtherProsecutionIT {
                 .add("caseId", randomUUID().toString())
                 .add("externalId", submissionId.toString())
                 .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("code", "DEFENDANT_DOB_IN_FUTURE")
-                                .add("values", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("key", "dob")
-                                                .add("value", "2050-01-01")))))
+                .add("caseErrors", createArrayBuilder().build())
+                .add("defendantErrors", defendantDobInFutureProblems())
                 .build();
         final JsonEnvelope rejectionEventEnvelope = envelopeFrom(
-                buildMetadata("public.prosecutioncasefile.civil-prosecution-rejected", randomUUID().toString()),
+                buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()),
                 rejectionEvent);
         messageProducerClientPublic.sendMessage(
-                "public.prosecutioncasefile.civil-prosecution-rejected",
+                PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 rejectionEventEnvelope);
 
-        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.REJECTED, ouCode);
+        // civil-prosecution-rejected (business-validation failure at initial submission) maps to FAILED
+        final Submission submission = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.FAILED, ouCode);
 
         assertThat(submission.getSubmissionId().toString(), is(submissionId.toString()));
-        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.REJECTED.name()));
-        assertThat(submission.getErrors(), hasSize(greaterThanOrEqualTo(1)));
-        final Problem firstError = submission.getErrors().get(0);
-        assertThat(firstError.code, is("DEFENDANT_DOB_IN_FUTURE"));
-        assertThat(firstError.values, hasSize(greaterThanOrEqualTo(1)));
-        assertThat(firstError.values.get(0).key, is("dob"));
+        assertThat(submission.getSubmissionStatus(), is(SubmissionStatus.FAILED.name()));
+        assertThat(submission.getDefendantErrors(), hasSize(greaterThanOrEqualTo(1)));
+        final DefendantProblem firstError = submission.getDefendantErrors().get(0);
+        assertThat(firstError.getProsecutorDefendantReference(), is(PROSECUTOR_DEFENDANT_REFERENCE));
+        final Problem defendantProblem = firstError.getProblems().get(0);
+        assertThat(defendantProblem.getCode(), is("DEFENDANT_DOB_IN_FUTURE"));
+        assertThat(defendantProblem.getValues(), hasSize(greaterThanOrEqualTo(1)));
+        assertThat(defendantProblem.getValues().get(0).getKey(), is("dob"));
     }
+
+    private JsonArray defendantDobInFutureProblems() {
+        return createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("prosecutorDefendantReference", PROSECUTOR_DEFENDANT_REFERENCE)
+                        .add("problems", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("code", "DEFENDANT_DOB_IN_FUTURE")
+                                        .add("values", createArrayBuilder()
+                                                .add(createObjectBuilder()
+                                                        .add("key", "dob")
+                                                        .add("value", "2050-01-01"))))))
+                .build();
+    }
+
     @Test
     public void shouldRejectOtherCaseWithMalformedHearingDateRangeDate() {
         // AC9 (CIMD-3539): startDateRangeOfHearing/endDateRangeOfHearing not in YYYY-MM-DD format
