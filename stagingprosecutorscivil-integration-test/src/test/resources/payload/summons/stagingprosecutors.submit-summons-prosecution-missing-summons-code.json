@@ -1,0 +1,46 @@
+{
+  "prosecutingAuthority": "GAAAA01",
+  "hearingDetails": {
+    "courtHearingLocation": "B01BH00",
+    "dateOfHearing": "2019-08-11",
+    "timeOfHearing": "09:01:01"
+  },
+  "prosecutionCases":
+  [
+    {
+      "informant": "Adam",
+      "caseMarker": "Case mark",
+      "urn": "case-urn-value1",
+      "defendants": [
+        {
+          "defendantDetails": {
+            "prosecutorDefendantId": "TFLDEF001",
+            "documentationLanguage": "E",
+            "hearingLanguage": "E",
+            "address": {
+              "address1": "1 Test Street",
+              "postcode": "SW1A 1AA"
+            }
+          },
+          "individual": {
+            "nameDetails": {
+              "forename": "John",
+              "surname": "Smith"
+            },
+            "gender": 1
+          },
+          "offences": [
+            {
+              "offenceDetails": {
+                "cjsOffenceCode": "CA03010",
+                "offenceSequenceNo": 1,
+                "offenceWording": "Failure to comply with a community protection notice",
+                "laidDate": "2019-08-01"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

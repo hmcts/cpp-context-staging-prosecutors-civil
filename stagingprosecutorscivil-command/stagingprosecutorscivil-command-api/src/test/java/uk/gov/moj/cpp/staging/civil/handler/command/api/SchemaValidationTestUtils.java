@@ -24,6 +24,8 @@ class SchemaValidationTestUtils {
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-details.json", "json/schema/hearing-details.json"),
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-date-range-details.json", "json/schema/hearing-date-range-details.json"),
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/prosecution-case.json", "json/schema/prosecution-case.json"),
+            Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-prosecution-case.json", "json/schema/summons-prosecution-case.json"),
+            Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/summons-code.json", "json/schema/summons-code.json"),
             Map.entry("http://justice.gov.uk/domain/core/common/definitions.json", "json/schema/definitions.json"),
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant.json", "json/schema/defendant.json"),
             Map.entry("http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/defendant-details.json", "json/schema/defendant-details.json"),

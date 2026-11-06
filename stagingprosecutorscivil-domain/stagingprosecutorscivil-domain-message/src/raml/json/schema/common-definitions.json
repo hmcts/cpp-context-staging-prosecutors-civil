@@ -12,10 +12,19 @@
       "type": "string",
       "enum": [
         "PENDING",
+        "PENDING_COURT_DECISION",
+        "ACCEPTED",
         "FAILED",
         "REJECTED",
         "SUCCESS",
         "SUCCESS_WITH_WARNINGS"
+      ]
+    },
+    "submissionType": {
+      "type": "string",
+      "enum": [
+        "PROSECUTION",
+        "MATERIAL"
       ]
     },
     "nationalInsuranceNumber": {

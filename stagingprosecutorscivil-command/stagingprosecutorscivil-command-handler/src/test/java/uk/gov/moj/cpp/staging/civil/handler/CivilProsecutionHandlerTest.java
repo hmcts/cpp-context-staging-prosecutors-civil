@@ -1,11 +1,25 @@
 package uk.gov.moj.cpp.staging.civil.handler;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.util.UUID.randomUUID;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloperWithEvents;
+import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
+import static uk.gov.justice.services.test.utils.core.matchers.HandlerMatcher.isHandler;
+import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
+
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
@@ -17,31 +31,29 @@ import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.*;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.*;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.util.UUID.randomUUID;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
-import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloperWithEvents;
-import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
-import static uk.gov.justice.services.test.utils.core.matchers.HandlerMatcher.isHandler;
-import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CivilProsecutionHandlerTest {
@@ -141,6 +153,42 @@ public class CivilProsecutionHandlerTest {
         verifyUpdateCaseFileReceivedPrivateEvent();
     }
 
+    @Test
+    public void shouldRaiseUpdateCivilCaseReceivedPrivateEventWithSummonsApplicationId() throws Exception {
+        final UUID summonsApplicationId = randomUUID();
+        final UpdateCivilCase updateCivilCase = UpdateCivilCase.updateCivilCase()
+                .withSubmissionId(UUID.randomUUID())
+                .withSubmissionStatus(SubmissionStatus.PENDING.name())
+                .withSummonsApplicationId(summonsApplicationId)
+                .build();
+
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString())
+                        .withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+
+        final Envelope<UpdateCivilCase> envelope = Enveloper.envelop(updateCivilCase)
+                .withName(PRIVATE_COMMAND_UPDATE_CASE_PROFILE)
+                .withMetadataFrom(requestEnvelope);
+
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
+
+        civilProsecutionHandler.handleCivilCaseUpdate(envelope);
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata()
+                                .withName(PRIVATE_EVENT_UPDATE_CASE_FILE_RECEIVED),
+                        payload().isJson(allOf(
+                                withJsonPath("$.submissionId", notNullValue()),
+                                withJsonPath("$.summonsApplicationId", is(summonsApplicationId.toString())))
+                        )
+                ))
+        );
+    }
+
     private void verifyOtherCaseReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
@@ -191,10 +239,13 @@ public class CivilProsecutionHandlerTest {
                                 withJsonPath("$.submissionId", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].caseMarker", is("Markers")),
                                 withJsonPath("$.prosecutionCases[0].paymentReference", is("PAYREF123")),
-                                withJsonPath("$.prosecutionCases[0].summonsCode", is("FIRST")),
+                                withJsonPath("$.prosecutionCases[0].summonsCode", is("A")),
                                 withJsonPath("$.prosecutionCases[0].defendants[0]", notNullValue()),
                                 withJsonPath("$.prosecutionCases[0].defendants[0].offences[0]", notNullValue()),
-                                withJsonPath("$.prosecutionCases[0].defendants[0].offences[0].arrestDate", is(LocalDate.now().toString())))
+                                withJsonPath("$.prosecutionCases[0].defendants[0].offences[0].arrestDate", is(LocalDate.now().toString())),
+                                withJsonPath("$.fileName", is("summons-batch.csv")),
+                                withJsonPath("$.submittedByUserName", is("Richard Chapman")),
+                                withJsonPath("$.prosecutorShortName", is("CPS")))
                         )
                 ))
         );
@@ -291,10 +342,10 @@ public class CivilProsecutionHandlerTest {
                         .withCourtHearingLocation("B01LY01")
                         .build())
                 .withProsecutingAuthority("THREE RIVER")
-                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                .withProsecutionCases(Arrays.asList(SummonsProsecutionCase.summonsProsecutionCase()
                         .withCaseMarker("Markers")
                         .withPaymentReference("PAYREF123")
-                        .withSummonsCode("FIRST")
+                        .withSummonsCode("A")
                         .withDefendants(Arrays.asList(Defendant.defendant()
                                 .withOffences(Arrays.asList(Offence.offence()
                                         .withArrestDate(LocalDate.now())
@@ -302,6 +353,9 @@ public class CivilProsecutionHandlerTest {
                                 .build()))
                         .build()))
                 .withSubmissionId(UUID.fromString("ce1c9255-725f-4669-a7e5-78c07252c82d"))
+                .withFileName("summons-batch.csv")
+                .withSubmittedByUserName("Richard Chapman")
+                .withProsecutorShortName("CPS")
                 .build();
 
         final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(

@@ -24,4 +24,12 @@ public class RuleConstants {
         return objectMapper.writeValueAsString(expectedPermission);
     }
 
+    public static String getBulkUploadPermission() throws JsonProcessingException {
+        final ExpectedPermission expectedPermission = builder()
+                .withObject("BULK_CASE")
+                .withAction("GrantAccess")
+                .build();
+        return objectMapper.writeValueAsString(expectedPermission);
+    }
+
 }

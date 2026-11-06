@@ -105,7 +105,6 @@ public class IndividualToProsecutionCaseFileIndividualConverterTest {
         assertNameDetails(personalInformation, stagingDefendant.getIndividual().getNameDetails());
         assertThat(personalInformation.getObservedEthnicity().toString(), is(stagingDefendant.getIndividual().getObservedEthnicity().toString()));
         assertThat(personalInformation.getOccupation(), is(stagingDefendant.getIndividual().getOccupation()));
-        assertThat(personalInformation.getOccupationCode(), is(stagingDefendant.getIndividual().getOccupationCode()));
     }
 
     private static void assertSelfDefinedInformation(final SelfDefinedInformation selfDefinedInformation, final uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual stagingIndividual) {

@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -90,12 +91,12 @@ public class ProsecutionSubmissionAggregateTest {
                 .withTimeOfHearing("10:00:00")
                 .withCourtHearingLocation("COURT2")
                 .build();
-        final List<ProsecutionCase> cases = Collections.singletonList(ProsecutionCase.prosecutionCase()
+        final List<SummonsProsecutionCase> cases = Collections.singletonList(SummonsProsecutionCase.summonsProsecutionCase()
                 .withUrn("URN456")
                 .build());
 
         final Stream<Object> events = aggregate.receiveSummons(
-                submissionId, hearingDetails, "GAAAA01", cases);
+                submissionId, hearingDetails, "GAAAA01", cases,null,null,null);
 
         final List<Object> eventList = events.collect(Collectors.toList());
         assertThat(eventList.size(), is(1));

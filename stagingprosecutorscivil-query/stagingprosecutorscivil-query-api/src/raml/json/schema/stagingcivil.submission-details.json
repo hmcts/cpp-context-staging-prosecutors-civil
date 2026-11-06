@@ -9,11 +9,80 @@
     "status": {
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/submissionStatus"
     },
-    "warnings": {
-      "type": "array"
+    "type": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/submissionType"
     },
-    "errors": {
-      "type": "array"
+    "receivedAt": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date-time"
+    },
+    "completedAt": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date-time"
+    },
+    "materialWarnings": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/problem.json"
+      }
+    },
+    "materialErrors": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/problem.json"
+      }
+    },
+    "caseErrors": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
+      }
+    },
+    "defendantErrors": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
+      }
+    },
+    "caseWarnings": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
+      }
+    },
+    "defendantWarnings": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
+      }
+    },
+    "fileName": {
+      "description": "The original filename of the uploaded complaints CSV file, when the submission originated from a CSV upload",
+      "type": "string"
+    },
+    "username": {
+      "description": "The display name of the user who submitted the complaints CSV file, when the submission originated from a CSV upload",
+      "type": "string"
+    },
+    "prosecutingAuthority": {
+      "description": "The resolved short name of the prosecuting authority for the submission, when the submission originated from a CSV upload",
+      "type": "string"
     }
-  }
+  },
+  "required": [
+    "id",
+    "status",
+    "type",
+    "receivedAt",
+    "materialErrors",
+    "materialWarnings",
+    "caseErrors",
+    "defendantErrors",
+    "caseWarnings",
+    "defendantWarnings"
+  ]
 }

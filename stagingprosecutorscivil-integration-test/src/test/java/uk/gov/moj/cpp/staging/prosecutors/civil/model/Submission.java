@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.staging.prosecutors.civil.model;
 
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.common.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.queryclient.Query;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.queryclient.QueryPoller;
@@ -18,9 +20,17 @@ public class Submission {
 
     private final String submissionStatus;
 
-    private final List<Problem> errors;
+    private final List<Problem> materialErrors;
 
-    private final List<Problem> warnings;
+    private final List<Problem> materialWarnings;
+
+    private final List<CaseProblem> caseErrors;
+
+    private final List<CaseProblem> caseWarnings;
+
+    private final List<DefendantProblem> defendantErrors;
+
+    private final List<DefendantProblem> defendantWarnings;
 
     private final String type;
 
@@ -28,23 +38,47 @@ public class Submission {
 
     private final ZonedDateTime completedAt;
 
+    private final String fileName;
+
+    private final String username;
+
+    private final String prosecutingAuthority;
+
+    private final UUID summonsApplicationId;
+
     @JsonCreator
     public Submission(
             @JsonProperty("id") UUID submissionId,
             @JsonProperty("status") String submissionStatus,
-            @JsonProperty("errors") List<Problem> errors,
-            @JsonProperty("warnings") List<Problem> warnings,
+            @JsonProperty("materialErrors") List<Problem> materialErrors,
+            @JsonProperty("materialWarnings") List<Problem> materialWarnings,
+            @JsonProperty("caseErrors") List<CaseProblem> caseErrors,
+            @JsonProperty("caseWarnings") List<CaseProblem> caseWarnings,
+            @JsonProperty("defendantErrors") List<DefendantProblem> defendantErrors,
+            @JsonProperty("defendantWarnings") List<DefendantProblem> defendantWarnings,
             @JsonProperty("type") String type,
             @JsonProperty("receivedAt") ZonedDateTime receivedAt,
-            @JsonProperty("completedAt") ZonedDateTime completedAt) {
+            @JsonProperty("completedAt") ZonedDateTime completedAt,
+            @JsonProperty("fileName") String fileName,
+            @JsonProperty("username") String username,
+            @JsonProperty("prosecutingAuthority") String prosecutingAuthority,
+            @JsonProperty("summonsApplicationId") UUID summonsApplicationId) {
 
         this.submissionId = submissionId;
         this.submissionStatus = submissionStatus;
-        this.errors = errors;
-        this.warnings = warnings;
+        this.materialErrors = materialErrors;
+        this.materialWarnings = materialWarnings;
+        this.caseErrors = caseErrors;
+        this.caseWarnings = caseWarnings;
+        this.defendantErrors = defendantErrors;
+        this.defendantWarnings = defendantWarnings;
         this.type = type;
         this.receivedAt = receivedAt;
         this.completedAt = completedAt;
+        this.fileName = fileName;
+        this.username = username;
+        this.prosecutingAuthority = prosecutingAuthority;
+        this.summonsApplicationId = summonsApplicationId;
     }
 
     public static QueryPoller<Submission> poller() {
@@ -63,19 +97,51 @@ public class Submission {
         return submissionId;
     }
 
-    public List<Problem> getErrors() {
-        return errors;
-    }
-
-    public List<Problem> getWarnings() {
-        return warnings;
-    }
-
     public ZonedDateTime getReceivedAt() {
         return receivedAt;
     }
 
     public ZonedDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getProsecutingAuthority() {
+        return prosecutingAuthority;
+    }
+
+    public UUID getSummonsApplicationId() {
+        return summonsApplicationId;
+    }
+
+    public List<Problem> getMaterialErrors() {
+        return materialErrors;
+    }
+
+    public List<Problem> getMaterialWarnings() {
+        return materialWarnings;
+    }
+
+    public List<CaseProblem> getCaseErrors() {
+        return caseErrors;
+    }
+
+    public List<CaseProblem> getCaseWarnings() {
+        return caseWarnings;
+    }
+
+    public List<DefendantProblem> getDefendantErrors() {
+        return defendantErrors;
+    }
+
+    public List<DefendantProblem> getDefendantWarnings() {
+        return defendantWarnings;
     }
 }

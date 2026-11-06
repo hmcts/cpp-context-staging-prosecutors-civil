@@ -19,8 +19,18 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.validators.OffenceValidator;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.*;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCase;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.OtherCaseWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SubmitMaterialWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.SummonsWithSubmissionId;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.OffenceDetails;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -315,14 +325,14 @@ public class CivilProsecutionApiTest {
                 )
                 .build()
         );
-        List<ProsecutionCase> prosecutionCaseList = new ArrayList();
+        List<SummonsProsecutionCase> prosecutionCaseList = new ArrayList();
         prosecutionCaseList.add(
-            ProsecutionCase.prosecutionCase()
+            SummonsProsecutionCase.summonsProsecutionCase()
                 .withUrn("urn1")
                 .withInformant("Adam")
                 .withCaseMarker("caseMarker")
                 .withPaymentReference("PAYREF102")
-                .withSummonsCode("FIRST")
+                .withSummonsCode("A")
                 .withRelatedReferenceNumber("RELREF-1")
                 .withDefendants(defendants)
                 .build()
