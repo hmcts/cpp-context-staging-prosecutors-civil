@@ -61,7 +61,6 @@ public class IndividualToProsecutionCaseFileIndividualConverter implements Conve
                 .withDriverLicenceIssue(null)
                 .withDriverLicenceCode(null)
                 .withCustodyStatus(ofNullable(individual.getCustodyStatus()).map(String::toString).orElse(null))
-                .withBailConditions(ofNullable(individual.getBailConditions()).map(String::toString).orElse(null))
                 .withParentGuardianInformation(buildParentGuardianInformation(ofNullable(individual.getParentGuardian()).orElse(null)))
                 .build();
 
@@ -77,7 +76,6 @@ public class IndividualToProsecutionCaseFileIndividualConverter implements Conve
                 .withGivenName3(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getNameDetails).map(NameDetails::getForename3).orElse(null))
                 .withObservedEthnicity(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getObservedEthnicity).map(BigDecimal::intValue).orElse(null))
                 .withOccupation(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getOccupation).orElse(null))
-                .withOccupationCode(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getOccupationCode).orElse(null))
                 .withTitle(ofNullable(defendant.getIndividual()).map(uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual::getNameDetails).map(NameDetails::getTitle).orElse(null))
                 .build();
     }

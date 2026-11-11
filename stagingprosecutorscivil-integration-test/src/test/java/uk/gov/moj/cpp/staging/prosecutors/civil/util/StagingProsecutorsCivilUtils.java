@@ -37,9 +37,11 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
@@ -53,6 +55,8 @@ public class StagingProsecutorsCivilUtils {
 
     public static final String SUMMONS_CONTENT_TYPE = "application/vnd.stagingcivil.summons+json";
     public static final String OTHER_CASE_CONTENT_TYPE = "application/vnd.stagingcivil.other-case+json";
+    public static final String SUBMISSION_DETAILS_MEDIA_TYPE = "application/vnd.stagingcivil.submission-details+json";
+    public static final String CJSOUCODE_HEADER = "CJSOUCODE";
     private static final RestClient restClient = new RestClient();
     private static final String COMMAND_BASE_URI = getBaseUri() + "/stagingprosecutorscivil-command-api/command/api/rest/staging-civil";
     private static final String TOPIC_NAME = "jms.topic.stagingprosecutorscivil.event";
@@ -62,7 +66,9 @@ public class StagingProsecutorsCivilUtils {
     private static final String READ_BASE_URI = getBaseUri()
             + "/stagingprosecutorscivil-query-api/query/api/rest/staging-civil";
     private static final String WRITE_BASE_URI = COMMAND_BASE_URI + "/v1";
+    public static final String CSV_CONTENT_TYPE = "text/csv";
     private static final String PROSECUTOR_DOCUMENT_UPLOAD_COMMAND_URL = WRITE_BASE_URI + "/prosecutions/%s/materials";
+    private static final String COMPLAINTS_FILES_UPLOAD_COMMAND_URL = COMMAND_BASE_URI + "/complaints-files";
 
     public static UrlResponse submitSummons(final String inputFileName, final String contentType) {
 
@@ -70,9 +76,19 @@ public class StagingProsecutorsCivilUtils {
 
     }
 
+    public static int submitSummonsProsecutionStatus(final String inputFileName, final String contentType) {
+        return postCommand(inputFileName, contentType).getStatus();
+    }
+
     public static UrlResponse submitOtherCase(final String inputFileName, final String contentType) {
 
         return submitProsecution(inputFileName, contentType, "stagingprosecutorscivil.event.other-case-received");
+
+    }
+
+    public static Response submitOtherCaseExpectingRejection(final String inputFileName, final String contentType) {
+
+        return postCommand(inputFileName, contentType);
 
     }
 
@@ -116,8 +132,30 @@ public class StagingProsecutorsCivilUtils {
         return getSubmission(submissionId, withJsonPath("status", is(expectedSubmissionStatus.name())));
     }
 
+    public static Submission pollForSubmission(final UUID submissionId, final SubmissionStatus expectedSubmissionStatus, final String ouCode) {
+        return getSubmission(submissionId, ouCode, withJsonPath("status", is(expectedSubmissionStatus.name())));
+    }
+
+    public static Submission pollForSubmissionWithAdditionalInfo(final UUID submissionId, final SubmissionStatus expectedSubmissionStatus) {
+        return getSubmission(submissionId, true, withJsonPath("status", is(expectedSubmissionStatus.name())));
+    }
+
     public static Submission getSubmission(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
-        final String payload = poll(getRequestParams(submissionId))
+        return getSubmission(submissionId, false, matcher);
+    }
+
+    public static Submission getSubmission(final UUID submissionId, final boolean additionalInfo, final Matcher<? super ReadContext> matcher) {
+        final String payload = pollForSubmissionPayload(submissionId, additionalInfo, matcher);
+
+        try {
+            return mapper.readValue(payload, Submission.class);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Submission getSubmission(final UUID submissionId, final String ouCode, final Matcher<? super ReadContext> matcher) {
+        final String payload = poll(getRequestParamsWithOuCode(submissionId, ouCode))
                 .pollDelay(0, MILLISECONDS)
                 .pollInterval(100, MILLISECONDS)
                 .timeout(10, SECONDS)
@@ -135,12 +173,84 @@ public class StagingProsecutorsCivilUtils {
         }
     }
 
-    private static RequestParams getRequestParams(final UUID submissionId) {
+    public static JsonObject pollForSubmissionAsJson(final UUID submissionId, final SubmissionStatus expectedSubmissionStatus) {
+        return getSubmissionAsJson(submissionId, withJsonPath("status", is(expectedSubmissionStatus.name())));
+    }
+
+    public static JsonObject getSubmissionAsJson(final UUID submissionId, final Matcher<? super ReadContext> matcher) {
+        final String payload = pollForSubmissionPayload(submissionId, false, matcher);
+
+        return createReader(new ByteArrayInputStream(payload.getBytes())).readObject();
+    }
+
+    private static String pollForSubmissionPayload(final UUID submissionId, final boolean additionalInfo, final Matcher<? super ReadContext> matcher) {
+        return poll(getRequestParams(submissionId, additionalInfo))
+                .pollDelay(0, MILLISECONDS)
+                .pollInterval(100, MILLISECONDS)
+                .timeout(30, SECONDS)
+                .until(
+                        status().is(OK),
+                        payload().isJson(matcher)
+                )
+                .getPayload();
+    }
+
+    public static Response getComplaintsFilesTemplate() {
+        return restClient.query(READ_BASE_URI + "/complaints-files-template", CSV_CONTENT_TYPE);
+    }
+
+    public static Response getSubmissionErrorDetailsCsv(final UUID submissionId) {
+        return getSubmissionErrorDetailsCsv(submissionId, randomUUID().toString());
+    }
+
+    public static Response getSubmissionErrorDetailsCsv(final UUID submissionId, final String userId) {
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, userId);
+        return restClient.query(READ_BASE_URI + "/submissions/" + submissionId, CSV_CONTENT_TYPE, headers);
+    }
+
+    public static Response queryRaw(final String submissionIdPath) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionIdPath;
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, UUID.randomUUID());
+        return restClient.query(url, SUBMISSION_DETAILS_MEDIA_TYPE, headers);
+    }
+
+    public static Response queryRawNoAuth(final UUID submissionId) {
         final String url = READ_BASE_URI + "/submissions/" + submissionId;
+        return restClient.query(url, SUBMISSION_DETAILS_MEDIA_TYPE, new MultivaluedHashMap<>());
+    }
+
+    public static Response queryRawWrongMediaType(final UUID submissionId) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, UUID.randomUUID());
+        return restClient.query(url, MediaType.APPLICATION_JSON, headers);
+    }
+
+    public static Response getSubmissionDetailsRaw(final UUID submissionId, final String userId) {
+        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        headers.putSingle(USER_ID, userId);
+        return restClient.query(READ_BASE_URI + "/submissions/" + submissionId,
+                "application/vnd.stagingcivil.submission-details+json", headers);
+    }
+
+    private static RequestParams getRequestParams(final UUID submissionId, final boolean additionalInfo) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId
+                + (additionalInfo ? "?additionalInfo=true" : "");
         final String mediaType = "application/vnd.stagingcivil.submission-details+json";
 
-        return requestParams(url, mediaType)
+        return requestParams(url, SUBMISSION_DETAILS_MEDIA_TYPE)
                 .withHeader(USER_ID, UUID.randomUUID())
+                .build();
+    }
+
+    private static RequestParams getRequestParamsWithOuCode(final UUID submissionId, final String ouCode) {
+        final String url = READ_BASE_URI + "/submissions/" + submissionId;
+
+        return requestParams(url, SUBMISSION_DETAILS_MEDIA_TYPE)
+                .withHeader(USER_ID, UUID.randomUUID())
+                .withHeader(CJSOUCODE_HEADER, ouCode)
                 .build();
     }
 
@@ -176,6 +286,44 @@ public class StagingProsecutorsCivilUtils {
         request.setEntity(multipartEntityBuilder.build());
         request.setHeader(HeaderConstants.USER_ID, randomUUID().toString());
 
+
+        return HttpClients.createDefault().execute(request);
+    }
+
+    public static HttpResponse sendComplaintsFileUploadRequest(final File file, final String userId) throws IOException {
+        final HttpPost request = new HttpPost(COMPLAINTS_FILES_UPLOAD_COMMAND_URL);
+
+        final MultipartEntityBuilder multipartEntityBuilder = create()
+                .setMode(BROWSER_COMPATIBLE)
+                .addBinaryBody("file", file, MULTIPART_FORM_DATA, file.getName());
+
+        request.setEntity(multipartEntityBuilder.build());
+        request.setHeader(HeaderConstants.USER_ID, userId);
+
+        return HttpClients.createDefault().execute(request);
+    }
+
+    public static HttpResponse sendComplaintsFileUploadRequestWithoutFilePart(final String userId) throws IOException {
+        final HttpPost request = new HttpPost(COMPLAINTS_FILES_UPLOAD_COMMAND_URL);
+
+        final MultipartEntityBuilder multipartEntityBuilder = create()
+                .setMode(BROWSER_COMPATIBLE)
+                .addTextBody("notFile", "irrelevant");
+
+        request.setEntity(multipartEntityBuilder.build());
+        request.setHeader(HeaderConstants.USER_ID, userId);
+
+        return HttpClients.createDefault().execute(request);
+    }
+
+    public static HttpResponse sendComplaintsFileUploadRequestWithoutUserIdHeader(final File file) throws IOException {
+        final HttpPost request = new HttpPost(COMPLAINTS_FILES_UPLOAD_COMMAND_URL);
+
+        final MultipartEntityBuilder multipartEntityBuilder = create()
+                .setMode(BROWSER_COMPATIBLE)
+                .addBinaryBody("file", file, MULTIPART_FORM_DATA, file.getName());
+
+        request.setEntity(multipartEntityBuilder.build());
 
         return HttpClients.createDefault().execute(request);
     }

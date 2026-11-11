@@ -10,6 +10,7 @@ import static java.util.stream.IntStream.rangeClosed;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address.address;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ContactDetails.contactDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.DefendantDetails.defendantDetails;
+import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails.hearingDateRangeDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails.hearingDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual.individual;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.NameDetails.nameDetails;
@@ -19,8 +20,10 @@ import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardianIndi
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardianNameDetails.parentGuardianNameDetails;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardianOrganisation.parentGuardianOrganisation;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase.prosecutionCase;
+import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase.summonsProsecutionCase;
 import static uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation.selfDefinedInformation;
 
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Channel;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
@@ -34,15 +37,22 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Individual;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Language;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.NameDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
-import uk.gov.moj.cpp.staging.prosecutors.json.schemas.OffenceDateCode;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Organisation;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ParentGuardian;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.CivilProsecutionSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.GroupSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicCivilProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupParkedForSummonsApplicationApproval;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupProsecutionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupSubmissionRejected;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicParkedForSummonsApplicationApproval;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionApproved;
+import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicSubmissionRejected;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -65,6 +75,8 @@ public class Prosecutors {
     public static final String PNC_IDENTIFIER = "PnCidentifier";
     public static final String ORGANISATION_NAME = "Organisation Name";
     public static final String COMPANY_TELEPHONE_NUMBER = "12323453456";
+    public static final LocalDate START_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 12);
+    public static final LocalDate END_DATE_RANGE_OF_HEARING = LocalDate.of(2026, 3, 14);
     public static final String ENFORCEMENT_COURT_HEARING_LOCATION = "B01LY01";
 
     public static List<Offence> prosecutorsOffenceList(final int numberElements) {
@@ -77,20 +89,14 @@ public class Prosecutors {
 
         return Offence.offence()
                 .withOffenceDetails(offenceDetails()
-                        .withBackDuty(("12"))
-                        .withBackDutyDateFrom((parse("2018-02-02")))
-                        .withBackDutyDateTo((parse("2018-02-20")))
                         .withCjsOffenceCode("PS0000" + sequenceNo)
                         .withOffenceCommittedDate(parse("2018-02-25"))
                         .withOffenceCommittedEndDate((parse("2018-02-25")))
-                        .withOffenceDateCode(OffenceDateCode.NUMBER_1)
                         .withOffenceLocation(("fenceLocation"))
                         .withOffenceSequenceNo(sequenceNo)
                         .withOffenceWording("fenceWording")
                         .withOffenceWordingWelsh(("fenceWordingWelsh"))
                         .withProsecutorCompensation(("23"))
-                        .withVehicleMake(("Ford"))
-                        .withVehicleRegistrationMark(("AA11 ABC"))
                         .build())
                 .withStatementOfFacts("Statement  facts")
                 .withStatementOfFactsWelsh("Statement  facts welsh")
@@ -144,8 +150,12 @@ public class Prosecutors {
         return PublicGroupProsecutionRejected.publicGroupProsecutionRejected()
                 .withExternalId(SUBMISSION_ID)
                 .withCaseErrors(asList(
-                        Problem.problem()
-                                .withCode("ERR01")
+                        CaseProblem.caseProblem()
+                                .withProsecutorCaseReference("URN01")
+                                .withProblems(asList(
+                                        Problem.problem()
+                                                .withCode("ERR01")
+                                                .build()))
                                 .build()))
                 .withDefendantErrors(asList(
                         DefendantProblem.defendantProblem()
@@ -155,8 +165,12 @@ public class Prosecutors {
                                                 .build()))
                                 .build()))
                 .withGroupCaseErrors(asList(
-                        Problem.problem()
-                                .withCode("ERR03")
+                        CaseProblem.caseProblem()
+                                .withProsecutorCaseReference(null)
+                                .withProblems(asList(
+                                        Problem.problem()
+                                                .withCode("ERR03")
+                                                .build()))
                                 .build()))
                 .build();
     }
@@ -165,8 +179,12 @@ public class Prosecutors {
         return PublicCivilProsecutionRejected.publicCivilProsecutionRejected()
                 .withExternalId(SUBMISSION_ID)
                 .withCaseErrors(asList(
-                        Problem.problem()
-                                .withCode("ERR01")
+                        CaseProblem.caseProblem()
+                                .withProsecutorCaseReference("URN01")
+                                .withProblems(asList(
+                                        Problem.problem()
+                                                .withCode("ERR01")
+                                                .build()))
                                 .build()))
                 .withDefendantErrors(asList(
                         DefendantProblem.defendantProblem()
@@ -192,9 +210,57 @@ public class Prosecutors {
                 .build();
     }
 
+    public static PublicParkedForSummonsApplicationApproval parkedForSummonsApplicationApproval() {
+        return PublicParkedForSummonsApplicationApproval.publicParkedForSummonsApplicationApproval()
+                .withExternalId(SUBMISSION_ID)
+                .withCaseId(randomUUID())
+                .withApplicationId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicGroupParkedForSummonsApplicationApproval groupParkedForSummonsApplicationApproval() {
+        return PublicGroupParkedForSummonsApplicationApproval.publicGroupParkedForSummonsApplicationApproval()
+                .withExternalId(SUBMISSION_ID)
+                .withGroupId(randomUUID())
+                .withApplicationId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicSubmissionApproved submissionApproved() {
+        return PublicSubmissionApproved.publicSubmissionApproved()
+                .withExternalId(SUBMISSION_ID)
+                .withCaseId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicSubmissionRejected submissionRejected() {
+        return PublicSubmissionRejected.publicSubmissionRejected()
+                .withExternalId(SUBMISSION_ID)
+                .withCaseId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
+    public static PublicGroupSubmissionApproved groupSubmissionApproved() {
+        return PublicGroupSubmissionApproved.publicGroupSubmissionApproved()
+                .withExternalId(SUBMISSION_ID)
+                .withGroupId(randomUUID())
+                .build();
+    }
+
+    public static PublicGroupSubmissionRejected groupSubmissionRejected() {
+        return PublicGroupSubmissionRejected.publicGroupSubmissionRejected()
+                .withExternalId(SUBMISSION_ID)
+                .withGroupId(randomUUID())
+                .withChannel(Channel.CIVIL)
+                .build();
+    }
+
     private static Individual.Builder prosecutorsIndividual() {
         return individual()
-                .withAliases(asList(prosecutorsNameDetails(), prosecutorsNameDetails()))
                 .withContactDetails(prosecutorsContactDetails())
                 .withDateOfBirth(LocalDate.now())
                 .withDriverNumber(("Driver Number"))
@@ -202,13 +268,13 @@ public class Prosecutors {
                 .withGender(Gender.NUMBER_1)
                 .withNameDetails(prosecutorsNameDetails())
                 .withNationalInsuranceNumber(("National Insurance Number"))
+                .withNationality(("GBR"))
+                .withAdditionalNationality(("FRA"))
                 .withObservedEthnicity((BigDecimal.ONE))
                 .withOccupation(("Occupation"))
                 .withCustodyStatus(("E"))
-                .withBailConditions(("BAIL CONDITIONS"))
                 .withLanguageRequirement(("languageNeeds"))
                 .withSpecificRequirements(("specialNeeds"))
-                .withOccupationCode((1))
                 .withNationality("GBR")
                 .withAdditionalNationality("POL");
     }
@@ -263,7 +329,6 @@ public class Prosecutors {
                         .withCroNumber(CRO_NUMBER)
                         .withDocumentationLanguage(Language.E)
                         .withHearingLanguage(Language.E)
-                        .withNumPreviousConvictions(1)
                         .withPncIdentifier(PNC_IDENTIFIER)
                         .withProsecutorCosts(BigDecimal.TEN.toString())
                         .withProsecutorDefendantId(randomUUID().toString())
@@ -273,7 +338,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }
@@ -287,7 +351,6 @@ public class Prosecutors {
                         .withCroNumber(CRO_NUMBER)
                         .withDocumentationLanguage(Language.E)
                         .withHearingLanguage(Language.E)
-                        .withNumPreviousConvictions(1)
                         .withPncIdentifier(PNC_IDENTIFIER)
                         .withProsecutorCosts(BigDecimal.TEN.toString())
                         .withProsecutorDefendantId(randomUUID().toString())
@@ -297,7 +360,6 @@ public class Prosecutors {
                 .withOrganisation(Organisation.organisation()
                         .withOrganisationName(ORGANISATION_NAME)
                         .withCompanyTelephoneNumber(COMPANY_TELEPHONE_NUMBER)
-                        .withAliasOrganisationNames(asList("Alias1", "Alias2", "Alias3"))
                         .build())
                 .build();
     }
@@ -337,6 +399,19 @@ public class Prosecutors {
                 .build();
     }
 
+    public static OtherCaseReceived enforcementOtherCaseReceived() {
+        return OtherCaseReceived.otherCaseReceived()
+                .withSubmissionId(SUBMISSION_ID)
+                .withProsecutionCases(Arrays.asList(otherCaseCaseDetail(), otherCaseCaseDetail()))
+                .withHearingDateRangeDetails(hearingDateRangeDetails()
+                        .withStartDateRangeOfHearing(START_DATE_RANGE_OF_HEARING)
+                        .withEndDateRangeOfHearing(END_DATE_RANGE_OF_HEARING)
+                        .withCourtHearingLocation(ENFORCEMENT_COURT_HEARING_LOCATION)
+                        .build())
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
+                .build();
+    }
+
     public static OtherCaseReceived otherCaseReceived() {
         return OtherCaseReceived.otherCaseReceived()
                 .withSubmissionId(SUBMISSION_ID)
@@ -372,14 +447,25 @@ public class Prosecutors {
                 .build();
     }
 
-    public static ProsecutionCase summonsCaseDetail() {
+    public static SummonsProsecutionCase summonsCaseDetail() {
+        return summonsProsecutionCase()
+                .withUrn(URN)
+                .withInformant(INFORMANT)
+                .withCaseMarker(CASE_MARKER)
+                .withDefendants(singletonList(prosecutorsDefendant()))
+                .withPaymentReference(PAYMENT_REFERENCE)
+                .withSummonsCode("A")
+                .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
+                .build();
+    }
+
+    public static ProsecutionCase otherCaseDetail() {
         return prosecutionCase()
                 .withUrn(URN)
                 .withInformant(INFORMANT)
                 .withCaseMarker(CASE_MARKER)
                 .withDefendants(singletonList(prosecutorsDefendant()))
                 .withPaymentReference(PAYMENT_REFERENCE)
-                .withSummonsCode("summons_code")
                 .withRelatedReferenceNumber(RELATED_REFERENCE_NUMBER)
                 .build();
     }

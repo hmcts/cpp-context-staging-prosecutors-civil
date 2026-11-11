@@ -8,6 +8,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus.SUCCESS;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
@@ -16,12 +17,10 @@ import uk.gov.moj.cpp.persistence.entity.CaseDetail;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
@@ -30,6 +29,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +52,9 @@ public class SubmissionEventListener {
 
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Inject
+    private UtcClock utcClock;
 
     @Handles("stagingprosecutorscivil.event.other-case-received")
     public void otherCaseReceived(final Envelope<OtherCaseReceived> event) {
@@ -101,6 +104,10 @@ public class SubmissionEventListener {
                 .withCaseDetail(caseDetails)
                 .withErrors(null)
                 .withWarnings(null)
+                .withType(SubmissionType.PROSECUTION)
+                .withFileName(summonsReceived.getFileName())
+                .withSubmittedByUserName(summonsReceived.getSubmittedByUserName())
+                .withProsecutorShortName(summonsReceived.getProsecutorShortName())
                 .build();
 
         submissionRepository.save(submission);
@@ -119,18 +126,69 @@ public class SubmissionEventListener {
             return;
         }
 
-        if (SubmissionStatus.REJECTED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
-            submission.setErrors(transformErrorsToJsonArray(updatedCivilCaseReceived.getCaseErrors()));
-            submission.setGroupCaseErrors(transformErrorsToJsonArray(updatedCivilCaseReceived.getGroupCaseErrors()));
+        if (!isValidTransition(submission.getSubmissionStatus(), updatedCivilCaseReceived.getSubmissionStatus())) {
+            LOGGER.info("Ignoring submissionStatus transition to {} for SubmissionId {} - current status is {}, which does not allow this transition",
+                    updatedCivilCaseReceived.getSubmissionStatus(), updatedCivilCaseReceived.getSubmissionId(), submission.getSubmissionStatus());
+            return;
+        }
+
+        if (SubmissionStatus.FAILED.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
+            submission.setGroupCaseErrors(transformCaseProblemsToJsonArray(
+                    mergeCaseProblems(updatedCivilCaseReceived.getCaseErrors(), updatedCivilCaseReceived.getGroupCaseErrors())));
             submission.setDefendantErrors(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantErrors()));
         } else if (SubmissionStatus.SUCCESS_WITH_WARNINGS.equals(updatedCivilCaseReceived.getSubmissionStatus())) {
-            submission.setWarnings(transformErrorsToJsonArray(updatedCivilCaseReceived.getWarnings()));
-            submission.setCaseWarnings(transformErrorsToJsonArray(updatedCivilCaseReceived.getCaseWarnings()));
+            submission.setCaseWarnings(transformCaseProblemsToJsonArray(updatedCivilCaseReceived.getCaseWarnings()));
             submission.setDefendantWarnings(transformDefendantProblemsToJsonArray(updatedCivilCaseReceived.getDefendantWarnings()));
         }
 
+        if (updatedCivilCaseReceived.getSummonsApplicationId() != null) {
+            submission.setSummonsApplicationId(updatedCivilCaseReceived.getSummonsApplicationId());
+        }
+
+        if (isTerminalStatus(updatedCivilCaseReceived.getSubmissionStatus())) {
+            // Wall-clock time, not the event's metadata createdAt: this listener's viewstore is
+            // derived state, but completedAt is intentionally allowed to differ on replay/rebuild
+            // (it reflects when this projection observed completion, not the original event time).
+            submission.setCompletedAt(utcClock.now());
+        }
         submission.setSubmissionStatus(updatedCivilCaseReceived.getSubmissionStatus().name());
         submissionRepository.save(submission);
+    }
+
+    /**
+     * PCF sends {@code submission-approved}/{@code group-submission-approved} for every
+     * successful CIVIL summons case (gated only on channel and initiation code), from the same
+     * trigger as, and immediately after, the pre-existing {@code
+     * civil.prosecution-submission-succeeded}/{@code group-submission-succeeded} events — not
+     * only ones that went through the summons-application-approval (SA) parking flow. Without
+     * this guard, ACCEPTED arriving second would unconditionally overwrite an already-correct
+     * SUCCESS status.
+     *
+     * <p>{@code submission-rejected}/{@code group-submission-rejected} only ever fire from PCF's
+     * genuine SA-rejection path, which no longer also raises {@code civil-prosecution-rejected}/
+     * {@code group-prosecution-rejected} for CIVIL (that pairing was removed on PCF's side —
+     * those events are now reserved for business-validation failures at initial submission,
+     * always while a submission is still PENDING). The REJECTED guard below is therefore no
+     * longer strictly required to avoid a FAILED/REJECTED race, but is kept as defence in depth
+     * against out-of-order or replayed delivery.
+     *
+     * <p>ACCEPTED and REJECTED are therefore only ever applied as a transition out of
+     * PENDING_COURT_DECISION — the state a submission is only ever in while genuinely parked
+     * pending an SA court decision; any other current status means this event does not apply to
+     * a summons-approval-flow submission and is ignored.
+     */
+    private boolean isValidTransition(final String currentStatus, final SubmissionStatus incomingStatus) {
+        if (SubmissionStatus.ACCEPTED.equals(incomingStatus) || SubmissionStatus.REJECTED.equals(incomingStatus)) {
+            return SubmissionStatus.PENDING_COURT_DECISION.name().equals(currentStatus);
+        }
+        return true;
+    }
+
+    private boolean isTerminalStatus(final SubmissionStatus submissionStatus) {
+        return SubmissionStatus.SUCCESS.equals(submissionStatus)
+                || SubmissionStatus.FAILED.equals(submissionStatus)
+                || SubmissionStatus.REJECTED.equals(submissionStatus)
+                || SubmissionStatus.SUCCESS_WITH_WARNINGS.equals(submissionStatus);
     }
 
     @Handles("stagingprosecutorscivil.event.material-submitted")
@@ -194,7 +252,7 @@ public class SubmissionEventListener {
         final Submission submission = submissionRepository.findBy(submissionId);
 
         if(nonNull(submission)) {
-            submission.setSubmissionStatus(SubmissionStatus.REJECTED.toString());
+            submission.setSubmissionStatus(SubmissionStatus.FAILED.toString());
             submission.setCompletedAt(timestamp);
             submission.setErrors(submissionErrors);
             submission.setWarnings(submissionWarnings);
@@ -228,6 +286,28 @@ public class SubmissionEventListener {
         return arrayBuilder.build();
     }
 
+    private List<CaseProblem> mergeCaseProblems(final List<CaseProblem> caseErrors, final List<CaseProblem> groupCaseErrors) {
+        final List<CaseProblem> merged = new ArrayList<>();
+        if (caseErrors != null) {
+            merged.addAll(caseErrors);
+        }
+        if (groupCaseErrors != null) {
+            merged.addAll(groupCaseErrors);
+        }
+        return merged;
+    }
+
+    private JsonArray transformCaseProblemsToJsonArray(final Collection<CaseProblem> caseErrors) {
+        if (caseErrors == null) {
+            return null;
+        }
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        caseErrors.stream()
+                .map(objectToJsonObjectConverter::convert)
+                .forEach(arrayBuilder::add);
+        return arrayBuilder.build();
+    }
+
     private JsonArray transformErrorsOrWarningsToJsonArray(final Collection<uk.gov.moj.cpp.staging.prosecutors.json.schemas.Problem> errorsOrWarnings) {
         if (errorsOrWarnings == null) {
             return null;
@@ -242,4 +322,3 @@ public class SubmissionEventListener {
         return arrayBuilder.build();
     }
 }
-

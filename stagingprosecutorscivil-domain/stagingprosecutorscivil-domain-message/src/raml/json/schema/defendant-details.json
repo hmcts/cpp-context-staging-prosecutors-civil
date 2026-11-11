@@ -32,10 +32,6 @@
     "address": {
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/address.json"
     },
-    "numPreviousConvictions": {
-      "type": "integer",
-      "description": "Number of previous conviction cited by prosecutor."
-    },
     "prosecutorCosts": {
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/money",
       "description": "Prosecution costs claimed by prosecutor."

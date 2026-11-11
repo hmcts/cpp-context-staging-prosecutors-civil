@@ -1,9 +1,6 @@
 package uk.gov.moj.cpp.staging.civil.handler;
 
-import static org.slf4j.LoggerFactory.getLogger;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.moj.cpp.staging.civil.handler.util.EventStreamAppender.appendEventsToStream;
-
+import org.slf4j.Logger;
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -16,14 +13,12 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
-import java.util.UUID;
-import java.util.function.Function;
+import javax.inject.Inject;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-import javax.json.JsonValue;
-
-import org.slf4j.Logger;
+import static org.slf4j.LoggerFactory.getLogger;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.moj.cpp.staging.civil.handler.util.EventStreamAppender.appendEventsToStream;
 
 @ServiceComponent(COMMAND_HANDLER)
 public class CivilProsecutionHandler {
@@ -43,7 +38,7 @@ public class CivilProsecutionHandler {
         final OtherCase otherCase = envelope.payload();
         final EventStream eventStream = eventSource.getStreamById(otherCase.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
-        final Stream<Object> events = aggregate.receiveOtherCase(otherCase.getSubmissionId(), otherCase.getHearingDetails(), otherCase.getProsecutingAuthority(), otherCase.getProsecutionCases());
+        final Stream<Object> events = aggregate.receiveOtherCase(otherCase.getSubmissionId(), otherCase.getHearingDetails(), otherCase.getHearingDateRangeDetails(), otherCase.getProsecutingAuthority(), otherCase.getProsecutionCases(), otherCase.getRelatedReferenceNumber());
 
         appendEventsToStream(envelope, eventStream, events);
     }
@@ -55,7 +50,7 @@ public class CivilProsecutionHandler {
         final Summons summons = envelope.payload();
         final EventStream eventStream = eventSource.getStreamById(summons.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
-        final Stream<Object> events = aggregate.receiveSummons(summons.getSubmissionId(), summons.getHearingDetails(), summons.getProsecutingAuthority(), summons.getProsecutionCases());
+        final Stream<Object> events = aggregate.receiveSummons(summons.getSubmissionId(), summons.getHearingDetails(), summons.getProsecutingAuthority(), summons.getProsecutionCases(), summons.getFileName(), summons.getSubmittedByUserName(), summons.getProsecutorShortName());
 
         appendEventsToStream(envelope, eventStream, events);
     }
@@ -68,7 +63,7 @@ public class CivilProsecutionHandler {
         final EventStream eventStream = eventSource.getStreamById(update.getSubmissionId());
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
         final Stream<Object> events = aggregate.receiveCivilCaseUpdate(update.getSubmissionId(), update.getSubmissionStatus(), update.getCaseErrors(),
-                update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings());
+                update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings(), update.getSummonsApplicationId());
         appendEventsToStream(envelope, eventStream, events);
     }
 }

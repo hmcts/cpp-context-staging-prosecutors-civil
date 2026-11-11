@@ -3,7 +3,7 @@
     <parent>
         <artifactId>stagingprosecutorscivil-command</artifactId>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-        <version>17.104.15-SNAPSHOT</version>
+        <version>17.104.18-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -54,6 +54,14 @@
             <groupId>com.github.everit-org.json-schema</groupId>
             <artifactId>org.everit.json.schema</artifactId>
             <version>1.12.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
             <groupId>uk.gov.justice.framework-generators</groupId>
@@ -231,6 +239,42 @@
                         <artifactId>stagingprosecutorscivil-command-handler</artifactId>
                         <version>${project.version}</version>
                         <classifier>raml</classifier>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>uk.gov.justice.framework-generators</groupId>
+                <artifactId>rest-client-generator-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>javax</groupId>
+                        <artifactId>javaee-api</artifactId>
+                        <version>${javaee-api.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.usersgroups</groupId>
+                        <artifactId>usersgroups-query-api</artifactId>
+                        <version>${usersgroups.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.referencedata</groupId>
+                        <artifactId>referencedata-query-api</artifactId>
+                        <version>${referencedata.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
                     </dependency>
                 </dependencies>
             </plugin>
