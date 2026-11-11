@@ -92,7 +92,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -149,6 +151,8 @@ public class SummonsProsecutionCsvToJsonConverter {
      */
     private static final Pattern ISO_DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
 
+    private static final ZoneId UK_ZONE = ZoneId.of("Europe/London");
+
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.builder()
             .setDelimiter(DELIMITER)
             .setHeader(SummonsProsecutionCsvColumns.HEADERS)
@@ -162,6 +166,12 @@ public class SummonsProsecutionCsvToJsonConverter {
     @Value(key = "stagingprosecutorscivil.complaints-files.max-rows", defaultValue = "1000")
     public String maxRows = "1000";
 
+    /**
+     * Source of "today" (UK local date) for the hearing-date and date-of-birth checks; replaceable
+     * so tests can pin the date.
+     */
+    public Clock clock = Clock.system(UK_ZONE);
+
     public String convertToJson(final Reader csvReader) throws IOException {
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(convertToObject(csvReader));
     }
@@ -169,6 +179,7 @@ public class SummonsProsecutionCsvToJsonConverter {
     public Summons convertToObject(final Reader csvReader) throws IOException {
         try (CSVParser parser = CSV_FORMAT.parse(csvReader)) {
             final int maxRowsAllowed = Integer.parseInt(maxRows);
+            final LocalDate today = LocalDate.now(clock);
             final Map<String, CaseAccumulator> caseAccumulators = new LinkedHashMap<>();
             HearingDetails hearingDetails = null;
             String prosecutingAuthority = null;
@@ -188,6 +199,7 @@ public class SummonsProsecutionCsvToJsonConverter {
                             .withDateOfHearing(requireDate(record, HEARING_DATE_OF_HEARING))
                             .withTimeOfHearing(requireNonBlank(record, HEARING_TIME_OF_HEARING))
                             .build();
+                    requireNotInPast(record, HEARING_DATE_OF_HEARING, hearingDetails.getDateOfHearing(), today);
                 }
 
                 final String caseUrn = requireNonBlank(record, CASE_URN);
@@ -200,6 +212,7 @@ public class SummonsProsecutionCsvToJsonConverter {
 
                 final String defendantId = requireNonBlank(record, DEFENDANT_PROSECUTOR_DEFENDANT_ID);
                 final DefendantAccumulator defendantAccumulator = newDefendantAccumulator(record);
+                requireDatesOfBirthNotInFuture(record, defendantAccumulator.individual, today);
                 caseAccumulator.defendantAccumulators.put(defendantId, defendantAccumulator);
 
                 defendantAccumulator.offences.add(buildOffence(record));
@@ -442,6 +455,34 @@ public class SummonsProsecutionCsvToJsonConverter {
         }
         throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
                 + value + "' - expected ISO date format YYYY-MM-DD");
+    }
+
+    private static void requireDatesOfBirthNotInFuture(final CSVRecord record, final Individual individual, final LocalDate today) {
+        if (individual == null) {
+            return;
+        }
+        requireNotInFuture(record, INDIVIDUAL_DATE_OF_BIRTH, individual.getDateOfBirth(), today);
+        final ParentGuardian parentGuardian = individual.getParentGuardian();
+        if (parentGuardian != null && parentGuardian.getIndividual() != null) {
+            requireNotInFuture(record, PARENT_GUARDIAN_INDIVIDUAL_DATE_OF_BIRTH, parentGuardian.getIndividual().getDateOfBirth(), today);
+        }
+    }
+
+    private static void requireNotInPast(final CSVRecord record, final String column, final LocalDate date, final LocalDate today) {
+        if (date != null && date.isBefore(today)) {
+            throw invalidDate(record, column, "date cannot be in the past");
+        }
+    }
+
+    private static void requireNotInFuture(final CSVRecord record, final String column, final LocalDate date, final LocalDate today) {
+        if (date != null && date.isAfter(today)) {
+            throw invalidDate(record, column, "date cannot be in the future");
+        }
+    }
+
+    private static IllegalArgumentException invalidDate(final CSVRecord record, final String column, final String reason) {
+        return new IllegalArgumentException("Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
+                + record.get(column) + "' - " + reason);
     }
 
     private static Integer requireInteger(final CSVRecord record, final String column) {

@@ -12,7 +12,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -36,7 +39,14 @@ class SummonsProsecutionCsvToJsonConverterTest {
     private static final String TEMPLATE_CSV = "summons-prosecution-template.csv";
     private static final String FULLY_POPULATED_CSV = "summons-prosecution-fully-populated.csv";
 
+    /** "Today" for the converter: before every hearing date in the fixtures and after every date of birth. */
+    private static final LocalDate TODAY = LocalDate.of(2022, 1, 1);
+
     private final SummonsProsecutionCsvToJsonConverter converter = new SummonsProsecutionCsvToJsonConverter();
+
+    {
+        converter.clock = Clock.fixed(Instant.parse("2022-01-01T00:00:00Z"), ZoneId.of("Europe/London"));
+    }
 
     @Test
     void convertsTemplateCsvIntoWireFormatMatchingTheCommandApiRequestShape() throws IOException {
@@ -357,6 +367,74 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
         assertEquals(LocalDate.of(2024, 2, 29), summonsProsecution.getProsecutionCases().get(0).getDefendants().get(0)
                 .getOffences().get(0).getOffenceDetails().getLaidDate());
+    }
+
+    @Test
+    void throwsWhenHearingDateIsInThePast() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, TODAY.minusDays(1).toString()));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("Row 1: '" + SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING + "' has invalid date '"
+                + TODAY.minusDays(1) + "' - date cannot be in the past", exception.getMessage());
+    }
+
+    @Test
+    void acceptsHearingDateOfToday() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, TODAY.toString()));
+
+        assertEquals(TODAY, converter.convertToObject(new StringReader(csv)).getHearingDetails().getDateOfHearing());
+    }
+
+    @Test
+    void throwsWhenDefendantDateOfBirthIsInTheFuture() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH, TODAY.plusDays(1).toString()));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("Row 1: '" + SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH + "' has invalid date '"
+                + TODAY.plusDays(1) + "' - date cannot be in the future", exception.getMessage());
+    }
+
+    @Test
+    void acceptsDefendantDateOfBirthOfToday() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH, TODAY.toString()));
+
+        assertEquals(TODAY, converter.convertToObject(new StringReader(csv)).getProsecutionCases().get(0)
+                .getDefendants().get(0).getIndividual().getDateOfBirth());
+    }
+
+    @Test
+    void throwsWhenParentGuardianDateOfBirthIsInTheFuture() {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.PARENT_GUARDIAN_TYPE, SummonsProsecutionCsvColumns.DEFENDANT_TYPE_INDIVIDUAL,
+                SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_1, "1 Guardian Street",
+                SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_SURNAME, "Smith",
+                SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_GENDER, "1",
+                SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_DATE_OF_BIRTH, TODAY.plusYears(1).toString()));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("Row 1: '" + SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_DATE_OF_BIRTH + "' has invalid date '"
+                + TODAY.plusYears(1) + "' - date cannot be in the future", exception.getMessage());
+    }
+
+    @Test
+    void reportsRowNumberWhenLaterRowHasFutureDateOfBirth() {
+        final String csv = String.join("\n", String.join(",", SummonsProsecutionCsvColumns.HEADERS),
+                buildCsvRow(Map.of()),
+                buildCsvRow(Map.of(SummonsProsecutionCsvColumns.CASE_URN, "SCIV00002",
+                        SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "DEF00002",
+                        SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH, "2030-05-01")));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("Row 2: '" + SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH + "' has invalid date "
+                + "'2030-05-01' - date cannot be in the future", exception.getMessage());
     }
 
     @Test

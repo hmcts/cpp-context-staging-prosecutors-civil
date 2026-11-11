@@ -36,6 +36,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +72,11 @@ class DefaultCommandApiComplaintsFilesResourceTest {
 
     @Spy
     private final SummonsProsecutionCsvToJsonConverter csvToJsonConverter = new SummonsProsecutionCsvToJsonConverter();
+
+    {
+        // pin "today" before the fixture's hearing date (2022-03-10) so it is not rejected as a past date
+        csvToJsonConverter.clock = Clock.fixed(Instant.parse("2022-01-01T00:00:00Z"), ZoneId.of("Europe/London"));
+    }
 
     @Mock
     private CivilProsecutionApi civilProsecutionApi;
@@ -277,6 +285,22 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         assertThat(exception.getMessage(),
                 is("Unable to parse complaints CSV file: Row 1: 'hearingDetails.dateOfHearing' has invalid date "
                         + "'10/03/2022' - expected ISO date format YYYY-MM-DD"));
+    }
+
+    @Test
+    void shouldThrowBadRequestWithReasonWhenCsvContainsPastHearingDate() throws Exception {
+        final String csv = new String(csvStream(FULLY_POPULATED_CSV).readAllBytes(), StandardCharsets.UTF_8)
+                .replace("2022-03-10", "2021-12-31");
+        when(filePart.getBody(eq(InputStream.class), isNull()))
+                .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        formDataMapWithFilePart();
+
+        final BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+
+        assertThat(exception.getMessage(),
+                is("Unable to parse complaints CSV file: Row 1: 'hearingDetails.dateOfHearing' has invalid date "
+                        + "'2021-12-31' - date cannot be in the past"));
     }
 
     @Test
