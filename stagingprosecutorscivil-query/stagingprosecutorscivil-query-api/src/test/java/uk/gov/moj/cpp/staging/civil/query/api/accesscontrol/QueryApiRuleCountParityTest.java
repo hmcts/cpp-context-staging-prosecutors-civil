@@ -21,7 +21,7 @@ import org.kie.api.definition.rule.Rule;
 class QueryApiRuleCountParityTest {
 
     @Test
-    void scM02_queryApiKbaseShouldLoadTheAccessControlRule() {
+    void scM02_queryApiKbaseShouldLoadAllThreeAccessControlRules() {
         final KieBase kieBase = KieServices.Factory.get().getKieClasspathContainer().getKieBase("QUERY_API");
 
         final List<String> ruleNames = kieBase.getKiePackages().stream()
@@ -30,6 +30,8 @@ class QueryApiRuleCountParityTest {
                 .collect(toList());
 
         assertThat(ruleNames, containsInAnyOrder(
-                "Command - Rule for getting submission details"));
+                "Command - Rule for getting submission details",
+                "Command - Rule for getting submission error details CSV",
+                "Query - Rule for getting complaints files template"));
     }
 }
