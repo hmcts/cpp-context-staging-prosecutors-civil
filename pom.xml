@@ -10,7 +10,7 @@
 
     <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
     <artifactId>stagingprosecutorscivil</artifactId>
-    <version>17.104.18-SNAPSHOT</version>
+    <version>17.104.18-CHD-2786-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>stagingprosecutorscivil</name>
 
@@ -23,8 +23,8 @@
         <postgresql.version>42.1.4</postgresql.version>
         <prosecutioncasefile.version>17.0.104</prosecutioncasefile.version>
         <referencedata.version>17.104.137</referencedata.version>
-        <usersgroups.version>17.104.50</usersgroups.version>
-        <coredomain.version>17.104.6</coredomain.version>
+        <usersgroups.version>25.104.52</usersgroups.version>
+        <coredomain.version>17.104.6-CHD-2786-SNAPSHOT</coredomain.version>
         <liquibase.core.version>3.6.1</liquibase.core.version>
         <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
     </properties>
