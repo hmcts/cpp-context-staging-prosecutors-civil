@@ -40,7 +40,7 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
     public GroupProsecutions convert(final ProsecutionCase prosecutionCase) {
 
         final Converter<Defendant, uk.gov.moj.cpp.prosecution.casefile.json.schemas.Defendant> defendantToProsecutionCaseFileDefendantConverter
-                = new DefendantToProsecutionCaseFileDefendantConverter(otherCaseReceived.getHearingDetails());
+                = new DefendantToProsecutionCaseFileDefendantConverter(otherCaseReceived.getHearingDetails(), otherCaseReceived.getHearingDateRangeDetails());
 
         return GroupProsecutions.groupProsecutions()
                 .withCaseDetails(buildCaseDetails(prosecutionCase))
@@ -68,7 +68,9 @@ public class ProsecutionCaseToGroupProsecutionConverterForOthers implements Conv
         return CaseDetails.caseDetails()
                 .withDateReceived(dateReceived.toLocalDate())
                 .withProsecutorCaseReference(prosecutionCase.getUrn())
-                .withRelatedUrn(prosecutionCase.getRelatedReferenceNumber())
+                .withRelatedUrn(otherCaseReceived.getRelatedReferenceNumber() != null
+                        ? otherCaseReceived.getRelatedReferenceNumber()
+                        : prosecutionCase.getRelatedReferenceNumber())
                 .withOtherPartyOfficerInCase(null)
                 .withCaseId(caseFileId)
                 .withSummonsCode(prosecutionCase.getSummonsCode())
