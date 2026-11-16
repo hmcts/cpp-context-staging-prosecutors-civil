@@ -110,6 +110,18 @@ public class WiremockUtils {
                         .withBody(readResource("stub-data/usersgroups.get-groups-by-user.json"))));
     }
 
+    public static void setupNoPermissionsStub(final String userId) {
+        stubPingFor("usersgroups-service");
+
+        stubFor(get(urlPathEqualTo("/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user/permissions"))
+                .willReturn(aResponse().withStatus(HTTP_STATUS_OK)
+                        .withHeader(ID, userId)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                        .withBody("{\"permissions\":[]}")));
+
+        waitForStubToBeReady("/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user/permissions", CONTENT_TYPE_QUERY_PERMISSION);
+    }
+
     public WiremockUtils stubUserGroupsWithProsecutingAuthority(final String prosecutingAuthority) {
         return stubUserGroupsForGroupName("Charging Lawyers", prosecutingAuthority);
     }

@@ -27,20 +27,17 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.staging.civil.aggregate.MaterialSubmission;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SubmitMaterialCommand;
-import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.SubmitMaterialCommand;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
-import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.UpdateCivilCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
+import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.ProsecutionCase;
@@ -115,6 +112,19 @@ public class CivilProsecutionHandlerTest {
         assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
                 .with(method("handleSummons")
                         .thatHandles(PRIVATE_COMMAND_SUMMONS)));
+
+    }
+
+    @Test
+    public void shouldRaiseOtherCaseReceivedPrivateEventWithEnforcementFields() throws Exception {
+
+        final Envelope<OtherCase> envelope = buildEnforcementOtherCaseEnvelope();
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
+
+        civilProsecutionHandler.handleOtherCase(envelope);
+
+        verifyEnforcementOtherCaseReceivedPrivateEvent();
 
     }
 
@@ -200,6 +210,22 @@ public class CivilProsecutionHandlerTest {
         );
     }
 
+    private void verifyEnforcementOtherCaseReceivedPrivateEvent() throws EventStreamException {
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata()
+                                .withName(PRIVATE_EVENT_OTHER_CASE_RECEIVED),
+                        payload().isJson(allOf(
+                                withJsonPath("$.prosecutingAuthority", is("THREE RIVER")),
+                                withJsonPath("$.submissionId", notNullValue()),
+                                withJsonPath("$.relatedReferenceNumber", is("GOB123456789")))
+                        ))
+        ));
+    }
+
     private void verifySummonsReceivedPrivateEvent() throws EventStreamException {
 
         final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
@@ -274,6 +300,38 @@ public class CivilProsecutionHandlerTest {
 
     }
 
+    private Envelope<OtherCase> buildEnforcementOtherCaseEnvelope() {
+
+        final OtherCase otherCase = OtherCase.otherCase()
+                .withHearingDateRangeDetails(HearingDateRangeDetails.hearingDateRangeDetails()
+                        .withStartDateRangeOfHearing(LocalDate.now())
+                        .withEndDateRangeOfHearing(LocalDate.now().plusDays(30))
+                        .withCourtHearingLocation("B01LY01")
+                        .build())
+                .withProsecutingAuthority("THREE RIVER")
+                .withRelatedReferenceNumber("GOB123456789")
+                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                        .withCaseMarker("Markers")
+                        .withPaymentReference("PAYREF123")
+                        .withDefendants(Arrays.asList(Defendant.defendant()
+                                .withOffences(Arrays.asList(Offence.offence()
+                                        .withArrestDate(LocalDate.now())
+                                        .build()))
+                                .build()))
+                        .build()))
+                .withSubmissionId(UUID.fromString("ce1c9255-725f-4669-a7e5-78c07252c82d"))
+                .build();
+
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString())
+                        .withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+
+        return Enveloper.envelop(otherCase)
+                .withName(PRIVATE_COMMAND_OTHER_CASE)
+                .withMetadataFrom(requestEnvelope);
+
+    }
 
     private Envelope<Summons> buildSummonsEnvelope() {
 

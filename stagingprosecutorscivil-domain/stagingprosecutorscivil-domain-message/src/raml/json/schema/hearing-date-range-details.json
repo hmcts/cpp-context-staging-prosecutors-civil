@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/hearing-date-range-details.json",
+  "type": "object",
+  "properties": {
+    "startDateRangeOfHearing": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "Start date of the hearing date range (YYYY-MM-DD)"
+    },
+    "endDateRangeOfHearing": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
+      "description": "End date of the hearing date range (YYYY-MM-DD)"
+    },
+    "courtHearingLocation": {
+      "type": "string",
+      "description": "The OUCODE of the courthouse (reference data)",
+      "minLength": 1,
+      "maxLength": 7
+    }
+  },
+  "required": [
+    "startDateRangeOfHearing",
+    "endDateRangeOfHearing",
+    "courtHearingLocation"
+  ]
+}

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.staging.prosecutors.civil.model;
 
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.common.Problem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.queryclient.Query;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.queryclient.QueryPoller;
@@ -22,6 +24,14 @@ public class Submission {
 
     private final List<Problem> materialWarnings;
 
+    private final List<CaseProblem> caseErrors;
+
+    private final List<CaseProblem> caseWarnings;
+
+    private final List<DefendantProblem> defendantErrors;
+
+    private final List<DefendantProblem> defendantWarnings;
+
     private final String type;
 
     private final ZonedDateTime receivedAt;
@@ -42,6 +52,10 @@ public class Submission {
             @JsonProperty("status") String submissionStatus,
             @JsonProperty("materialErrors") List<Problem> materialErrors,
             @JsonProperty("materialWarnings") List<Problem> materialWarnings,
+            @JsonProperty("caseErrors") List<CaseProblem> caseErrors,
+            @JsonProperty("caseWarnings") List<CaseProblem> caseWarnings,
+            @JsonProperty("defendantErrors") List<DefendantProblem> defendantErrors,
+            @JsonProperty("defendantWarnings") List<DefendantProblem> defendantWarnings,
             @JsonProperty("type") String type,
             @JsonProperty("receivedAt") ZonedDateTime receivedAt,
             @JsonProperty("completedAt") ZonedDateTime completedAt,
@@ -54,6 +68,10 @@ public class Submission {
         this.submissionStatus = submissionStatus;
         this.materialErrors = materialErrors;
         this.materialWarnings = materialWarnings;
+        this.caseErrors = caseErrors;
+        this.caseWarnings = caseWarnings;
+        this.defendantErrors = defendantErrors;
+        this.defendantWarnings = defendantWarnings;
         this.type = type;
         this.receivedAt = receivedAt;
         this.completedAt = completedAt;
@@ -109,5 +127,21 @@ public class Submission {
 
     public List<Problem> getMaterialWarnings() {
         return materialWarnings;
+    }
+
+    public List<CaseProblem> getCaseErrors() {
+        return caseErrors;
+    }
+
+    public List<CaseProblem> getCaseWarnings() {
+        return caseWarnings;
+    }
+
+    public List<DefendantProblem> getDefendantErrors() {
+        return defendantErrors;
+    }
+
+    public List<DefendantProblem> getDefendantWarnings() {
+        return defendantWarnings;
     }
 }
