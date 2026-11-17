@@ -1,0 +1,19 @@
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.3.xsd">
+
+    <changeSet id="widen-errors-and-warnings-columns-to-text" author="stagingprosecutorscivil">
+        <modifyDataType tableName="submission" columnName="errors" newDataType="TEXT"/>
+        <modifyDataType tableName="submission" columnName="warnings" newDataType="TEXT"/>
+        <modifyDataType tableName="submission" columnName="case_errors" newDataType="TEXT"/>
+        <modifyDataType tableName="submission" columnName="defendant_errors" newDataType="TEXT"/>
+        <modifyDataType tableName="submission" columnName="case_warnings" newDataType="TEXT"/>
+        <modifyDataType tableName="submission" columnName="defendant_warnings" newDataType="TEXT"/>
+
+        <modifyDataType tableName="case_detail" columnName="case_errors" newDataType="TEXT"/>
+        <modifyDataType tableName="case_detail" columnName="defendant_errors" newDataType="TEXT"/>
+        <modifyDataType tableName="case_detail" columnName="defendant_warnings" newDataType="TEXT"/>
+        <modifyDataType tableName="case_detail" columnName="case_warnings" newDataType="TEXT"/>
+    </changeSet>
+</databaseChangeLog>
