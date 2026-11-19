@@ -6,6 +6,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.ProblemValue;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.ComplaintsFileValidationFailed;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
@@ -104,5 +108,34 @@ public class ProsecutionSubmissionAggregateTest {
         final SummonsReceived event = (SummonsReceived) eventList.get(0);
         assertThat(event.getSubmissionId(), is(submissionId));
         assertThat(event.getSubmissionStatus(), is(SubmissionStatus.PENDING));
+    }
+
+    @Test
+    public void shouldRaiseComplaintsFileValidationFailedEventInFailedStatus() {
+        final UUID submissionId = UUID.randomUUID();
+        final List<CaseProblem> caseErrors = Collections.singletonList(CaseProblem.caseProblem()
+                .withProsecutorCaseReference("SCIV00001")
+                .withProblems(Collections.singletonList(Problem.problem()
+                        .withCode("REQUIRED_FIELD_MISSING")
+                        .withValues(Collections.singletonList(ProblemValue.problemValue()
+                                .withKey("defendant.individual.nameDetails.surname")
+                                .withValue("")
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<Object> eventList = aggregate.rejectComplaintsFile(submissionId, "GAAAA01",
+                "complaints.csv", "Richard Chapman", "TVL", caseErrors).collect(Collectors.toList());
+
+        assertThat(eventList.size(), is(1));
+        assertThat(eventList.get(0), instanceOf(ComplaintsFileValidationFailed.class));
+        final ComplaintsFileValidationFailed event = (ComplaintsFileValidationFailed) eventList.get(0);
+        assertThat(event.getSubmissionId(), is(submissionId));
+        assertThat(event.getSubmissionStatus(), is(SubmissionStatus.FAILED));
+        assertThat(event.getProsecutingAuthority(), is("GAAAA01"));
+        assertThat(event.getFileName(), is("complaints.csv"));
+        assertThat(event.getSubmittedByUserName(), is("Richard Chapman"));
+        assertThat(event.getProsecutorShortName(), is("TVL"));
+        assertThat(event.getCaseErrors(), is(caseErrors));
     }
 }

@@ -1,0 +1,33 @@
+{
+  "submissionId": "7e2f843e-d639-40b3-8611-8015f3a18958",
+  "submissionStatus": "FAILED",
+  "prosecutingAuthority": "GAAAA01",
+  "fileName": "complaints-2026-11-19.csv",
+  "submittedByUserName": "Richard Chapman",
+  "prosecutorShortName": "TVL",
+  "caseErrors": [
+    {
+      "prosecutorCaseReference": "TVL12345678",
+      "problems": [
+        {
+          "code": "REQUIRED_FIELD_MISSING",
+          "values": [
+            {
+              "key": "defendant.individual.nameDetails.surname",
+              "value": ""
+            }
+          ]
+        },
+        {
+          "code": "INVALID_DATE_FORMAT",
+          "values": [
+            {
+              "key": "defendant.individual.dateOfBirth",
+              "value": "31/02/1990"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

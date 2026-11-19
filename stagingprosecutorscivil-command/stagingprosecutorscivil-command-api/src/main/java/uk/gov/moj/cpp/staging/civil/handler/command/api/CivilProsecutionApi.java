@@ -14,6 +14,8 @@ import uk.gov.justice.services.core.json.JsonSchemaValidator;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.validators.OffenceValidator;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
@@ -21,9 +23,13 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,6 +39,9 @@ import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 
 @ServiceComponent(COMMAND_API)
 public class CivilProsecutionApi {
@@ -43,6 +52,7 @@ public class CivilProsecutionApi {
 
     private static final String RESPONSE_URL_VERSION_PLACEHOLDER = "VERSION";
     private static final String VERSION_NO = "v1";
+    private static final String REJECT_COMPLAINTS_FILE_COMMAND = "stagingcivil.command.reject-complaints-file";
 
     private final Sender sender;
     @Inject
@@ -131,6 +141,71 @@ public class CivilProsecutionApi {
                 UrlResponse.urlResponse()
                         .withStatusURL(getBaseResponseURLWithVersion() + submissionId.toString())
                         .withSubmissionId(submissionId).build());
+    }
+
+    /**
+     * Records a complaints CSV upload that could not be turned into a valid summons submission
+     * because of schema-level problems (blank required columns, malformed values, JSON-schema
+     * violations). The upload is still accepted - the caller gets a {@code submissionId} like any
+     * other upload - and the submission is created directly in {@code FAILED} status with the
+     * problems stored as case errors, so they appear in the submission's error report alongside
+     * the business-validation errors raised later by Prosecution Case File.
+     */
+    public Envelope<UrlResponse> rejectComplaintsFile(final Metadata metadata,
+                                                     final String prosecutingAuthority,
+                                                     final String fileName,
+                                                     final String submittedByUserName,
+                                                     final String prosecutorShortName,
+                                                     final List<ComplaintsFileValidationError> errors) {
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonObjectBuilder payload = createObjectBuilder()
+                .add("submissionId", submissionId.toString())
+                .add("prosecutingAuthority", prosecutingAuthority)
+                .add("caseErrors", toCaseProblems(errors));
+        addIfPresent(payload, "fileName", fileName);
+        addIfPresent(payload, "submittedByUserName", submittedByUserName);
+        addIfPresent(payload, "prosecutorShortName", prosecutorShortName);
+
+        LOGGER.info("Complaints file for submissionId {} failed schema validation with {} error(s)", submissionId, errors.size());
+        sender.send(JsonEnvelope.envelopeFrom(
+                metadataFrom(metadata).withId(UUID.randomUUID()).withName(REJECT_COMPLAINTS_FILE_COMMAND),
+                payload.build()));
+
+        return Envelope.envelopeFrom(metadata,
+                UrlResponse.urlResponse()
+                        .withStatusURL(getBaseResponseURLWithVersion() + submissionId)
+                        .withSubmissionId(submissionId).build());
+    }
+
+    /**
+     * Groups the errors into Prosecution Case File {@code case-problem} entries - one per case
+     * reference, in file order - the same shape PCF uses for business-validation case errors.
+     */
+    private static JsonArray toCaseProblems(final List<ComplaintsFileValidationError> errors) {
+        final Map<String, JsonArrayBuilder> problemsByReference = new LinkedHashMap<>();
+        errors.forEach(error -> problemsByReference
+                .computeIfAbsent(error.getCaseReference(), reference -> createArrayBuilder())
+                .add(createObjectBuilder()
+                        .add("code", error.getCode())
+                        .add("values", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("key", error.getField() != null ? error.getField() : "row")
+                                        .add("value", error.getValue())))));
+
+        final JsonArrayBuilder caseProblems = createArrayBuilder();
+        problemsByReference.forEach((reference, problems) -> {
+            final JsonObjectBuilder caseProblem = createObjectBuilder().add("problems", problems);
+            addIfPresent(caseProblem, "prosecutorCaseReference", reference);
+            caseProblems.add(caseProblem);
+        });
+        return caseProblems.build();
+    }
+
+    private static void addIfPresent(final JsonObjectBuilder builder, final String name, final String value) {
+        if (value != null) {
+            builder.add(name, value);
+        }
     }
 
     @Handles("stagingcivil.submit-material")

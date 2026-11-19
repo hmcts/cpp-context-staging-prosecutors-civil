@@ -8,6 +8,7 @@ import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.ComplaintsFileValidationFailed;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SummonsReceived;
@@ -98,6 +99,33 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                 .withCaseWarnings(caseWarnings)
                                 .withDefendantWarnings(defendantWarnings)
                                 .withSummonsApplicationId(summonsApplicationId)
+                                .build()
+                )
+        );
+    }
+
+    /**
+     * A complaints CSV upload that failed schema validation is never sent to Prosecution Case File:
+     * the submission goes straight to {@code FAILED}, carrying the schema problems as case errors so
+     * they appear in its error report.
+     */
+    public Stream<Object> rejectComplaintsFile(final UUID submissionId,
+                                               final String prosecutingAuthority,
+                                               final String fileName,
+                                               final String submittedByUserName,
+                                               final String prosecutorShortName,
+                                               final List<CaseProblem> caseErrors) {
+        LOGGER.info("Raising private event stagingprosecutorscivil.event.complaints-file-validation-failed for submission id {}", submissionId);
+        return apply(
+                Stream.of(
+                        ComplaintsFileValidationFailed.complaintsFileValidationFailed()
+                                .withSubmissionId(submissionId)
+                                .withSubmissionStatus(SubmissionStatus.FAILED)
+                                .withProsecutingAuthority(prosecutingAuthority)
+                                .withFileName(fileName)
+                                .withSubmittedByUserName(submittedByUserName)
+                                .withProsecutorShortName(prosecutorShortName)
+                                .withCaseErrors(caseErrors)
                                 .build()
                 )
         );

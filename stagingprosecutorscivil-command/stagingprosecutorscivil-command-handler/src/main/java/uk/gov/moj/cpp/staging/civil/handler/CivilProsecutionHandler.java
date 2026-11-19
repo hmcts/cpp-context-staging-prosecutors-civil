@@ -10,6 +10,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.RejectComplaintsFile;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
@@ -64,6 +65,21 @@ public class CivilProsecutionHandler {
         final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
         final Stream<Object> events = aggregate.receiveCivilCaseUpdate(update.getSubmissionId(), update.getSubmissionStatus(), update.getCaseErrors(),
                 update.getDefendantErrors(), update.getGroupCaseErrors(), update.getWarnings(), update.getCaseWarnings(), update.getDefendantWarnings(), update.getSummonsApplicationId());
+        appendEventsToStream(envelope, eventStream, events);
+    }
+
+    @Handles("stagingcivil.command.reject-complaints-file")
+    public void handleRejectComplaintsFile(final Envelope<RejectComplaintsFile> envelope) throws EventStreamException {
+        LOGGER.info("stagingcivil.command.reject-complaints-file with SubmissionId {}", envelope.payload().getSubmissionId());
+
+        final RejectComplaintsFile rejectComplaintsFile = envelope.payload();
+        final EventStream eventStream = eventSource.getStreamById(rejectComplaintsFile.getSubmissionId());
+        final ProsecutionSubmissionAggregate aggregate = aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class);
+        final Stream<Object> events = aggregate.rejectComplaintsFile(rejectComplaintsFile.getSubmissionId(),
+                rejectComplaintsFile.getProsecutingAuthority(), rejectComplaintsFile.getFileName(),
+                rejectComplaintsFile.getSubmittedByUserName(), rejectComplaintsFile.getProsecutorShortName(),
+                rejectComplaintsFile.getCaseErrors());
+
         appendEventsToStream(envelope, eventStream, events);
     }
 }

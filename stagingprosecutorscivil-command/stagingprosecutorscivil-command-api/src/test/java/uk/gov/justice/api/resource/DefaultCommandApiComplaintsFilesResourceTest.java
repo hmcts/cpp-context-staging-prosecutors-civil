@@ -3,6 +3,9 @@ package uk.gov.justice.api.resource;
 import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,6 +33,7 @@ import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 
@@ -48,7 +53,12 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
+import org.everit.json.schema.ValidationException;
+import org.everit.json.schema.loader.SchemaLoader;
+import org.hamcrest.Matcher;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,6 +115,9 @@ class DefaultCommandApiComplaintsFilesResourceTest {
 
     @Captor
     private ArgumentCaptor<String> fileNameCaptor;
+
+    @Captor
+    private ArgumentCaptor<List<ComplaintsFileValidationError>> errorsCaptor;
 
     @Captor
     private ArgumentCaptor<String> submittedByUserNameCaptor;
@@ -264,9 +277,133 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     }
 
     @Test
-    void shouldThrowBadRequestWithReasonWhenCsvContainsNonIsoDate() throws Exception {
-        final String csv = new String(csvStream(FULLY_POPULATED_CSV).readAllBytes(), StandardCharsets.UTF_8)
-                .replace("2022-03-10", "10/03/2022");
+    void shouldAcceptUploadAndRecordFailedSubmissionWhenCsvContainsNonIsoDates() throws Exception {
+        // every 2022-03-10 becomes 10/03/2022: the hearing date (read from row 1) and row 3's laid date
+        final String csv = fixtureCsv().replace("2022-03-10", "10/03/2022");
+        when(filePart.getBody(eq(InputStream.class), isNull()))
+                .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        formDataMapWithFilePart("form-data; name=\"file\"; filename=\"summons-batch.csv\"");
+        final UrlResponse urlResponse = stubAllowedUploadAndRejection();
+
+        final Response response = resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+
+        assertThat(response.getStatus(), is(Response.Status.ACCEPTED.getStatusCode()));
+        assertThat(response.getEntity(), is(urlResponse));
+        verify(civilProsecutionApi).rejectComplaintsFile(any(), eq("GAAAA01"), eq("summons-batch.csv"),
+                eq("Richard Chapman"), eq("TVL"), errorsCaptor.capture());
+        assertThat(errorsCaptor.getValue(), contains(
+                validationError(1L, "SCIV11111", "INVALID_DATE_FORMAT", "hearingDetails.dateOfHearing", "10/03/2022"),
+                validationError(3L, "SCIV33333", "INVALID_DATE_FORMAT", "offence.offenceDetails.laidDate", "10/03/2022")));
+        verify(civilProsecutionApi, never()).summonsProsecution(any(), any(), any(), any());
+        // rows 1 and 2 still convert, so they are schema-validated in the same upload
+        verify(jsonSchemaValidator).validate(any(), eq("stagingcivil.summons"));
+    }
+
+    @Test
+    void shouldReportConversionAndSchemaErrorsTogetherOrderedByRow() throws Exception {
+        // row 2 cannot be converted; rows 1 and 3 convert but fail JSON-schema validation (row 3)
+        final String csv = fixtureCsv().replace("2012-08-14", "14/08/2012");
+        when(filePart.getBody(eq(InputStream.class), isNull()))
+                .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        formDataMapWithFilePart("form-data; name=\"file\"; filename=\"summons-batch.csv\"");
+        stubAllowedUploadAndRejection();
+        // a genuine everit violation at #/prosecutionCases/1/urn - index 1 of the converted cases is row 3
+        final JSONObject urnMaxLengthSchema = new JSONObject()
+                .put("properties", new JSONObject()
+                        .put("prosecutionCases", new JSONObject()
+                                .put("items", new JSONObject()
+                                        .put("properties", new JSONObject()
+                                                .put("urn", new JSONObject().put("maxLength", 4))))));
+        final JSONObject twoCases = new JSONObject()
+                .put("prosecutionCases", new JSONArray()
+                        .put(new JSONObject().put("urn", "ok"))
+                        .put(new JSONObject().put("urn", "SCIV33333")));
+        final ValidationException violation = assertThrows(ValidationException.class,
+                () -> SchemaLoader.load(urnMaxLengthSchema).validate(twoCases));
+        doThrow(new JsonSchemaValidationException("schema violations", violation))
+                .when(jsonSchemaValidator).validate(any(), eq("stagingcivil.summons"));
+
+        resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+
+        verify(civilProsecutionApi).rejectComplaintsFile(any(), any(), any(), any(), any(), errorsCaptor.capture());
+        assertThat(errorsCaptor.getValue(), contains(
+                validationError(2L, "SCIV22222", "INVALID_DATE_FORMAT", "defendant.individual.dateOfBirth", "14/08/2012"),
+                validationError(3L, "SCIV33333", "INVALID_VALUE", "case.urn", "SCIV33333")));
+        verify(civilProsecutionApi, never()).summonsProsecution(any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldReportHearingDetailsErrorsTogetherWithSchemaErrorsFromOtherRowsWithoutDuplicates() throws Exception {
+        // only row 1's hearing date is read for the file - the other rows' hearing columns are ignored
+        final String csv = fixtureCsv().replaceFirst("2022-03-10", "10/03/2022");
+        when(filePart.getBody(eq(InputStream.class), isNull()))
+                .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        formDataMapWithFilePart("form-data; name=\"file\"; filename=\"summons-batch.csv\"");
+        stubAllowedUploadAndRejection();
+        // genuine everit violations: the unreadable (so blank) hearing date, and row 3's urn
+        final JSONObject schema = new JSONObject()
+                .put("properties", new JSONObject()
+                        .put("hearingDetails", new JSONObject()
+                                .put("required", new JSONArray().put("dateOfHearing")))
+                        .put("prosecutionCases", new JSONObject()
+                                .put("items", new JSONObject()
+                                        .put("properties", new JSONObject()
+                                                .put("urn", new JSONObject().put("pattern", "^SCIV[12]"))))));
+        final JSONObject submission = new JSONObject()
+                .put("hearingDetails", new JSONObject().put("courtHearingLocation", "B01LY01"))
+                .put("prosecutionCases", new JSONArray()
+                        .put(new JSONObject().put("urn", "SCIV11111"))
+                        .put(new JSONObject().put("urn", "SCIV22222"))
+                        .put(new JSONObject().put("urn", "SCIV33333")));
+        final ValidationException violations = assertThrows(ValidationException.class,
+                () -> SchemaLoader.load(schema).validate(submission));
+        doThrow(new JsonSchemaValidationException("schema violations", violations))
+                .when(jsonSchemaValidator).validate(any(), eq("stagingcivil.summons"));
+
+        resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+
+        verify(civilProsecutionApi).rejectComplaintsFile(any(), any(), any(), any(), any(), errorsCaptor.capture());
+        assertThat(errorsCaptor.getValue(), contains(
+                validationError(1L, "SCIV11111", "INVALID_DATE_FORMAT", "hearingDetails.dateOfHearing", "10/03/2022"),
+                validationError(3L, "SCIV33333", "INVALID_VALUE", "case.urn", "SCIV33333")));
+        verify(civilProsecutionApi, never()).summonsProsecution(any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldNotRecordAFailedSubmissionWhenCallingUserLacksPermissionEvenIfCsvHasErrors() throws Exception {
+        final String csv = fixtureCsv().replace("2012-08-14", "14/08/2012");
+        when(filePart.getBody(eq(InputStream.class), isNull()))
+                .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        formDataMapWithFilePart();
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        when(accessControlService.checkAccessControl(any(), any()))
+                .thenReturn(Optional.of(new AccessControlViolation("user not permitted")));
+
+        final Response response = resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+
+        assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+        verify(civilProsecutionApi, never()).rejectComplaintsFile(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldNotRecordAFailedSubmissionWhenCallingUserBelongsToAnotherProsecutorEvenIfCsvHasErrors() throws Exception {
+        final String csv = fixtureCsv().replace("2012-08-14", "14/08/2012");
+        when(filePart.getBody(eq(InputStream.class), isNull()))
+                .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        formDataMapWithFilePart();
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        doThrow(new BadRequestException("prosecuting authority mismatch"))
+                .when(prosecutingAuthorityValidationService).validateCallingUserBelongsToProsecutingAuthority(any(), any(), any());
+
+        assertThrows(BadRequestException.class,
+                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+
+        verify(civilProsecutionApi, never()).rejectComplaintsFile(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldThrowBadRequestWhenProsecutingAuthorityIsBlankBecauseTheFileCannotBeAttributed() throws Exception {
+        final String csv = fixtureCsv().replace("GAAAA01", "");
         when(filePart.getBody(eq(InputStream.class), isNull()))
                 .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
         formDataMapWithFilePart();
@@ -274,9 +411,8 @@ class DefaultCommandApiComplaintsFilesResourceTest {
         final BadRequestException exception = assertThrows(BadRequestException.class,
                 () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
 
-        assertThat(exception.getMessage(),
-                is("Unable to parse complaints CSV file: Row 1: 'hearingDetails.dateOfHearing' has invalid date "
-                        + "'10/03/2022' - expected ISO date format YYYY-MM-DD"));
+        assertThat(exception.getMessage(), is("Unable to parse complaints CSV file: Row 1: required column 'prosecutingAuthority' is blank"));
+        verify(civilProsecutionApi, never()).rejectComplaintsFile(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -315,14 +451,49 @@ class DefaultCommandApiComplaintsFilesResourceTest {
     }
 
     @Test
-    void shouldThrowBadRequestWhenSchemaValidationFails() throws Exception {
+    void shouldAcceptUploadAndRecordFailedSubmissionWhenSchemaValidationFails() throws Exception {
         when(filePart.getBody(eq(InputStream.class), isNull())).thenReturn(csvStream(FULLY_POPULATED_CSV));
-        formDataMapWithFilePart();
+        formDataMapWithFilePart("form-data; name=\"file\"; filename=\"summons-batch.csv\"");
+        final UrlResponse urlResponse = stubAllowedUploadAndRejection();
         doThrow(new JsonSchemaValidationException("Schema validation failed"))
                 .when(jsonSchemaValidator).validate(any(), eq("stagingcivil.summons"));
 
-        assertThrows(BadRequestException.class,
-                () -> resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput));
+        final Response response = resource.postStagingcivilSummonsProsecutionCsvComplaintsFiles(multipartFormDataInput);
+
+        assertThat(response.getStatus(), is(Response.Status.ACCEPTED.getStatusCode()));
+        assertThat(response.getEntity(), is(urlResponse));
+        verify(civilProsecutionApi).rejectComplaintsFile(any(), eq("GAAAA01"), eq("summons-batch.csv"),
+                eq("Richard Chapman"), eq("TVL"), errorsCaptor.capture());
+        assertThat(errorsCaptor.getValue().size(), is(1));
+        verify(civilProsecutionApi, never()).summonsProsecution(any(), any(), any(), any());
+        verify(auditService).audit(any(), eq(Component.COMMAND_API));
+    }
+
+    private UrlResponse stubAllowedUploadAndRejection() {
+        when(headers.getHeaderString(HeaderConstants.USER_ID)).thenReturn(randomUUID().toString());
+        when(accessControlService.checkAccessControl(any(), any())).thenReturn(Optional.empty());
+        when(referenceDataClient.getProsecutorShortNameForOuCode("GAAAA01")).thenReturn("TVL");
+        when(userGroupsClient.getDisplayNameForUser(any())).thenReturn(Optional.of("Richard Chapman"));
+        final UUID submissionId = randomUUID();
+        final UrlResponse urlResponse = new UrlResponse("https://replace-me.gov.uk/v1/" + submissionId, submissionId);
+        when(civilProsecutionApi.rejectComplaintsFile(any(), any(), any(), any(), any(), any()))
+                .thenReturn(envelopeFrom(metadataBuilder().withId(randomUUID()).withName("x").build(), urlResponse));
+        return urlResponse;
+    }
+
+    private String fixtureCsv() throws IOException {
+        return new String(csvStream(FULLY_POPULATED_CSV).readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    private static Matcher<ComplaintsFileValidationError> validationError(final long rowNumber, final String caseReference,
+                                                                          final String code, final String field,
+                                                                          final String value) {
+        return allOf(
+                hasProperty("rowNumber", is(rowNumber)),
+                hasProperty("caseReference", is(caseReference)),
+                hasProperty("code", is(code)),
+                hasProperty("field", is(field)),
+                hasProperty("value", is(value)));
     }
 
     private void formDataMapWithFilePart() {

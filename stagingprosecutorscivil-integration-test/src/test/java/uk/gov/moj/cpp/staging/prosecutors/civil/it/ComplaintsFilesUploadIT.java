@@ -57,6 +57,8 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV_MISSING_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-missing-summons-code.csv";
     private static final String COMPLAINTS_CSV_INVALID_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-invalid-summons-code.csv";
     private static final String COMPLAINTS_CSV_DUPLICATE_URN = "payload/complaints/complaints-summons-prosecution-duplicate-urn.csv";
+    private static final String COMPLAINTS_CSV_HEADER_ONLY = "payload/complaints/complaints-summons-prosecution-header-only.csv";
+    private static final String ERROR_REPORT_HEADER = "Reference,Error Type,Error Code,Field,Value\n";
     private static final String CSV_OUCODE = "GAAAA01";
     private static final String PROSECUTOR_SHORT_NAME = "DVLA";
     private static final String LEGAL_ADVISERS_GROUP_NAME = "Legal Advisers";
@@ -319,19 +321,36 @@ public class ComplaintsFilesUploadIT {
     }
 
     @Test
-    public void shouldRejectUploadWhenCsvCannotBeParsed() throws IOException {
+    public void shouldAcceptUploadAndReportBlankRequiredColumnInErrorReport() throws IOException {
+        // CAD-1528 AC1: a file that uploads but fails schema validation is tracked as a FAILED
+        // submission whose error report lists the problem, instead of a synchronous 400.
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_MISSING_SUMMONS_CODE), randomUUID().toString());
 
-        assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
-        assertThat(extractErrorMessage(response), containsString("Unable to parse complaints CSV file"));
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        final Submission submission = pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+        assertThat(submission.getProsecutingAuthority(), is(PROSECUTOR_SHORT_NAME));
+
+        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
+                + "SCIV11111,Case,REQUIRED_FIELD_MISSING,case.summonsCode,"));
     }
 
     @Test
-    public void shouldRejectUploadWhenCsvFailsSchemaValidation() throws IOException {
+    public void shouldAcceptUploadAndReportSchemaViolationInErrorReport() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_INVALID_SUMMONS_CODE), randomUUID().toString());
 
-        assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
-        assertThat(extractErrorMessage(response), containsString("Complaints CSV file failed schema validation"));
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
+                + "SCIV11111,Case,INVALID_VALUE,case.summonsCode,X"));
     }
 
     @Test
@@ -361,14 +380,35 @@ public class ComplaintsFilesUploadIT {
     }
 
     @Test
-    public void shouldRejectUploadWhenCsvContainsDuplicateCaseUrn() throws IOException {
+    public void shouldAcceptUploadAndReportDuplicateCaseUrnInErrorReport() throws IOException {
         // Each row represents a single case/defendant - there is no multi-defendant-per-case
         // flow in scope, so a case.urn must be unique across the rows of a single uploaded file.
-        // This is validated at request time, before any downstream submission is created.
+        // The repeated row is reported in the error report; the file is not sent downstream.
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_DUPLICATE_URN), randomUUID().toString());
 
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
+                + "SCIV11111,Case,DUPLICATE_CASE_URN,case.urn,SCIV11111"));
+    }
+
+    @Test
+    public void shouldStillRejectUploadSynchronouslyWhenCsvHasNoDataRows() throws IOException {
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_HEADER_ONLY), randomUUID().toString());
+
         assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
-        assertThat(extractErrorMessage(response), containsString("SCIV11111"));
+        assertThat(extractErrorMessage(response), containsString("Unable to parse complaints CSV file"));
+    }
+
+    private String errorReportFor(final UUID submissionId) {
+        final Response csvResponse = getSubmissionErrorDetailsCsv(submissionId);
+        assertThat(csvResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+        return csvResponse.readEntity(String.class);
     }
 
     private File getFileFrom(final String filePath) {

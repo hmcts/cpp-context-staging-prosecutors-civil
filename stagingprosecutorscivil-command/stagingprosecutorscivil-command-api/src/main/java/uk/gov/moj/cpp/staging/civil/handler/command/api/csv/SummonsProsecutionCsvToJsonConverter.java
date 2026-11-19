@@ -95,9 +95,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
@@ -136,6 +137,11 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
  * - there is no multi-defendant-per-case flow, so {@code case.urn} must be unique across the rows
  * of a file; a repeated URN is rejected.
  * <p>
+ * {@link #convert(Reader)} collects every row-level problem (blank required column, malformed date,
+ * unknown enum value, duplicate URN) as a {@link ComplaintsFileValidationError} so the upload can be
+ * accepted and the problems reported in the submission's error report; only file-level problems
+ * are thrown as {@link IllegalArgumentException}.
+ * <p>
  * The number of data rows accepted per file is capped by the {@code
  * stagingprosecutorscivil.complaints-files.max-rows} configuration value (defaults to 1000 and can
  * be set per environment); a file with more rows than the configured limit is rejected.
@@ -166,72 +172,143 @@ public class SummonsProsecutionCsvToJsonConverter {
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(convertToObject(csvReader));
     }
 
+    /**
+     * Strict conversion: fails on the first row-level problem found. Kept for callers that need a
+     * complete, valid {@link Summons} or nothing - the complaints-file upload itself uses
+     * {@link #convert(Reader)} so it can report every problem at once.
+     *
+     * @throws IllegalArgumentException for a file-level problem (see {@link #convert(Reader)}) or
+     *                                  the first row-level problem in the file
+     */
     public Summons convertToObject(final Reader csvReader) throws IOException {
+        final ComplaintsFileConversionResult result = convert(csvReader);
+        if (result.hasErrors()) {
+            throw new IllegalArgumentException(result.getErrors().get(0).getMessage());
+        }
+        return result.getSummons()
+                .orElseThrow(() -> new IllegalArgumentException("CSV file contains no data rows"));
+    }
+
+    /**
+     * Converts the whole file, collecting every row-level problem instead of stopping at the first.
+     * <p>
+     * Rows with a problem are left out of the returned {@link Summons}; their problems are returned
+     * in {@link ComplaintsFileConversionResult#getErrors()} keyed by the row's {@code case.urn}.
+     * {@code hearingDetails.*} are only read from the first data row, so a problem with them is
+     * reported against that row. It does not stop the first row's case from being converted, and
+     * the {@link Summons} is still returned (with the unreadable hearing values left blank) so the
+     * converted cases can be schema-validated and every problem reported together.
+     *
+     * @throws IllegalArgumentException for problems that mean the file cannot be processed or
+     *                                  attributed to a prosecutor at all: no data rows, more rows than
+     *                                  the configured limit, a first data row that does not match the
+     *                                  template's columns, or a blank {@code prosecutingAuthority}
+     */
+    public ComplaintsFileConversionResult convert(final Reader csvReader) throws IOException {
         try (CSVParser parser = CSV_FORMAT.parse(csvReader)) {
             final int maxRowsAllowed = Integer.parseInt(maxRows);
-            final Map<String, CaseAccumulator> caseAccumulators = new LinkedHashMap<>();
+            final List<ComplaintsFileValidationError> errors = new ArrayList<>();
+            final Set<String> seenCaseUrns = new HashSet<>();
+            final List<SummonsProsecutionCase> prosecutionCases = new ArrayList<>();
+            final List<ComplaintsFileConversionResult.ConvertedRow> convertedRows = new ArrayList<>();
             HearingDetails hearingDetails = null;
             String prosecutingAuthority = null;
             int rowCount = 0;
 
-            for (final CSVRecord record : parser) {
+            for (final CSVRecord csvRecord : parser) {
                 rowCount++;
                 if (rowCount > maxRowsAllowed) {
                     throw new IllegalArgumentException("CSV file exceeds the maximum allowed number of rows ("
                             + maxRowsAllowed + ")");
                 }
 
-                if (hearingDetails == null) {
-                    prosecutingAuthority = requireNonBlank(record, PROSECUTING_AUTHORITY);
+                final Row record = new Row(csvRecord);
+
+                if (rowCount == 1) {
+                    if (record.isMissingColumns()) {
+                        throw new IllegalArgumentException("Row " + record.getRecordNumber() + " has "
+                                + csvRecord.size() + " columns but the complaints file template has "
+                                + SummonsProsecutionCsvColumns.HEADERS.length);
+                    }
+                    prosecutingAuthority = nullIfBlank(record.get(PROSECUTING_AUTHORITY));
+                    if (prosecutingAuthority == null) {
+                        throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": required column '"
+                                + PROSECUTING_AUTHORITY + "' is blank");
+                    }
                     hearingDetails = HearingDetails.hearingDetails()
                             .withCourtHearingLocation(requireNonBlank(record, HEARING_COURT_HEARING_LOCATION))
                             .withDateOfHearing(requireDate(record, HEARING_DATE_OF_HEARING))
                             .withTimeOfHearing(requireNonBlank(record, HEARING_TIME_OF_HEARING))
                             .build();
+                    // hearing details belong to the whole file, not to the first row's case - report
+                    // them, but don't let them exclude that case from conversion
+                    errors.addAll(record.errors);
+                    record.errors.clear();
                 }
 
-                final String caseUrn = requireNonBlank(record, CASE_URN);
-                if (caseAccumulators.containsKey(caseUrn)) {
-                    throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": duplicate case URN '"
-                            + caseUrn + "' - each row must have a unique case.urn");
+                if (record.isMissingColumns()) {
+                    record.error(ComplaintsFileValidationError.INVALID_ROW, null, "Row " + record.getRecordNumber()
+                            + " has " + csvRecord.size() + " columns but the complaints file template has "
+                            + SummonsProsecutionCsvColumns.HEADERS.length);
+                    errors.addAll(record.errors);
+                    continue;
                 }
-                final CaseAccumulator caseAccumulator = new CaseAccumulator(newCaseBuilder(record));
-                caseAccumulators.put(caseUrn, caseAccumulator);
 
-                final String defendantId = requireNonBlank(record, DEFENDANT_PROSECUTOR_DEFENDANT_ID);
-                final DefendantAccumulator defendantAccumulator = newDefendantAccumulator(record);
-                caseAccumulator.defendantAccumulators.put(defendantId, defendantAccumulator);
+                final SummonsProsecutionCase prosecutionCase = buildProsecutionCase(record);
 
-                defendantAccumulator.offences.add(buildOffence(record));
+                final String caseUrn = nullIfBlank(record.get(CASE_URN));
+                if (caseUrn != null && !seenCaseUrns.add(caseUrn)) {
+                    record.error(ComplaintsFileValidationError.DUPLICATE_CASE_URN, CASE_URN,
+                            "Row " + record.getRecordNumber() + ": duplicate case URN '" + caseUrn
+                                    + "' - each row must have a unique " + CASE_URN);
+                }
+
+                if (record.hasErrors()) {
+                    errors.addAll(record.errors);
+                } else {
+                    prosecutionCases.add(prosecutionCase);
+                    convertedRows.add(new ComplaintsFileConversionResult.ConvertedRow(
+                            record.getRecordNumber(), record.caseReference));
+                }
             }
 
-            if (hearingDetails == null) {
+            if (rowCount == 0) {
                 throw new IllegalArgumentException("CSV file contains no data rows");
             }
 
-            final List<SummonsProsecutionCase> prosecutionCases = new ArrayList<>();
-            for (final CaseAccumulator caseAccumulator : caseAccumulators.values()) {
-                final List<Defendant> defendants = new ArrayList<>();
-                for (final DefendantAccumulator defendantAccumulator : caseAccumulator.defendantAccumulators.values()) {
-                    defendants.add(Defendant.defendant()
-                            .withDefendantDetails(defendantAccumulator.defendantDetails)
-                            .withIndividual(defendantAccumulator.individual)
-                            .withOrganisation(defendantAccumulator.organisation)
-                            .withOffences(defendantAccumulator.offences)
-                            .build());
-                }
-                prosecutionCases.add(caseAccumulator.caseBuilder.withDefendants(defendants).build());
-            }
+            final Summons summons = !prosecutionCases.isEmpty()
+                    ? Summons.summons()
+                            .withHearingDetails(hearingDetails)
+                            .withProsecutingAuthority(prosecutingAuthority)
+                            .withProsecutionCases(prosecutionCases)
+                            .build()
+                    : null;
 
-            return Summons.summons()
-                    .withHearingDetails(hearingDetails)
-                    .withProsecutingAuthority(prosecutingAuthority)
-                    .withProsecutionCases(prosecutionCases)
-                    .build();
+            return new ComplaintsFileConversionResult(prosecutingAuthority, summons, convertedRows, errors);
         }
     }
 
-    private static SummonsProsecutionCase.Builder newCaseBuilder(final CSVRecord record) {
+    /**
+     * Each row is exactly one case with one defendant and one offence.
+     */
+    private static SummonsProsecutionCase buildProsecutionCase(final Row record) {
+        final SummonsProsecutionCase.Builder caseBuilder = newCaseBuilder(record);
+        final DefendantAccumulator defendantAccumulator = newDefendantAccumulator(record);
+        defendantAccumulator.offences.add(buildOffence(record));
+
+        final Defendant defendant = Defendant.defendant()
+                .withDefendantDetails(defendantAccumulator.defendantDetails)
+                .withIndividual(defendantAccumulator.individual)
+                .withOrganisation(defendantAccumulator.organisation)
+                .withOffences(defendantAccumulator.offences)
+                .build();
+
+        final List<Defendant> defendants = new ArrayList<>();
+        defendants.add(defendant);
+        return caseBuilder.withDefendants(defendants).build();
+    }
+
+    private static SummonsProsecutionCase.Builder newCaseBuilder(final Row record) {
         return SummonsProsecutionCase.summonsProsecutionCase()
                 .withUrn(requireNonBlank(record, CASE_URN))
                 .withInformant(nullIfBlank(record.get(CASE_INFORMANT)))
@@ -241,11 +318,14 @@ public class SummonsProsecutionCsvToJsonConverter {
                 .withPaymentReference(nullIfBlank(record.get(CASE_PAYMENT_REFERENCE)));
     }
 
-    private static DefendantAccumulator newDefendantAccumulator(final CSVRecord record) {
+    private static DefendantAccumulator newDefendantAccumulator(final Row record) {
         final DefendantAccumulator accumulator = new DefendantAccumulator();
         accumulator.defendantDetails = buildDefendantDetails(record);
 
         final String defendantType = requireNonBlank(record, DEFENDANT_TYPE);
+        if (defendantType == null) {
+            return accumulator;
+        }
         switch (defendantType) {
             case DEFENDANT_TYPE_INDIVIDUAL:
                 accumulator.individual = buildIndividual(record);
@@ -254,14 +334,15 @@ public class SummonsProsecutionCsvToJsonConverter {
                 accumulator.organisation = buildOrganisation(record);
                 break;
             default:
-                throw new IllegalArgumentException("Column '" + DEFENDANT_TYPE + "' must be '"
-                        + DEFENDANT_TYPE_INDIVIDUAL + "' or '" + DEFENDANT_TYPE_ORGANISATION
-                        + "' but was '" + defendantType + "'");
+                record.error(ComplaintsFileValidationError.INVALID_VALUE, DEFENDANT_TYPE,
+                        "Row " + record.getRecordNumber() + ": column '" + DEFENDANT_TYPE + "' must be '"
+                                + DEFENDANT_TYPE_INDIVIDUAL + "' or '" + DEFENDANT_TYPE_ORGANISATION
+                                + "' but was '" + defendantType + "'");
         }
         return accumulator;
     }
 
-    private static DefendantDetails buildDefendantDetails(final CSVRecord record) {
+    private static DefendantDetails buildDefendantDetails(final Row record) {
         return DefendantDetails.defendantDetails()
                 .withProsecutorDefendantId(requireNonBlank(record, DEFENDANT_PROSECUTOR_DEFENDANT_ID))
                 .withAsn(nullIfBlank(record.get(DEFENDANT_ASN)))
@@ -275,7 +356,7 @@ public class SummonsProsecutionCsvToJsonConverter {
                 .build();
     }
 
-    private static Address buildAddress(final CSVRecord record, final String address1Column, final String address2Column,
+    private static Address buildAddress(final Row record, final String address1Column, final String address2Column,
                                          final String address3Column, final String address4Column,
                                          final String address5Column, final String postcodeColumn) {
         return Address.address()
@@ -288,7 +369,7 @@ public class SummonsProsecutionCsvToJsonConverter {
                 .build();
     }
 
-    private static Individual buildIndividual(final CSVRecord record) {
+    private static Individual buildIndividual(final Row record) {
         return Individual.individual()
                 .withNameDetails(NameDetails.nameDetails()
                         .withTitle(nullIfBlank(record.get(INDIVIDUAL_NAME_TITLE)))
@@ -315,7 +396,7 @@ public class SummonsProsecutionCsvToJsonConverter {
                 .build();
     }
 
-    private static ParentGuardian buildParentGuardian(final CSVRecord record) {
+    private static ParentGuardian buildParentGuardian(final Row record) {
         final String parentGuardianType = nullIfBlank(record.get(PARENT_GUARDIAN_TYPE));
         if (parentGuardianType == null) {
             return null;
@@ -352,14 +433,15 @@ public class SummonsProsecutionCsvToJsonConverter {
                         .build());
                 break;
             default:
-                throw new IllegalArgumentException("Column '" + PARENT_GUARDIAN_TYPE + "' must be '"
-                        + DEFENDANT_TYPE_INDIVIDUAL + "' or '" + DEFENDANT_TYPE_ORGANISATION
-                        + "' but was '" + parentGuardianType + "'");
+                record.error(ComplaintsFileValidationError.INVALID_VALUE, PARENT_GUARDIAN_TYPE,
+                        "Row " + record.getRecordNumber() + ": column '" + PARENT_GUARDIAN_TYPE + "' must be '"
+                                + DEFENDANT_TYPE_INDIVIDUAL + "' or '" + DEFENDANT_TYPE_ORGANISATION
+                                + "' but was '" + parentGuardianType + "'");
         }
         return builder.build();
     }
 
-    private static ContactDetails buildContactDetails(final CSVRecord record, final String workPhoneColumn,
+    private static ContactDetails buildContactDetails(final Row record, final String workPhoneColumn,
                                                         final String homePhoneColumn, final String mobilePhoneColumn,
                                                         final String primaryEmailColumn, final String secondaryEmailColumn) {
         final String workPhone = nullIfBlank(record.get(workPhoneColumn));
@@ -384,14 +466,14 @@ public class SummonsProsecutionCsvToJsonConverter {
                 .build();
     }
 
-    private static Organisation buildOrganisation(final CSVRecord record) {
+    private static Organisation buildOrganisation(final Row record) {
         return Organisation.organisation()
                 .withOrganisationName(requireNonBlank(record, ORGANISATION_NAME))
                 .withCompanyTelephoneNumber(nullIfBlank(record.get(ORGANISATION_COMPANY_TELEPHONE_NUMBER)))
                 .build();
     }
 
-    private static Offence buildOffence(final CSVRecord record) {
+    private static Offence buildOffence(final Row record) {
         return Offence.offence()
                 .withOffenceDetails(OffenceDetails.offenceDetails()
                         .withCjsOffenceCode(requireNonBlank(record, OFFENCE_CJS_OFFENCE_CODE))
@@ -414,25 +496,29 @@ public class SummonsProsecutionCsvToJsonConverter {
         return (value == null || value.isBlank()) ? null : value;
     }
 
-    private static String requireNonBlank(final CSVRecord record, final String column) {
+    // The helpers below never throw for a bad value: they record the problem against the row and
+    // return null, so every problem in a row is collected in a single pass.
+
+    private static String requireNonBlank(final Row record, final String column) {
         final String value = nullIfBlank(record.get(column));
         if (value == null) {
-            throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": required column '"
-                    + column + "' is blank");
+            record.error(ComplaintsFileValidationError.REQUIRED_FIELD_MISSING, column,
+                    "Row " + record.getRecordNumber() + ": required column '" + column + "' is blank");
         }
         return value;
     }
 
-    private static LocalDate parseDate(final CSVRecord record, final String column) {
+    private static LocalDate parseDate(final Row record, final String column) {
         final String value = nullIfBlank(record.get(column));
         return value == null ? null : toIsoDate(record, column, value);
     }
 
-    private static LocalDate requireDate(final CSVRecord record, final String column) {
-        return toIsoDate(record, column, requireNonBlank(record, column));
+    private static LocalDate requireDate(final Row record, final String column) {
+        final String value = requireNonBlank(record, column);
+        return value == null ? null : toIsoDate(record, column, value);
     }
 
-    private static LocalDate toIsoDate(final CSVRecord record, final String column, final String value) {
+    private static LocalDate toIsoDate(final Row record, final String column, final String value) {
         if (ISO_DATE_PATTERN.matcher(value).matches()) {
             try {
                 return LocalDate.parse(value);
@@ -440,39 +526,108 @@ public class SummonsProsecutionCsvToJsonConverter {
                 // well-formed but not a real calendar date, e.g. 2022-02-30 - reported below
             }
         }
-        throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
-                + value + "' - expected ISO date format YYYY-MM-DD");
+        record.error(ComplaintsFileValidationError.INVALID_DATE_FORMAT, column,
+                "Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
+                        + value + "' - expected ISO date format YYYY-MM-DD");
+        return null;
     }
 
-    private static Integer requireInteger(final CSVRecord record, final String column) {
-        return Integer.valueOf(requireNonBlank(record, column));
+    private static Integer requireInteger(final Row record, final String column) {
+        final String value = requireNonBlank(record, column);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException e) {
+            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid whole number value '"
+                            + value + "'");
+            return null;
+        }
     }
 
-    private static BigDecimal parseBigDecimal(final CSVRecord record, final String column) {
+    private static BigDecimal parseBigDecimal(final Row record, final String column) {
         final String value = nullIfBlank(record.get(column));
-        return value == null ? null : new BigDecimal(value);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException e) {
+            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid numeric value '"
+                            + value + "'");
+            return null;
+        }
     }
 
-    private static Gender requireGender(final CSVRecord record, final String column) {
+    private static Gender requireGender(final Row record, final String column) {
         final String value = requireNonBlank(record, column);
-        return Gender.valueFor(Integer.valueOf(value))
-                .orElseThrow(() -> new IllegalArgumentException("Row " + record.getRecordNumber() + ": column '"
-                        + column + "' has invalid gender value '" + value + "'"));
+        if (value == null) {
+            return null;
+        }
+        Optional<Gender> gender;
+        try {
+            gender = Gender.valueFor(Integer.valueOf(value));
+        } catch (NumberFormatException e) {
+            gender = Optional.empty();
+        }
+        if (gender.isEmpty()) {
+            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid gender value '"
+                            + value + "'");
+        }
+        return gender.orElse(null);
     }
 
-    private static Language requireLanguage(final CSVRecord record, final String column) {
+    private static Language requireLanguage(final Row record, final String column) {
         final String value = requireNonBlank(record, column);
-        return Language.valueFor(value)
-                .orElseThrow(() -> new IllegalArgumentException("Row " + record.getRecordNumber() + ": column '"
-                        + column + "' has invalid language value '" + value + "'"));
+        if (value == null) {
+            return null;
+        }
+        final Optional<Language> language = Language.valueFor(value);
+        if (language.isEmpty()) {
+            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid language value '"
+                            + value + "'");
+        }
+        return language.orElse(null);
     }
 
-    private static final class CaseAccumulator {
-        private final SummonsProsecutionCase.Builder caseBuilder;
-        private final Map<String, DefendantAccumulator> defendantAccumulators = new LinkedHashMap<>();
+    /**
+     * One CSV data row plus the problems found while converting it.
+     */
+    private static final class Row {
+        private final CSVRecord csvRecord;
+        private final String caseReference;
+        private final List<ComplaintsFileValidationError> errors = new ArrayList<>();
 
-        private CaseAccumulator(final SummonsProsecutionCase.Builder caseBuilder) {
-            this.caseBuilder = caseBuilder;
+        private Row(final CSVRecord csvRecord) {
+            this.csvRecord = csvRecord;
+            final String caseUrn = csvRecord.isSet(CASE_URN) ? nullIfBlank(csvRecord.get(CASE_URN)) : null;
+            this.caseReference = caseUrn != null ? caseUrn : "Row " + csvRecord.getRecordNumber();
+        }
+
+        private String get(final String column) {
+            return csvRecord.get(column);
+        }
+
+        private long getRecordNumber() {
+            return csvRecord.getRecordNumber();
+        }
+
+        private boolean isMissingColumns() {
+            return csvRecord.size() < SummonsProsecutionCsvColumns.HEADERS.length;
+        }
+
+        private void error(final String code, final String column, final String message) {
+            final String rawValue = column != null && csvRecord.isSet(column) ? csvRecord.get(column) : "";
+            errors.add(new ComplaintsFileValidationError(getRecordNumber(), caseReference, code, column, rawValue, message));
+        }
+
+        private boolean hasErrors() {
+            return !errors.isEmpty();
         }
     }
 

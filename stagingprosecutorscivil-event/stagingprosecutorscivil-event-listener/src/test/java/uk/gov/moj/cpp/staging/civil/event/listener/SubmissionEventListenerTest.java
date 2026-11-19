@@ -28,6 +28,7 @@ import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.ComplaintsFileValidationFailed;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
@@ -594,6 +595,51 @@ public class SubmissionEventListenerTest {
         assertThat(existingSubmission.getSubmissionStatus(), is(SUCCESS.toString()));
         assertThat(existingSubmission.getCompletedAt(), is(notNullValue()));
         verify(submissionRepository).save(existingSubmission);
+    }
+
+    @Test
+    public void shouldCreateFailedSubmissionWithSchemaErrorsAsCaseErrorsWhenComplaintsFileValidationFailed() {
+        final UUID submissionId = randomUUID();
+        final CaseProblem caseError = CaseProblem.caseProblem().withProsecutorCaseReference("SCIV00001").build();
+        final javax.json.JsonObject caseErrorJson = Json.createObjectBuilder()
+                .add("prosecutorCaseReference", "SCIV00001")
+                .add("problems", Json.createArrayBuilder().add(Json.createObjectBuilder()
+                        .add("code", "REQUIRED_FIELD_MISSING")
+                        .add("values", Json.createArrayBuilder().add(Json.createObjectBuilder()
+                                .add("key", "defendant.individual.nameDetails.surname")
+                                .add("value", "")))))
+                .build();
+        when(objectToJsonObjectConverter.convert(caseError)).thenReturn(caseErrorJson);
+
+        final ComplaintsFileValidationFailed validationFailed = ComplaintsFileValidationFailed.complaintsFileValidationFailed()
+                .withSubmissionId(submissionId)
+                .withSubmissionStatus(FAILED)
+                .withProsecutingAuthority("GAAAA01")
+                .withFileName("complaints.csv")
+                .withSubmittedByUserName("Richard Chapman")
+                .withProsecutorShortName("TVL")
+                .withCaseErrors(Collections.singletonList(caseError))
+                .build();
+        final Envelope<ComplaintsFileValidationFailed> envelope =
+                newEnvelope("stagingprosecutorscivil.event.complaints-file-validation-failed", validationFailed);
+
+        submissionEventListener.complaintsFileValidationFailed(envelope);
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        final ZonedDateTime createdAt = envelope.metadata().createdAt().get();
+        assertThat(submission.getSubmissionId(), is(submissionId));
+        assertThat(submission.getSubmissionStatus(), is(FAILED.name()));
+        assertThat(submission.getType(), is(SubmissionType.PROSECUTION));
+        assertThat(submission.getOuCode(), is("GAAAA01"));
+        assertThat(submission.getFileName(), is("complaints.csv"));
+        assertThat(submission.getSubmittedByUserName(), is("Richard Chapman"));
+        assertThat(submission.getProsecutorShortName(), is("TVL"));
+        assertThat(submission.getReceivedAt(), is(createdAt));
+        assertThat(submission.getCompletedAt(), is(createdAt));
+        assertThat(submission.getGroupCaseErrors(), is(Json.createArrayBuilder().add(caseErrorJson).build()));
+        assertThat(submission.getDefendantErrors(), is(nullValue()));
+        assertThat(submission.getCaseDetail().isEmpty(), is(true));
     }
 
     private <T> Envelope<T> newEnvelope(final String name, T payload) {

@@ -20,6 +20,7 @@ import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.ComplaintsFileValidationFailed;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionSuccessful;
@@ -109,6 +110,38 @@ public class SubmissionEventListener {
                 .withSubmittedByUserName(summonsReceived.getSubmittedByUserName())
                 .withProsecutorShortName(summonsReceived.getProsecutorShortName())
                 .build();
+
+        submissionRepository.save(submission);
+    }
+
+    /**
+     * A complaints CSV upload that failed schema validation never reaches Prosecution Case File, so
+     * it is created here already in its terminal {@code FAILED} status, with the schema problems
+     * stored in the same {@code caseErrors} column that PCF's business-validation case errors use -
+     * the error report CSV is built from that column.
+     */
+    @Handles("stagingprosecutorscivil.event.complaints-file-validation-failed")
+    public void complaintsFileValidationFailed(final Envelope<ComplaintsFileValidationFailed> event) {
+        LOGGER.info("stagingprosecutorscivil.event.complaints-file-validation-failed event received in Listener for SubmissionId {}", event.payload().getSubmissionId());
+
+        final ComplaintsFileValidationFailed validationFailed = event.payload();
+        final ZonedDateTime createdAt = extractCreatedAt(event.metadata());
+
+        final Submission submission = Submission.builder()
+                .withSubmissionId(validationFailed.getSubmissionId())
+                .withSubmissionStatus(validationFailed.getSubmissionStatus().name())
+                .withOuCode(validationFailed.getProsecutingAuthority())
+                .withReceivedAt(createdAt)
+                .withCompletedAt(createdAt)
+                .withCaseDetail(new HashSet<>())
+                .withErrors(null)
+                .withWarnings(null)
+                .withType(SubmissionType.PROSECUTION)
+                .withFileName(validationFailed.getFileName())
+                .withSubmittedByUserName(validationFailed.getSubmittedByUserName())
+                .withProsecutorShortName(validationFailed.getProsecutorShortName())
+                .build();
+        submission.setGroupCaseErrors(transformCaseProblemsToJsonArray(validationFailed.getCaseErrors()));
 
         submissionRepository.save(submission);
     }
