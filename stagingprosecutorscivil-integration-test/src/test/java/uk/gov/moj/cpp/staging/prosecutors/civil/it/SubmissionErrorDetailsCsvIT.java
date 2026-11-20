@@ -6,8 +6,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.ResourcesUtils.asJsonObject;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.ResourcesUtils.readExpectedCsv;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtils.SUMMONS_CONTENT_TYPE;
@@ -20,6 +20,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.StagingProsecutorsCivilUtil
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.UrlResponse;
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
+import java.util.Map;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -61,31 +62,8 @@ public class SubmissionErrorDetailsCsvIT {
         final UUID submissionId = urlResponse.getSubmissionId();
         StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
-        final JsonObject rejectedEvent = createObjectBuilder()
-                .add("caseId", randomUUID().toString())
-                .add("externalId", submissionId.toString())
-                .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("prosecutorCaseReference", "123")
-                                .add("problems", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("code", "PROSECUTOR_OUCODE_NOT_RECOGNISED")
-                                                .add("values", createArrayBuilder()
-                                                        .add(createObjectBuilder()
-                                                                .add("key", "prosecutingAuthority")
-                                                                .add("value", "A010000")))))))
-                .add("defendantErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("prosecutorDefendantReference", "cad5a01")
-                                .add("problems", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("code", "OFFENCE_CODE_NOT_SUPPORTED")
-                                                .add("values", createArrayBuilder()
-                                                        .add(createObjectBuilder()
-                                                                .add("key", "offence_offenceCode")
-                                                                .add("value", "AX03547")))))))
-                .build();
+        final JsonObject rejectedEvent = asJsonObject("payload/events/civil-prosecution-rejected-case-and-defendant-errors.json",
+                Map.of("%CASE_ID%", randomUUID().toString(), "%SUBMISSION_ID%", submissionId.toString()));
 
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
@@ -103,9 +81,7 @@ public class SubmissionErrorDetailsCsvIT {
         final String csv = response.readEntity(String.class);
         // A direct JSON API submission has no uploaded file, so prosecutioncasefile's keys are kept as sent
         // (complaints-file uploads report them as template columns - see ComplaintsFilesUploadIT).
-        final String expectedCsv = "Reference,Error Type,Error Code,Field,Value\n"
-                + "123,Case,PROSECUTOR_OUCODE_NOT_RECOGNISED,prosecutingAuthority,A010000\n"
-                + "cad5a01,Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence_offenceCode,AX03547";
+        final String expectedCsv = readExpectedCsv("payload/error-reports/json-api-case-and-defendant-errors.csv");
         assertThat(csv, is(expectedCsv));
     }
 }

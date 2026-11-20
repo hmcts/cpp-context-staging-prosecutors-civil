@@ -11,7 +11,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.ResourcesUtils.asJsonObject;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.ResourcesUtils.readExpectedCsv;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
@@ -32,6 +33,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,8 +61,6 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV_DUPLICATE_URN = "payload/complaints/complaints-summons-prosecution-duplicate-urn.csv";
     private static final String COMPLAINTS_CSV_HEADER_ONLY = "payload/complaints/complaints-summons-prosecution-header-only.csv";
     private static final String COMPLAINTS_CSV_INVALID_DATE_OF_BIRTH = "payload/complaints/complaints-summons-prosecution-invalid-date-of-birth.csv";
-    private static final String FIXTURE_PROSECUTOR_DEFENDANT_ID = "123e4567-e89b-12d3-a456-426614174000";
-    private static final String ERROR_REPORT_HEADER = "Reference,Error Type,Error Code,Field,Value\n";
     private static final String CSV_OUCODE = "GAAAA01";
     private static final String PROSECUTOR_SHORT_NAME = "DVLA";
     private static final String LEGAL_ADVISERS_GROUP_NAME = "Legal Advisers";
@@ -69,7 +69,6 @@ public class ComplaintsFilesUploadIT {
     private static final String PUBLIC_EVENT_PCF_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL = "public.prosecutioncasefile.parked-for-summons-application-approval";
     private static final String PUBLIC_EVENT_PCF_SUBMISSION_APPROVED = "public.prosecutioncasefile.submission-approved";
     private static final String PUBLIC_EVENT_PCF_SUBMISSION_REJECTED = "public.prosecutioncasefile.submission-rejected";
-    private static final String OFFENCE_CODE_INVALID = "OFFENCE_CODE_INVALID";
 
     private final WiremockUtils wiremockUtils = new WiremockUtils();
     private final JmsMessageProducerClient messageProducerClientPublic = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
@@ -128,18 +127,8 @@ public class ComplaintsFilesUploadIT {
         // ChargeProsecutionIT.shouldUpdateStatusToRejectedForSingleCaseProsecution, but simulating
         // a business validation failure on the defendant's offence (OFFENCE_CODE_INVALID) rather
         // than a case-level problem.
-        final JsonObject rejectedEvent = createObjectBuilder()
-                .add("caseId", randomUUID().toString())
-                .add("externalId", submissionId.toString())
-                .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder().build())
-                .add("defendantErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("problems", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("code", OFFENCE_CODE_INVALID)
-                                                .add("values", createArrayBuilder().build())))))
-                .build();
+        final JsonObject rejectedEvent = asJsonObject("payload/events/civil-prosecution-rejected-offence-code-invalid.json",
+                Map.of("%CASE_ID%", randomUUID().toString(), "%SUBMISSION_ID%", submissionId.toString()));
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
@@ -164,18 +153,8 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
-        final JsonObject rejectedEvent = createObjectBuilder()
-                .add("caseId", randomUUID().toString())
-                .add("externalId", submissionId.toString())
-                .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder().build())
-                .add("defendantErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("problems", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("code", OFFENCE_CODE_INVALID)
-                                                .add("values", createArrayBuilder().build())))))
-                .build();
+        final JsonObject rejectedEvent = asJsonObject("payload/events/civil-prosecution-rejected-offence-code-invalid.json",
+                Map.of("%CASE_ID%", randomUUID().toString(), "%SUBMISSION_ID%", submissionId.toString()));
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
@@ -336,8 +315,7 @@ public class ComplaintsFilesUploadIT {
         final Submission submission = pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
         assertThat(submission.getProsecutingAuthority(), is(PROSECUTOR_SHORT_NAME));
 
-        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
-                + "SCIV11111,Case,REQUIRED_FIELD_MISSING,case.summonsCode,"));
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-missing-summons-code.csv")));
     }
 
     @Test
@@ -351,8 +329,7 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
 
-        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
-                + "SCIV11111,Case,INVALID_VALUE,case.summonsCode,X"));
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-invalid-summons-code.csv")));
     }
 
     @Test
@@ -366,8 +343,7 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
 
-        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
-                + FIXTURE_PROSECUTOR_DEFENDANT_ID + ",Defendant,INVALID_DATE_FORMAT,defendant.individual.dateOfBirth,31/02/1990"));
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-invalid-date-of-birth.csv")));
     }
 
     @Test
@@ -381,22 +357,8 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
-        final JsonObject rejectedEvent = createObjectBuilder()
-                .add("caseId", randomUUID().toString())
-                .add("externalId", submissionId.toString())
-                .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder().build())
-                .add("defendantErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("prosecutorDefendantReference", FIXTURE_PROSECUTOR_DEFENDANT_ID)
-                                .add("problems", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("code", "OFFENCE_CODE_NOT_SUPPORTED")
-                                                .add("values", createArrayBuilder()
-                                                        .add(createObjectBuilder()
-                                                                .add("key", "offence_offenceCode")
-                                                                .add("value", "CA03010")))))))
-                .build();
+        final JsonObject rejectedEvent = asJsonObject("payload/events/civil-prosecution-rejected-offence-code-not-supported.json",
+                Map.of("%CASE_ID%", randomUUID().toString(), "%SUBMISSION_ID%", submissionId.toString()));
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
@@ -404,8 +366,7 @@ public class ComplaintsFilesUploadIT {
         pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
 
         // prosecutioncasefile's key offence_offenceCode is reported as the template column the user uploaded
-        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
-                + FIXTURE_PROSECUTOR_DEFENDANT_ID + ",Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence.offenceDetails.cjsOffenceCode,CA03010"));
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-offence-code-not-supported.csv")));
     }
 
     @Test
@@ -448,8 +409,7 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
 
-        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
-                + "SCIV11111,Case,DUPLICATE_CASE_URN,case.urn,SCIV11111"));
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-duplicate-urn.csv")));
     }
 
     @Test

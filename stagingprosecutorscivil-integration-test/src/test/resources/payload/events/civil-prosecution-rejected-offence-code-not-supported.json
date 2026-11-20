@@ -1,0 +1,22 @@
+{
+  "caseId": "%CASE_ID%",
+  "externalId": "%SUBMISSION_ID%",
+  "channel": "CIVIL",
+  "caseErrors": [],
+  "defendantErrors": [
+    {
+      "prosecutorDefendantReference": "123e4567-e89b-12d3-a456-426614174000",
+      "problems": [
+        {
+          "code": "OFFENCE_CODE_NOT_SUPPORTED",
+          "values": [
+            {
+              "key": "offence_offenceCode",
+              "value": "CA03010"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "caseErrors": [
+    {
+      "prosecutorCaseReference": "C1",
+      "problems": [
+        {
+          "code": "CASE_COUNT_EXCEEDED",
+          "values": [
+            {
+              "key": "groupProsecutions.size",
+              "value": "101"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

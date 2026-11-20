@@ -1,0 +1,37 @@
+{
+  "caseId": "%CASE_ID%",
+  "externalId": "%SUBMISSION_ID%",
+  "channel": "CIVIL",
+  "caseErrors": [
+    {
+      "prosecutorCaseReference": "123",
+      "problems": [
+        {
+          "code": "PROSECUTOR_OUCODE_NOT_RECOGNISED",
+          "values": [
+            {
+              "key": "prosecutingAuthority",
+              "value": "A010000"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "defendantErrors": [
+    {
+      "prosecutorDefendantReference": "cad5a01",
+      "problems": [
+        {
+          "code": "OFFENCE_CODE_NOT_SUPPORTED",
+          "values": [
+            {
+              "key": "offence_offenceCode",
+              "value": "AX03547"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+Reference,Error Type,Error Code,Field,Value
+D1,Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence_offenceCode,AX03547
+D1,Defendant,DEFENDANT_DOB_IN_FUTURE,individual_selfDefinedInformation_dateOfBirth,2090-01-01

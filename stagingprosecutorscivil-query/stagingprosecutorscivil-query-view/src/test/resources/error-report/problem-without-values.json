@@ -1,0 +1,12 @@
+{
+  "caseErrors": [
+    {
+      "prosecutorCaseReference": "REF1",
+      "problems": [
+        {
+          "code": "NO_VALUES_CODE"
+        }
+      ]
+    }
+  ]
+}

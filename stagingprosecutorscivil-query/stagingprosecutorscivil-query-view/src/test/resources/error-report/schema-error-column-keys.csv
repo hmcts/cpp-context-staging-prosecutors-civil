@@ -1,0 +1,2 @@
+Reference,Error Type,Error Code,Field,Value
+D1,Defendant,INVALID_DATE_FORMAT,defendant.individual.dateOfBirth,31/02/1990
