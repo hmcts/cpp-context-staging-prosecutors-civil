@@ -1,0 +1,32 @@
+{
+  "defendantErrors": [
+    {
+      "prosecutorDefendantReference": "D1",
+      "problems": [
+        {
+          "code": "DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE",
+          "values": [
+            {
+              "key": "dateOfBirth",
+              "value": "2090-01-01"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prosecutorDefendantReference": "D1",
+      "problems": [
+        {
+          "code": "DEFENDANT_DOB_IN_FUTURE",
+          "values": [
+            {
+              "key": "dateOfBirth",
+              "value": "2091-01-01"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

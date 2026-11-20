@@ -11,7 +11,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.ResourcesUtils.asJsonObject;
+import static uk.gov.moj.cpp.staging.prosecutors.civil.util.ResourcesUtils.readExpectedCsv;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.SystemIDMapperStub.stubAddMany;
@@ -32,6 +33,7 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,6 +59,8 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV_MISSING_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-missing-summons-code.csv";
     private static final String COMPLAINTS_CSV_INVALID_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-invalid-summons-code.csv";
     private static final String COMPLAINTS_CSV_DUPLICATE_URN = "payload/complaints/complaints-summons-prosecution-duplicate-urn.csv";
+    private static final String COMPLAINTS_CSV_HEADER_ONLY = "payload/complaints/complaints-summons-prosecution-header-only.csv";
+    private static final String COMPLAINTS_CSV_INVALID_DATE_OF_BIRTH = "payload/complaints/complaints-summons-prosecution-invalid-date-of-birth.csv";
     private static final String CSV_OUCODE = "GAAAA01";
     private static final String PROSECUTOR_SHORT_NAME = "DVLA";
     private static final String LEGAL_ADVISERS_GROUP_NAME = "Legal Advisers";
@@ -65,7 +69,6 @@ public class ComplaintsFilesUploadIT {
     private static final String PUBLIC_EVENT_PCF_PARKED_FOR_SUMMONS_APPLICATION_APPROVAL = "public.prosecutioncasefile.parked-for-summons-application-approval";
     private static final String PUBLIC_EVENT_PCF_SUBMISSION_APPROVED = "public.prosecutioncasefile.submission-approved";
     private static final String PUBLIC_EVENT_PCF_SUBMISSION_REJECTED = "public.prosecutioncasefile.submission-rejected";
-    private static final String OFFENCE_CODE_INVALID = "OFFENCE_CODE_INVALID";
 
     private final WiremockUtils wiremockUtils = new WiremockUtils();
     private final JmsMessageProducerClient messageProducerClientPublic = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
@@ -124,18 +127,8 @@ public class ComplaintsFilesUploadIT {
         // ChargeProsecutionIT.shouldUpdateStatusToRejectedForSingleCaseProsecution, but simulating
         // a business validation failure on the defendant's offence (OFFENCE_CODE_INVALID) rather
         // than a case-level problem.
-        final JsonObject rejectedEvent = createObjectBuilder()
-                .add("caseId", randomUUID().toString())
-                .add("externalId", submissionId.toString())
-                .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder().build())
-                .add("defendantErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("problems", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("code", OFFENCE_CODE_INVALID)
-                                                .add("values", createArrayBuilder().build())))))
-                .build();
+        final JsonObject rejectedEvent = asJsonObject("payload/events/civil-prosecution-rejected-offence-code-invalid.json",
+                Map.of("%CASE_ID%", randomUUID().toString(), "%SUBMISSION_ID%", submissionId.toString()));
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
@@ -160,18 +153,8 @@ public class ComplaintsFilesUploadIT {
         final UUID submissionId = extractSubmissionId(response);
         pollForSubmission(submissionId, SubmissionStatus.PENDING);
 
-        final JsonObject rejectedEvent = createObjectBuilder()
-                .add("caseId", randomUUID().toString())
-                .add("externalId", submissionId.toString())
-                .add("channel", "CIVIL")
-                .add("caseErrors", createArrayBuilder().build())
-                .add("defendantErrors", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("problems", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("code", OFFENCE_CODE_INVALID)
-                                                .add("values", createArrayBuilder().build())))))
-                .build();
+        final JsonObject rejectedEvent = asJsonObject("payload/events/civil-prosecution-rejected-offence-code-invalid.json",
+                Map.of("%CASE_ID%", randomUUID().toString(), "%SUBMISSION_ID%", submissionId.toString()));
         messageProducerClientPublic.sendMessage(
                 PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
                 envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
@@ -319,19 +302,71 @@ public class ComplaintsFilesUploadIT {
     }
 
     @Test
-    public void shouldRejectUploadWhenCsvCannotBeParsed() throws IOException {
+    public void shouldAcceptUploadAndReportBlankRequiredColumnInErrorReport() throws IOException {
+        // CAD-1528 AC1: a file that uploads but fails schema validation is tracked as a FAILED
+        // submission whose error report lists the problem, instead of a synchronous 400.
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_MISSING_SUMMONS_CODE), randomUUID().toString());
 
-        assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
-        assertThat(extractErrorMessage(response), containsString("Unable to parse complaints CSV file"));
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        final Submission submission = pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+        assertThat(submission.getProsecutingAuthority(), is(PROSECUTOR_SHORT_NAME));
+
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-missing-summons-code.csv")));
     }
 
     @Test
-    public void shouldRejectUploadWhenCsvFailsSchemaValidation() throws IOException {
+    public void shouldAcceptUploadAndReportSchemaViolationInErrorReport() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_INVALID_SUMMONS_CODE), randomUUID().toString());
 
-        assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
-        assertThat(extractErrorMessage(response), containsString("Complaints CSV file failed schema validation"));
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-invalid-summons-code.csv")));
+    }
+
+    @Test
+    public void shouldReportDefendantColumnSchemaErrorAsDefendantErrorAgainstProsecutorDefendantId() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_INVALID_DATE_OF_BIRTH), randomUUID().toString());
+
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-invalid-date-of-birth.csv")));
+    }
+
+    @Test
+    public void shouldReportProsecutionCaseFileBusinessErrorKeyAsTemplateColumnForComplaintsFileUpload() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final JsonObject rejectedEvent = asJsonObject("payload/events/civil-prosecution-rejected-offence-code-not-supported.json",
+                Map.of("%CASE_ID%", randomUUID().toString(), "%SUBMISSION_ID%", submissionId.toString()));
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
+
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        // prosecutioncasefile's key offence_offenceCode is reported as the template column the user uploaded
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-offence-code-not-supported.csv")));
     }
 
     @Test
@@ -361,14 +396,34 @@ public class ComplaintsFilesUploadIT {
     }
 
     @Test
-    public void shouldRejectUploadWhenCsvContainsDuplicateCaseUrn() throws IOException {
+    public void shouldAcceptUploadAndReportDuplicateCaseUrnInErrorReport() throws IOException {
         // Each row represents a single case/defendant - there is no multi-defendant-per-case
         // flow in scope, so a case.urn must be unique across the rows of a single uploaded file.
-        // This is validated at request time, before any downstream submission is created.
+        // The repeated row is reported in the error report; the file is not sent downstream.
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
         final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_DUPLICATE_URN), randomUUID().toString());
 
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-duplicate-urn.csv")));
+    }
+
+    @Test
+    public void shouldStillRejectUploadSynchronouslyWhenCsvHasNoDataRows() throws IOException {
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_HEADER_ONLY), randomUUID().toString());
+
         assertThat(response.getStatusLine().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
-        assertThat(extractErrorMessage(response), containsString("SCIV11111"));
+        assertThat(extractErrorMessage(response), containsString("Unable to parse complaints CSV file"));
+    }
+
+    private String errorReportFor(final UUID submissionId) {
+        final Response csvResponse = getSubmissionErrorDetailsCsv(submissionId);
+        assertThat(csvResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+        return csvResponse.readEntity(String.class);
     }
 
     private File getFileFrom(final String filePath) {

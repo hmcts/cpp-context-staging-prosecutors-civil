@@ -1,0 +1,32 @@
+{
+  "defendantErrors": [
+    {
+      "prosecutorDefendantReference": "D1",
+      "problems": [
+        {
+          "code": "OFFENCE_CODE_NOT_SUPPORTED",
+          "values": [
+            {
+              "key": "offence_offenceCode",
+              "value": "AX03547"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prosecutorDefendantReference": "D1",
+      "problems": [
+        {
+          "code": "DEFENDANT_DOB_IN_FUTURE",
+          "values": [
+            {
+              "key": "individual_selfDefinedInformation_dateOfBirth",
+              "value": "2090-01-01"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

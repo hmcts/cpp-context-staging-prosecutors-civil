@@ -1,70 +1,111 @@
 package uk.gov.moj.cpp.staging.civil.query;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 
-import javax.json.JsonArray;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+
+import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Each scenario is a pair of files under {@code src/test/resources/error-report/}:
+ * {@code <scenario>.json} holds the submission's stored {@code caseErrors} / {@code defendantErrors}
+ * (either may be absent) and {@code <scenario>.csv} the expected error report.
+ */
 public class SubmissionErrorDetailsCsvBuilderTest {
+
+    private static final String FIXTURES = "/error-report/";
 
     @Test
     public void shouldReturnHeaderOnlyWhenBothArraysAreNull() {
-        assertThat(SubmissionErrorDetailsCsvBuilder.build(null, null), is("Reference,Error Type,Error Code,Field,Value"));
+        assertThat(buildFrom("no-errors", false), is(expectedCsv("no-errors")));
     }
 
     @Test
     public void shouldReturnHeaderOnlyWhenBothArraysAreEmpty() {
-        final JsonArray empty = createArrayBuilder().build();
-        assertThat(SubmissionErrorDetailsCsvBuilder.build(empty, empty), is("Reference,Error Type,Error Code,Field,Value"));
+        assertThat(buildFrom("empty-errors", false), is(expectedCsv("empty-errors")));
     }
 
     @Test
     public void shouldEmitOneRowWithEmptyFieldAndValueWhenProblemHasNoValues() {
-        final JsonArray caseErrors = createArrayBuilder()
-                .add(createObjectBuilder()
-                        .add("prosecutorCaseReference", "REF1")
-                        .add("problems", createArrayBuilder()
-                                .add(createObjectBuilder().add("code", "NO_VALUES_CODE"))))
-                .build();
-
-        final String csv = SubmissionErrorDetailsCsvBuilder.build(caseErrors, null);
-
-        assertThat(csv, is("Reference,Error Type,Error Code,Field,Value\nREF1,Case,NO_VALUES_CODE,,"));
+        assertThat(buildFrom("problem-without-values", false), is(expectedCsv("problem-without-values")));
     }
 
     @Test
     public void shouldPreserveOrderOfCasesBeforeDefendants() {
-        final JsonArray caseErrors = createArrayBuilder()
-                .add(caseError("C1", "CASE_CODE"))
-                .build();
-        final JsonArray defendantErrors = createArrayBuilder()
-                .add(defendantError("D1", "DEF_CODE"))
-                .build();
-
-        final String csv = SubmissionErrorDetailsCsvBuilder.build(caseErrors, defendantErrors);
-
-        assertThat(csv, is("Reference,Error Type,Error Code,Field,Value\n"
-                + "C1,Case,CASE_CODE,f,v\n"
-                + "D1,Defendant,DEF_CODE,f,v"));
+        assertThat(buildFrom("case-and-defendant-errors", false), is(expectedCsv("case-and-defendant-errors")));
     }
 
-    private static javax.json.JsonObjectBuilder caseError(final String reference, final String code) {
-        return createObjectBuilder()
-                .add("prosecutorCaseReference", reference)
-                .add("problems", createArrayBuilder()
-                        .add(createObjectBuilder().add("code", code)
-                                .add("values", createArrayBuilder().add(createObjectBuilder().add("key", "f").add("value", "v")))));
+    @Test
+    public void shouldReportProsecutionCaseFileKeysAsTemplateColumnsForComplaintsFileUploads() {
+        assertThat(buildFrom("prosecution-case-file-keys", true), is(expectedCsv("prosecution-case-file-keys")));
     }
 
-    private static javax.json.JsonObjectBuilder defendantError(final String reference, final String code) {
-        return createObjectBuilder()
-                .add("prosecutorDefendantReference", reference)
-                .add("problems", createArrayBuilder()
-                        .add(createObjectBuilder().add("code", code)
-                                .add("values", createArrayBuilder().add(createObjectBuilder().add("key", "f").add("value", "v")))));
+    @Test
+    public void shouldReportAReusedKeyAgainstTheColumnItsProblemCodeRefersTo() {
+        assertThat(buildFrom("reused-key-by-problem-code", true), is(expectedCsv("reused-key-by-problem-code")));
+    }
+
+    @Test
+    public void shouldLeaveTemplateColumnKeysFromSchemaErrorsUnchanged() {
+        assertThat(buildFrom("schema-error-column-keys", true), is(expectedCsv("schema-error-column-keys")));
+    }
+
+    @Test
+    public void shouldKeepTheRawKeyWhenAProsecutionCaseFileKeyHasNoTemplateColumn() {
+        assertThat(buildFrom("unmapped-key", true), is(expectedCsv("unmapped-key")));
+    }
+
+    @Test
+    public void shouldKeepRawKeysForSubmissionsThatDidNotComeFromAComplaintsFile() {
+        assertThat(buildFrom("prosecution-case-file-keys", false), is(expectedCsv("prosecution-case-file-keys-raw")));
+
+        final JsonObject errors = readJson("prosecution-case-file-keys");
+        assertThat(SubmissionErrorDetailsCsvBuilder.build(errors.getJsonArray("caseErrors"), errors.getJsonArray("defendantErrors")),
+                is(expectedCsv("prosecution-case-file-keys-raw")));
+    }
+
+    @Test
+    public void shouldLeaveTheReferenceBlankWhenTheErrorHasNone() {
+        assertThat(buildFrom("blank-reference", true), is(expectedCsv("blank-reference")));
+    }
+
+    private static String buildFrom(final String scenario, final boolean useCsvColumnNames) {
+        final JsonObject errors = readJson(scenario);
+        return SubmissionErrorDetailsCsvBuilder.build(
+                errors.getJsonArray("caseErrors"), errors.getJsonArray("defendantErrors"), useCsvColumnNames);
+    }
+
+    private static JsonObject readJson(final String scenario) {
+        try (InputStream in = resource(scenario + ".json")) {
+            return createReader(in).readObject();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * The expected report, without the file's trailing newline - the builder does not end the CSV with one.
+     */
+    private static String expectedCsv(final String scenario) {
+        try (InputStream in = resource(scenario + ".csv")) {
+            return new String(in.readAllBytes(), UTF_8).replaceFirst("\\R\\z", "");
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static InputStream resource(final String name) {
+        final InputStream in = SubmissionErrorDetailsCsvBuilderTest.class.getResourceAsStream(FIXTURES + name);
+        if (in == null) {
+            throw new IllegalArgumentException("Missing test fixture " + FIXTURES + name);
+        }
+        return in;
     }
 }

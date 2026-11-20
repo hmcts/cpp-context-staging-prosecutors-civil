@@ -1,0 +1,18 @@
+{
+  "defendantErrors": [
+    {
+      "prosecutorDefendantReference": "D1",
+      "problems": [
+        {
+          "code": "INVALID_DATE_FORMAT",
+          "values": [
+            {
+              "key": "defendant.individual.dateOfBirth",
+              "value": "31/02/1990"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

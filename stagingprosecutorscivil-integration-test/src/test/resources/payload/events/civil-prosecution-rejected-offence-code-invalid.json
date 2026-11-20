@@ -1,0 +1,16 @@
+{
+  "caseId": "%CASE_ID%",
+  "externalId": "%SUBMISSION_ID%",
+  "channel": "CIVIL",
+  "caseErrors": [],
+  "defendantErrors": [
+    {
+      "problems": [
+        {
+          "code": "OFFENCE_CODE_INVALID",
+          "values": []
+        }
+      ]
+    }
+  ]
+}

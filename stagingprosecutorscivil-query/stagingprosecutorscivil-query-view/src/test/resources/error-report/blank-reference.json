@@ -1,0 +1,17 @@
+{
+  "defendantErrors": [
+    {
+      "problems": [
+        {
+          "code": "REQUIRED_FIELD_MISSING",
+          "values": [
+            {
+              "key": "defendant.prosecutorDefendantId",
+              "value": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

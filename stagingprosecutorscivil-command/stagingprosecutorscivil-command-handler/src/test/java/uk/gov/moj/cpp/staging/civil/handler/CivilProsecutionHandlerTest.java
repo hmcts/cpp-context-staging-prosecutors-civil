@@ -28,9 +28,15 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.ProblemValue;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
+import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.RejectComplaintsFile;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
+import uk.gov.moj.cpp.staging.prosecutors.civil.event.ComplaintsFileValidationFailed;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmitted;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
@@ -81,7 +87,7 @@ public class CivilProsecutionHandlerTest {
     private AggregateService aggregateService;
 
     @Spy
-    private final Enveloper enveloper = createEnveloperWithEvents(OtherCaseReceived.class, SummonsReceived.class, UpdateCivilCaseReceived.class, MaterialSubmitted.class);
+    private final Enveloper enveloper = createEnveloperWithEvents(OtherCaseReceived.class, SummonsReceived.class, UpdateCivilCaseReceived.class, MaterialSubmitted.class, ComplaintsFileValidationFailed.class);
 
     @Test
     public void shouldHandleOtherCaseCommand() {
@@ -185,6 +191,76 @@ public class CivilProsecutionHandlerTest {
                                 withJsonPath("$.submissionId", notNullValue()),
                                 withJsonPath("$.summonsApplicationId", is(summonsApplicationId.toString())))
                         )
+                ))
+        );
+    }
+
+    @Test
+    public void shouldHandleRejectComplaintsFileCommand() {
+        assertThat(civilProsecutionHandler, isHandler(COMMAND_HANDLER)
+                .with(method("handleRejectComplaintsFile")
+                        .thatHandles("stagingcivil.command.reject-complaints-file")));
+    }
+
+    @Test
+    public void shouldRaiseComplaintsFileValidationFailedPrivateEvent() throws Exception {
+        final UUID submissionId = randomUUID();
+        final RejectComplaintsFile rejectComplaintsFile = RejectComplaintsFile.rejectComplaintsFile()
+                .withSubmissionId(submissionId)
+                .withProsecutingAuthority("GAAAA01")
+                .withFileName("complaints.csv")
+                .withSubmittedByUserName("Richard Chapman")
+                .withProsecutorShortName("TVL")
+                .withCaseErrors(Arrays.asList(CaseProblem.caseProblem()
+                        .withProsecutorCaseReference("SCIV00001")
+                        .withProblems(Arrays.asList(Problem.problem()
+                                .withCode("INVALID_DATE_FORMAT")
+                                .withValues(Arrays.asList(ProblemValue.problemValue()
+                                        .withKey("hearingDetails.dateOfHearing")
+                                        .withValue("04/02/2022")
+                                        .build()))
+                                .build()))
+                        .build()))
+                .withDefendantErrors(Arrays.asList(DefendantProblem.defendantProblem()
+                        .withProsecutorDefendantReference("DEF001")
+                        .withProblems(Arrays.asList(Problem.problem()
+                                .withCode("INVALID_DATE_FORMAT")
+                                .withValues(Arrays.asList(ProblemValue.problemValue()
+                                        .withKey("defendant.individual.dateOfBirth")
+                                        .withValue("31/02/1990")
+                                        .build()))
+                                .build()))
+                        .build()))
+                .build();
+        final JsonEnvelope requestEnvelope = JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUID(randomUUID().toString()).withUserId(USER_ID.toString()),
+                createObjectBuilder().build());
+        final Envelope<RejectComplaintsFile> envelope = Enveloper.envelop(rejectComplaintsFile)
+                .withName("stagingcivil.command.reject-complaints-file")
+                .withMetadataFrom(requestEnvelope);
+        when(eventSource.getStreamById(submissionId)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, ProsecutionSubmissionAggregate.class)).thenReturn(new ProsecutionSubmissionAggregate());
+
+        civilProsecutionHandler.handleRejectComplaintsFile(envelope);
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(eventStream);
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata().withName("stagingprosecutorscivil.event.complaints-file-validation-failed"),
+                        payload().isJson(allOf(
+                                withJsonPath("$.submissionId", is(submissionId.toString())),
+                                withJsonPath("$.submissionStatus", is(SubmissionStatus.FAILED.name())),
+                                withJsonPath("$.prosecutingAuthority", is("GAAAA01")),
+                                withJsonPath("$.fileName", is("complaints.csv")),
+                                withJsonPath("$.submittedByUserName", is("Richard Chapman")),
+                                withJsonPath("$.prosecutorShortName", is("TVL")),
+                                withJsonPath("$.caseErrors[0].prosecutorCaseReference", is("SCIV00001")),
+                                withJsonPath("$.caseErrors[0].problems[0].code", is("INVALID_DATE_FORMAT")),
+                                withJsonPath("$.caseErrors[0].problems[0].values[0].key", is("hearingDetails.dateOfHearing")),
+                                withJsonPath("$.caseErrors[0].problems[0].values[0].value", is("04/02/2022")),
+                                withJsonPath("$.defendantErrors[0].prosecutorDefendantReference", is("DEF001")),
+                                withJsonPath("$.defendantErrors[0].problems[0].values[0].key", is("defendant.individual.dateOfBirth")),
+                                withJsonPath("$.defendantErrors[0].problems[0].values[0].value", is("31/02/1990"))))
                 ))
         );
     }

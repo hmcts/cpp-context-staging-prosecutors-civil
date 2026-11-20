@@ -14,6 +14,8 @@ import uk.gov.justice.services.core.json.JsonSchemaValidator;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.uuid.UUIDProducer;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.validators.OffenceValidator;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
@@ -21,18 +23,26 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 
 @ServiceComponent(COMMAND_API)
 public class CivilProsecutionApi {
@@ -43,6 +53,7 @@ public class CivilProsecutionApi {
 
     private static final String RESPONSE_URL_VERSION_PLACEHOLDER = "VERSION";
     private static final String VERSION_NO = "v1";
+    private static final String REJECT_COMPLAINTS_FILE_COMMAND = "stagingcivil.command.reject-complaints-file";
 
     private final Sender sender;
     @Inject
@@ -131,6 +142,87 @@ public class CivilProsecutionApi {
                 UrlResponse.urlResponse()
                         .withStatusURL(getBaseResponseURLWithVersion() + submissionId.toString())
                         .withSubmissionId(submissionId).build());
+    }
+
+    /**
+     * Records a complaints CSV upload that could not be turned into a valid summons submission
+     * because of schema-level problems (blank required columns, malformed values, JSON-schema
+     * violations). The upload is still accepted - the caller gets a {@code submissionId} like any
+     * other upload - and the submission is created directly in {@code FAILED} status. Problems in
+     * {@code defendant.*} / {@code offence.*} columns are stored as defendant errors and the rest as
+     * case errors, matching how Prosecution Case File reports business-validation errors, so they
+     * appear in the submission's error report in the same way.
+     */
+    public Envelope<UrlResponse> rejectComplaintsFile(final Metadata metadata,
+                                                     final String prosecutingAuthority,
+                                                     final String fileName,
+                                                     final String submittedByUserName,
+                                                     final String prosecutorShortName,
+                                                     final List<ComplaintsFileValidationError> errors) {
+        final UUID submissionId = UUID.randomUUID();
+
+        final JsonObjectBuilder payload = createObjectBuilder()
+                .add("submissionId", submissionId.toString())
+                .add("prosecutingAuthority", prosecutingAuthority);
+        final List<ComplaintsFileValidationError> caseLevel = errors.stream().filter(e -> !e.isDefendantError()).collect(toList());
+        final List<ComplaintsFileValidationError> defendantLevel = errors.stream().filter(ComplaintsFileValidationError::isDefendantError).collect(toList());
+        if (!caseLevel.isEmpty()) {
+            payload.add("caseErrors", toProblems(caseLevel, ComplaintsFileValidationError::getCaseReference, "prosecutorCaseReference"));
+        }
+        if (!defendantLevel.isEmpty()) {
+            payload.add("defendantErrors", toProblems(defendantLevel, ComplaintsFileValidationError::getDefendantReference, "prosecutorDefendantReference"));
+        }
+        addIfPresent(payload, "fileName", fileName);
+        addIfPresent(payload, "submittedByUserName", submittedByUserName);
+        addIfPresent(payload, "prosecutorShortName", prosecutorShortName);
+
+        LOGGER.info("Complaints file for submissionId {} failed schema validation with {} error(s)", submissionId, errors.size());
+        sender.send(JsonEnvelope.envelopeFrom(
+                metadataFrom(metadata).withId(UUID.randomUUID()).withName(REJECT_COMPLAINTS_FILE_COMMAND),
+                payload.build()));
+
+        return Envelope.envelopeFrom(metadata,
+                UrlResponse.urlResponse()
+                        .withStatusURL(getBaseResponseURLWithVersion() + submissionId)
+                        .withSubmissionId(submissionId).build());
+    }
+
+    /**
+     * Groups the errors into Prosecution Case File {@code case-problem} / {@code defendant-problem}
+     * entries - one per CSV row, in file order - the same shape PCF uses for business-validation
+     * errors. Grouping by row (each row is one case and one defendant) keeps rows apart even when
+     * they share a defendant reference or have none; a row with no reference gets an entry without
+     * one rather than a made-up label.
+     */
+    private static JsonArray toProblems(final List<ComplaintsFileValidationError> errors,
+                                        final Function<ComplaintsFileValidationError, String> reference,
+                                        final String referenceName) {
+        final Map<Long, String> referenceByRow = new LinkedHashMap<>();
+        final Map<Long, JsonArrayBuilder> problemsByRow = new LinkedHashMap<>();
+        errors.forEach(error -> {
+            referenceByRow.putIfAbsent(error.getRowNumber(), reference.apply(error));
+            problemsByRow.computeIfAbsent(error.getRowNumber(), row -> createArrayBuilder())
+                    .add(createObjectBuilder()
+                            .add("code", error.getCode())
+                            .add("values", createArrayBuilder()
+                                    .add(createObjectBuilder()
+                                            .add("key", error.getField() != null ? error.getField() : "row")
+                                            .add("value", error.getValue()))));
+        });
+
+        final JsonArrayBuilder entries = createArrayBuilder();
+        problemsByRow.forEach((row, problems) -> {
+            final JsonObjectBuilder entry = createObjectBuilder().add("problems", problems);
+            addIfPresent(entry, referenceName, referenceByRow.get(row));
+            entries.add(entry);
+        });
+        return entries.build();
+    }
+
+    private static void addIfPresent(final JsonObjectBuilder builder, final String name, final String value) {
+        if (value != null) {
+            builder.add(name, value);
+        }
     }
 
     @Handles("stagingcivil.submit-material")

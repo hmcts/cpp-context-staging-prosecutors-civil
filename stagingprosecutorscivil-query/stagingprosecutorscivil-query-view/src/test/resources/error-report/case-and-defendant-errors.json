@@ -1,0 +1,34 @@
+{
+  "caseErrors": [
+    {
+      "prosecutorCaseReference": "C1",
+      "problems": [
+        {
+          "code": "CASE_CODE",
+          "values": [
+            {
+              "key": "f",
+              "value": "v"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "defendantErrors": [
+    {
+      "prosecutorDefendantReference": "D1",
+      "problems": [
+        {
+          "code": "DEF_CODE",
+          "values": [
+            {
+              "key": "f",
+              "value": "v"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

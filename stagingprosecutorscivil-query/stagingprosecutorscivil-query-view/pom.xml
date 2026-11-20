@@ -26,6 +26,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+            <artifactId>stagingprosecutorscivil-domain-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>

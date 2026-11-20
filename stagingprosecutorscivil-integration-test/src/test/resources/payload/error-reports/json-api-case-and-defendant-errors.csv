@@ -1,0 +1,3 @@
+Reference,Error Type,Error Code,Field,Value
+123,Case,PROSECUTOR_OUCODE_NOT_RECOGNISED,prosecutingAuthority,A010000
+cad5a01,Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence_offenceCode,AX03547

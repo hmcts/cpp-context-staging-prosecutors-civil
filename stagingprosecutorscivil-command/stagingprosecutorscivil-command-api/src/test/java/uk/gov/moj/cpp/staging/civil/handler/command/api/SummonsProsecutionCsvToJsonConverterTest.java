@@ -1,6 +1,19 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api;
 
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.DUPLICATE_CASE_URN;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INVALID_DATE_FORMAT;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INVALID_ROW;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INVALID_VALUE;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.REQUIRED_FIELD_MISSING;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,12 +29,15 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.hamcrest.Matcher;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileConversionResult;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError;
+import uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -458,6 +474,231 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
         assertEquals("secondary@example.com", defendant.getIndividual().getContactDetails().getSecondaryEmail());
         assertNull(defendant.getIndividual().getContactDetails().getPrimaryEmail());
+    }
+
+    // ---- convert(): collects every problem so they can be reported in the error report ----
+
+    @Test
+    void convertCollectsEveryProblemInARowInsteadOfStoppingAtTheFirst() throws IOException {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, "",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH, "31/02/1990",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER, "7"));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), contains(
+                error(1, "SCIV00001", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, ""),
+                error(1, "SCIV00001", INVALID_DATE_FORMAT, SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH, "31/02/1990"),
+                error(1, "SCIV00001", INVALID_VALUE, SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER, "7")));
+        assertTrue(result.getSummons().isEmpty());
+        assertTrue(result.getConvertedRows().isEmpty());
+        assertEquals("GAAAA01", result.getProsecutingAuthority());
+    }
+
+    @Test
+    void convertKeepsValidRowsAndReportsProblemsAgainstTheFailingRowsCaseUrn() throws IOException {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n"
+                + buildCsvRow(Map.of()) + "\n"
+                + buildCsvRow(Map.of(
+                        SummonsProsecutionCsvColumns.CASE_URN, "SCIV00002",
+                        SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, "")) + "\n"
+                + buildCsvRow(Map.of(SummonsProsecutionCsvColumns.CASE_URN, "SCIV00003")) + "\n";
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), contains(
+                error(2, "SCIV00002", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, "")));
+        assertTrue(result.getSummons().isPresent());
+        assertThat(result.getSummons().get().getProsecutionCases().stream().map(SummonsProsecutionCase::getUrn).collect(toList()),
+                contains("SCIV00001", "SCIV00003"));
+        assertThat(result.getConvertedRows().stream().map(ComplaintsFileConversionResult.ConvertedRow::getRowNumber).collect(toList()),
+                contains(1L, 3L));
+        assertThat(result.getConvertedRows().stream().map(ComplaintsFileConversionResult.ConvertedRow::getCaseReference).collect(toList()),
+                contains("SCIV00001", "SCIV00003"));
+    }
+
+    @Test
+    void convertLeavesTheCaseReferenceNullWhenTheCaseUrnIsBlank() throws IOException {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.CASE_URN, ""));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), contains(
+                error(1, null, REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.CASE_URN, "")));
+    }
+
+    @Test
+    void convertRecordsTheRowsProsecutorDefendantIdAsTheDefendantReference() throws IOException {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "DEF00001",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, ""));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors().size(), is(1));
+        assertThat(result.getErrors().get(0).getCaseReference(), is("SCIV00001"));
+        assertThat(result.getErrors().get(0).getDefendantReference(), is("DEF00001"));
+        assertTrue(result.getErrors().get(0).isDefendantError());
+    }
+
+    @Test
+    void convertLeavesTheDefendantReferenceNullWhenTheProsecutorDefendantIdIsBlank() throws IOException {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, ""));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors().get(0).getDefendantReference(), is(nullValue()));
+    }
+
+    @Test
+    void convertReportsADuplicateCaseUrnAgainstTheRepeatedRowOnly() throws IOException {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n"
+                + buildCsvRow(Map.of()) + "\n"
+                + buildCsvRow(Map.of(SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "DEF00002")) + "\n";
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), contains(
+                error(2, "SCIV00001", DUPLICATE_CASE_URN, SummonsProsecutionCsvColumns.CASE_URN, "SCIV00001")));
+        assertThat(result.getConvertedRows().size(), is(1));
+    }
+
+    @Test
+    void convertReportsHearingDetailsProblemsAgainstTheFirstRowWithoutExcludingItsCase() throws IOException {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n"
+                + buildCsvRow(Map.of(SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "04/02/2022")) + "\n"
+                + buildCsvRow(Map.of(SummonsProsecutionCsvColumns.CASE_URN, "SCIV00002")) + "\n";
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), contains(
+                error(1, "SCIV00001", INVALID_DATE_FORMAT, SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "04/02/2022")));
+        // both cases are still converted so they can be schema-validated in the same upload
+        assertThat(result.getConvertedRows().stream().map(ComplaintsFileConversionResult.ConvertedRow::getRowNumber).collect(toList()),
+                contains(1L, 2L));
+        final Summons summons = result.getSummons().get();
+        assertThat(summons.getProsecutionCases().size(), is(2));
+        assertNull(summons.getHearingDetails().getDateOfHearing());
+        assertEquals("B01LY01", summons.getHearingDetails().getCourtHearingLocation());
+    }
+
+    @Test
+    void convertReportsHearingDetailsAndFirstRowCaseProblemsTogether() throws IOException {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n"
+                + buildCsvRow(Map.of(
+                        SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, "",
+                        SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "04/02/2022",
+                        SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, "")) + "\n"
+                + buildCsvRow(Map.of(
+                        SummonsProsecutionCsvColumns.CASE_URN, "SCIV00002",
+                        SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, "10/01/2022")) + "\n";
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), contains(
+                error(1, "SCIV00001", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, ""),
+                error(1, "SCIV00001", INVALID_DATE_FORMAT, SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "04/02/2022"),
+                error(1, "SCIV00001", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, ""),
+                error(2, "SCIV00002", INVALID_DATE_FORMAT, SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, "10/01/2022")));
+        assertTrue(result.getSummons().isEmpty());
+    }
+
+    @Test
+    void convertReportsInvalidNumbersAndEnumsWithoutThrowing() throws IOException {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.OFFENCE_SEQUENCE_NO, "one",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_OBSERVED_ETHNICITY, "abc",
+                SummonsProsecutionCsvColumns.DEFENDANT_DOCUMENTATION_LANGUAGE, "X"));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), containsInAnyOrder(
+                error(1, "SCIV00001", INVALID_VALUE, SummonsProsecutionCsvColumns.DEFENDANT_DOCUMENTATION_LANGUAGE, "X"),
+                error(1, "SCIV00001", INVALID_VALUE, SummonsProsecutionCsvColumns.INDIVIDUAL_OBSERVED_ETHNICITY, "abc"),
+                error(1, "SCIV00001", INVALID_VALUE, SummonsProsecutionCsvColumns.OFFENCE_SEQUENCE_NO, "one")));
+    }
+
+    @Test
+    void convertReportsAnInvalidDefendantTypeWithoutReadingTheIndividualOrOrganisationColumns() throws IOException {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.DEFENDANT_TYPE, "PERSON",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, ""));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors(), contains(
+                error(1, "SCIV00001", INVALID_VALUE, SummonsProsecutionCsvColumns.DEFENDANT_TYPE, "PERSON")));
+    }
+
+    @Test
+    void convertReportsALaterRowWithMissingColumnsAsAnInvalidRow() throws IOException {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n"
+                + buildCsvRow(Map.of()) + "\n"
+                + "GAAAA01,B01LY01\n";
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors().size(), is(1));
+        assertThat(result.getErrors().get(0).getCode(), is(INVALID_ROW));
+        assertThat(result.getErrors().get(0).getRowNumber(), is(2L));
+        assertThat(result.getErrors().get(0).getCaseReference(), is(nullValue()));
+        assertThat(result.getConvertedRows().size(), is(1));
+    }
+
+    @Test
+    void convertThrowsWhenTheFirstRowDoesNotMatchTheTemplateColumns() {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\nGAAAA01,B01LY01\n";
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convert(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains("columns but the complaints file template has"));
+    }
+
+    @Test
+    void convertThrowsWhenProsecutingAuthorityIsBlankBecauseTheFileCannotBeAttributedToAProsecutor() {
+        final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.PROSECUTING_AUTHORITY, ""));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convert(new StringReader(csv)));
+
+        assertTrue(exception.getMessage().contains(SummonsProsecutionCsvColumns.PROSECUTING_AUTHORITY));
+    }
+
+    @Test
+    void convertReturnsEveryRowWhenTheFileIsValid() throws IOException {
+        final ComplaintsFileConversionResult result = converter.convert(resourceReader(FULLY_POPULATED_CSV));
+
+        assertTrue(result.getErrors().isEmpty());
+        assertThat(result.getSummons().get().getProsecutionCases().size(), is(3));
+        assertThat(result.getConvertedRows().stream().map(ComplaintsFileConversionResult.ConvertedRow::getCaseReference).collect(toList()),
+                contains("SCIV11111", "SCIV22222", "SCIV33333"));
+    }
+
+    @Test
+    void convertToObjectStillFailsFastWithTheFirstProblemsMessage() {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, "",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER, "7"));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> converter.convertToObject(new StringReader(csv)));
+
+        assertEquals("Row 1: required column '" + SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME + "' is blank",
+                exception.getMessage());
+    }
+
+    private static Matcher<ComplaintsFileValidationError> error(final long rowNumber, final String caseReference,
+                                                                final String code, final String field, final String value) {
+        return allOf(
+                hasProperty("rowNumber", is(rowNumber)),
+                hasProperty("caseReference", is(caseReference)),
+                hasProperty("code", is(code)),
+                hasProperty("field", is(field)),
+                hasProperty("value", is(value)));
     }
 
     private Defendant firstDefendantFrom(final String csv) throws IOException {

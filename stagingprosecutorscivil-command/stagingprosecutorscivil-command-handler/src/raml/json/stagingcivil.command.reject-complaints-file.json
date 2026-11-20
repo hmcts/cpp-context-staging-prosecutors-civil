@@ -1,0 +1,48 @@
+{
+  "submissionId": "ce1c9255-725f-4669-a7e5-78c07252c82d",
+  "prosecutingAuthority": "GAAAA01",
+  "fileName": "complaints-2026-11-19.csv",
+  "submittedByUserName": "Richard Chapman",
+  "prosecutorShortName": "TVL",
+  "caseErrors": [
+    {
+      "prosecutorCaseReference": "TVL12345678",
+      "problems": [
+        {
+          "code": "INVALID_DATE_FORMAT",
+          "values": [
+            {
+              "key": "hearingDetails.dateOfHearing",
+              "value": "04/02/2022"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "defendantErrors": [
+    {
+      "prosecutorDefendantReference": "TVLDEF001",
+      "problems": [
+        {
+          "code": "REQUIRED_FIELD_MISSING",
+          "values": [
+            {
+              "key": "defendant.individual.nameDetails.surname",
+              "value": ""
+            }
+          ]
+        },
+        {
+          "code": "INVALID_DATE_FORMAT",
+          "values": [
+            {
+              "key": "defendant.individual.dateOfBirth",
+              "value": "31/02/1990"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package uk.gov.justice.api.resource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toSet;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 
@@ -19,7 +20,10 @@ import uk.gov.moj.cpp.staging.civil.handler.command.api.CivilProsecutionApi;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.ProsecutingAuthorityValidationService;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.ReferenceDataClient;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.client.UserGroupsClient;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileConversionResult;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
+import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsSchemaViolationMapper;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 
 import uk.gov.justice.services.core.accesscontrol.AccessControlService;
@@ -31,9 +35,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -100,13 +107,24 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
     @Context
     private HttpHeaders headers;
 
+    /**
+     * Accepts a complaints CSV upload.
+     * <p>
+     * Problems that mean the file cannot be read or attributed to the caller's prosecutor
+     * organisation - no file part, unreadable or empty CSV, too many rows, a first row that does not
+     * match the template, a blank or foreign {@code prosecutingAuthority}, missing permission - are
+     * still rejected synchronously (400/403) because no submission can be tracked for them.
+     * <p>
+     * Every other schema-level problem (blank required columns, malformed values, JSON-schema
+     * violations) is collected for the whole file. If there are any, the upload is accepted (202 with
+     * a {@code submissionId}) and recorded as a {@code FAILED} submission whose error report lists
+     * them; otherwise the converted submission continues through the normal summons flow.
+     */
     @Override
     public Response postStagingcivilSummonsProsecutionCsvComplaintsFiles(
             final MultipartFormDataInput multipartFormDataInput) {
 
-        final Summons summonsProsecution = convertCsvToSummonsProsecution(multipartFormDataInput);
-        validateAgainstSummonsProsecutionSchema(summonsProsecution);
-
+        final ComplaintsFileConversionResult conversionResult = convertCsv(multipartFormDataInput);
         final String userId = requireUserIdHeader();
 
         final Metadata metadata = metadataBuilder()
@@ -115,12 +133,16 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
                 .withUserId(userId)
                 .build();
 
-        final JsonObject payload = summonsProsecutionAsJsonObject(summonsProsecution);
+        final JsonObject payload = conversionResult.getSummons()
+                .map(this::summonsProsecutionAsJsonObject)
+                .orElseGet(() -> Json.createObjectBuilder()
+                        .add("prosecutingAuthority", conversionResult.getProsecutingAuthority())
+                        .build());
         final JsonEnvelope commandEnvelope = JsonEnvelope.envelopeFrom(metadata, payload);
 
         auditService.audit(commandEnvelope, Component.COMMAND_API);
 
-        final String csvOuCode = summonsProsecution.getProsecutingAuthority();
+        final String csvOuCode = conversionResult.getProsecutingAuthority();
         final String prosecutorShortName = referenceDataClient.getProsecutorShortNameForOuCode(csvOuCode);
 
         prosecutingAuthorityValidationService.validateCallingUserBelongsToProsecutingAuthority(userId, csvOuCode, prosecutorShortName);
@@ -144,11 +166,60 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         final String fileName = extractFileName(multipartFormDataInput);
         final String submittedByUserName = userGroupsClient.getDisplayNameForUser(userId).orElse(null);
 
+        final List<ComplaintsFileValidationError> validationErrors = collectValidationErrors(conversionResult);
+        if (!validationErrors.isEmpty()) {
+            final Envelope<UrlResponse> rejected = civilProsecutionApi.rejectComplaintsFile(
+                    metadata, csvOuCode, fileName, submittedByUserName, prosecutorShortName, validationErrors);
+            return Response.status(Response.Status.ACCEPTED).entity(rejected.payload()).build();
+        }
+
+        final Summons summonsProsecution = conversionResult.getSummons()
+                .orElseThrow(() -> new BadRequestException("Unable to parse complaints CSV file: CSV file contains no data rows"));
         final Envelope<UrlResponse> result =
                 civilProsecutionApi.summonsProsecution(
                         envelopeFrom(metadata, summonsProsecution), fileName, submittedByUserName, prosecutorShortName);
 
         return Response.status(Response.Status.ACCEPTED).entity(result.payload()).build();
+    }
+
+    /**
+     * Row-level conversion errors plus, for the rows that did convert, every JSON-schema violation.
+     * A schema violation on a value the conversion already reported (e.g. a hearing date that could
+     * not be read, so was left blank) is dropped, so each problem appears once in the error report.
+     */
+    private List<ComplaintsFileValidationError> collectValidationErrors(final ComplaintsFileConversionResult conversionResult) {
+        final List<ComplaintsFileValidationError> errors = new ArrayList<>(conversionResult.getErrors());
+        final Set<String> alreadyReported = errors.stream()
+                .map(DefaultCommandApiComplaintsFilesResource::rowAndField)
+                .collect(toSet());
+        conversionResult.getSummons()
+                .map(summons -> schemaViolationsOf(summons, conversionResult))
+                .ifPresent(violations -> violations.stream()
+                        .filter(violation -> !alreadyReported.contains(rowAndField(violation)))
+                        .forEach(errors::add));
+        errors.sort(Comparator.comparingLong(ComplaintsFileValidationError::getRowNumber));
+        return errors;
+    }
+
+    private static String rowAndField(final ComplaintsFileValidationError error) {
+        return error.getRowNumber() + ":" + error.getField();
+    }
+
+    private List<ComplaintsFileValidationError> schemaViolationsOf(final Summons summonsProsecution,
+                                                                   final ComplaintsFileConversionResult conversionResult) {
+        final String json;
+        try {
+            json = objectMapper.writeValueAsString(summonsProsecution);
+        } catch (JsonProcessingException e) {
+            throw new BadRequestException("Unable to serialise converted complaints submission", e);
+        }
+        try {
+            jsonSchemaValidator.validate(json, SUMMONS_PROSECUTION_SCHEMA_NAME);
+            return List.of();
+        } catch (JsonSchemaValidationException e) {
+            LOGGER.info("Complaints CSV file failed schema validation: {}", e.getMessage());
+            return SummonsSchemaViolationMapper.map(e, conversionResult.getConvertedRows(), json);
+        }
     }
 
     private String extractFileName(final MultipartFormDataInput multipartFormDataInput) {
@@ -174,7 +245,7 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
         return userId;
     }
 
-    private Summons convertCsvToSummonsProsecution(final MultipartFormDataInput multipartFormDataInput) {
+    private ComplaintsFileConversionResult convertCsv(final MultipartFormDataInput multipartFormDataInput) {
         final Map<String, List<InputPart>> formParts = multipartFormDataInput.getFormDataMap();
         final List<InputPart> fileParts = formParts.get(FILE_PART_NAME);
 
@@ -184,21 +255,10 @@ public class DefaultCommandApiComplaintsFilesResource implements CommandApiCompl
 
         try (InputStream csvStream = fileParts.get(0).getBody(InputStream.class, null);
              Reader csvReader = new InputStreamReader(csvStream, UTF_8)) {
-            return csvToJsonConverter.convertToObject(csvReader);
+            return csvToJsonConverter.convert(csvReader);
         } catch (IOException | IllegalArgumentException e) {
             LOGGER.warn("Failed to parse complaints CSV file", e);
             throw new BadRequestException("Unable to parse complaints CSV file: " + e.getMessage(), e);
-        }
-    }
-
-    private void validateAgainstSummonsProsecutionSchema(final Summons summonsProsecution) {
-        try {
-            final String json = objectMapper.writeValueAsString(summonsProsecution);
-            jsonSchemaValidator.validate(json, SUMMONS_PROSECUTION_SCHEMA_NAME);
-        } catch (JsonSchemaValidationException e) {
-            throw new BadRequestException("Complaints CSV file failed schema validation", e);
-        } catch (JsonProcessingException e) {
-            throw new BadRequestException("Unable to serialise converted complaints submission", e);
         }
     }
 

@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/staging/prosecutors/civil/event/complaints-file-validation-failed.json",
+  "description": "A complaints CSV upload was accepted but failed schema validation, so it was not sent to Prosecution Case File. The submission is created directly in FAILED status and caseErrors feed its error report.",
+  "type": "object",
+  "properties": {
+    "submissionId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "submissionStatus": {
+      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/submissionStatus"
+    },
+    "prosecutingAuthority": {
+      "description": "The ou code from the uploaded file's prosecutingAuthority column",
+      "type": "string"
+    },
+    "fileName": {
+      "description": "The original filename of the uploaded complaints CSV file",
+      "type": "string"
+    },
+    "submittedByUserName": {
+      "description": "The display name of the user who submitted the complaints CSV file",
+      "type": "string"
+    },
+    "prosecutorShortName": {
+      "description": "The resolved short name of the prosecuting authority for the submission's ou code",
+      "type": "string"
+    },
+    "caseErrors": {
+      "description": "Problems in submission- or case-level columns (and rows that could not be read), keyed by case.urn. Present when there is at least one; caseErrors and defendantErrors are never both absent.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
+      }
+    },
+    "defendantErrors": {
+      "description": "Problems in defendant.* and offence.* columns, keyed by defendant.prosecutorDefendantId. Present when there is at least one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
+      }
+    }
+  },
+  "required": [
+    "submissionId",
+    "submissionStatus",
+    "prosecutingAuthority"
+  ],
+  "anyOf": [
+    { "required": ["caseErrors"] },
+    { "required": ["defendantErrors"] }
+  ],
+  "additionalProperties": false
+}
