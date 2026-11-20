@@ -8,10 +8,10 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.JsonValue;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
 
 public class JsonObjectsHelper {
 

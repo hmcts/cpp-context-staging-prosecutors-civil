@@ -25,9 +25,9 @@ import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

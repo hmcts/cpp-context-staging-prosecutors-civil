@@ -10,7 +10,7 @@ import static uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils.setupN
 
 import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
