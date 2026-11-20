@@ -66,6 +66,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.everit-org.json-schema</groupId>
+            <artifactId>org.everit.json.schema</artifactId>
+            <version>1.12.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
             <artifactId>stagingprosecutorscivil-viewstore-persistance</artifactId>
             <version>${project.version}</version>
@@ -120,6 +126,18 @@
                         <groupId>uk.gov.moj.cpp.prosecution.casefile</groupId>
                         <artifactId>prosecutioncasefile-command-api</artifactId>
                         <version>${prosecutioncasefile.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+                        <artifactId>stagingprosecutorscivil-query-api</artifactId>
+                        <version>${project.version}</version>
                         <classifier>raml</classifier>
                         <exclusions>
                             <exclusion>

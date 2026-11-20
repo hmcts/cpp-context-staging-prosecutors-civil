@@ -43,8 +43,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 
 public class WiremockUtils {
-    private static final String USER_DETAILS_MEDIA_TYPE = "application/vnd.usersgroups.logged-in-user-details+json";
-    private static final String USER_DETAILS_URL = "/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user";
+
     private static final int HTTP_STATUS_OK = 200;
 
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
@@ -53,11 +52,16 @@ public class WiremockUtils {
     private static final String SYSTEM_ID_MAPPER_URL = "/system-id-mapper-api/rest/systemid/mappings/*";
     private static final String USER_GROUPS_USERS_QUERY_URL = "/usersgroups-service/query/api/rest/usersgroups/users/.*/groups";
     private static final String CONTENT_TYPE_QUERY_PERMISSION = "application/vnd.usersgroups.get-logged-in-user-permissions+json";
+    private static final String REFERENCEDATA_PROSECUTORS_URL = "/referencedata-service/query/api/rest/referencedata/prosecutors.*";
+    private static final String CONTENT_TYPE_GET_PROSECUTOR = "application/vnd.referencedata.query.get.prosecutor+json";
+    private static final String USER_DETAILS_LOGGED_IN_USER_URL = "/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user";
+    private static final String CONTENT_TYPE_GET_USER_DETAILS = "application/vnd.usersgroups.logged-in-user-details+json";
 
     public WiremockUtils() {
         configureFor(HOST, PORT);
         reset();
         stubUserAndGroups();
+        stubLoggedInUserDetails("Richard", "Chapman");
     }
 
     public WiremockUtils stubPing(String url) {
@@ -104,6 +108,53 @@ public class WiremockUtils {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .withBody(readResource("stub-data/usersgroups.get-groups-by-user.json"))));
+    }
+
+    public static void setupNoPermissionsStub(final String userId) {
+        stubPingFor("usersgroups-service");
+
+        stubFor(get(urlPathEqualTo("/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user/permissions"))
+                .willReturn(aResponse().withStatus(HTTP_STATUS_OK)
+                        .withHeader(ID, userId)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                        .withBody("{\"permissions\":[]}")));
+
+        waitForStubToBeReady("/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user/permissions", CONTENT_TYPE_QUERY_PERMISSION);
+    }
+
+    public WiremockUtils stubUserGroupsWithProsecutingAuthority(final String prosecutingAuthority) {
+        return stubUserGroupsForGroupName("Charging Lawyers", prosecutingAuthority);
+    }
+
+    public WiremockUtils stubUserGroupsForGroupName(final String groupName, final String prosecutingAuthority) {
+        stubFor(get(urlMatching(USER_GROUPS_USERS_QUERY_URL))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .withBody("{\"groups\":[{\"groupId\":\"" + randomUUID() + "\",\"groupName\":\"" + groupName + "\","
+                                + "\"prosecutingAuthority\":\"" + prosecutingAuthority + "\"}]}")));
+        return this;
+    }
+
+    public WiremockUtils stubReferenceDataProsecutorByOuCode(final String shortName) {
+        stubPingFor("referencedata-service");
+        stubFor(get(urlMatching(REFERENCEDATA_PROSECUTORS_URL))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, CONTENT_TYPE_GET_PROSECUTOR)
+                        .withBody("{\"id\":\"" + randomUUID() + "\",\"fullName\":\"" + shortName
+                                + "\",\"shortName\":\"" + shortName + "\"}")));
+        return this;
+    }
+
+    public WiremockUtils stubLoggedInUserDetails(final String firstName, final String lastName) {
+        stubFor(get(urlPathEqualTo(USER_DETAILS_LOGGED_IN_USER_URL))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, CONTENT_TYPE_GET_USER_DETAILS)
+                        .withBody("{\"userId\":\"" + randomUUID() + "\",\"firstName\":\"" + firstName
+                                + "\",\"lastName\":\"" + lastName + "\",\"email\":\"test@example.com\"}")));
+        return this;
     }
 
     public static void setupLoggedInUsersPermissionQueryStub(final String userId) {

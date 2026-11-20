@@ -9,6 +9,7 @@
     {
       "informant": "Adam",
       "urn": "case-urn-value-youth-summons",
+      "summonsCode": "A",
       "defendants": [
         {
           "defendantDetails": {

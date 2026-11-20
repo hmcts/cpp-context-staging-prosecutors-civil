@@ -3,6 +3,10 @@
     {
       "object": "CIVIL_CASE",
       "action": "GrantAccess"
+    },
+    {
+      "object": "BULK_CASE",
+      "action": "GrantAccess"
     }
   ]
 }

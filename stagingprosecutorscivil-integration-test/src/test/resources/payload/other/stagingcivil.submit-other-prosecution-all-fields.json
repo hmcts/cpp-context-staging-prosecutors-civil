@@ -28,7 +28,6 @@
               "address5": "Address Line 5",
               "postcode": "SE1H 1XX"
             },
-            "numPreviousConvictions": 3,
             "prosecutorCosts": "20.99"
           },
           "individual": {
@@ -78,21 +77,11 @@
                 "postcode": "PG0 1XX"
               }
             },
-            "aliases": [
-              {
-                "title": "Mr",
-                "forename": "AliasJack",
-                "forename2": "AliasAaron",
-                "forename3": "Sr",
-                "surname": "AliasReaper"
-              }
-            ],
             "nationality": "GBR",
             "additionalNationality": "POL",
             "dateOfBirth": "1970-02-03",
             "gender": 1,
             "occupation": "TA",
-            "occupationCode": 666,
             "ethnicity": "W1",
             "driverNumber": "KER99861065SE9RM",
             "nationalInsuranceNumber": "SN123456C"
@@ -105,16 +94,10 @@
                 "offenceCommittedDate": "2019-06-11",
                 "laidDate": "2019-06-11",
                 "offenceCommittedEndDate": "2020-06-11",
-                "offenceDateCode": 4,
                 "offenceLocation": "Croydon",
                 "offenceWording": "Test Prosecution charge wording",
                 "offenceWordingWelsh": "Test Prosecution charge wording in Welsh",
-                "prosecutorCompensation": "99.99",
-                "backDuty": "+340.99",
-                "backDutyDateFrom": "2018-04-09",
-                "backDutyDateTo": "2018-05-09",
-                "vehicleMake": "Ford",
-                "vehicleRegistrationMark": "AA11 ABC"
+                "prosecutorCompensation": "99.99"
               },
               "statementOfFacts": "1Test Prosecution statements of facts",
               "statementOfFactsWelsh": "1Welsh -Test Prosecution statements of facts"
@@ -144,7 +127,6 @@
               "address5": "Address Line 5",
               "postcode": "SE1H 1XX"
             },
-            "numPreviousConvictions": 3,
             "prosecutorCosts": "20.99"
           },
           "individual": {
@@ -194,21 +176,11 @@
                 "postcode": "PG0 1XX"
               }
             },
-            "aliases": [
-              {
-                "title": "Mr",
-                "forename": "AliasJack",
-                "forename2": "AliasAaron",
-                "forename3": "Sr",
-                "surname": "AliasReaper"
-              }
-            ],
             "nationality": "GBR",
             "additionalNationality": "POL",
             "dateOfBirth": "1970-02-03",
             "gender": 1,
             "occupation": "TA",
-            "occupationCode": 666,
             "ethnicity": "W1",
             "driverNumber": "KER99861065SE9RM",
             "nationalInsuranceNumber": "SN123456C"
@@ -221,16 +193,10 @@
                 "offenceCommittedDate": "2019-06-11",
                 "laidDate": "2019-06-11",
                 "offenceCommittedEndDate": "2020-06-11",
-                "offenceDateCode": 4,
                 "offenceLocation": "Croydon",
                 "offenceWording": "Test Prosecution charge wording",
                 "offenceWordingWelsh": "Test Prosecution charge wording in Welsh",
-                "prosecutorCompensation": "99.99",
-                "backDuty": "+340.99",
-                "backDutyDateFrom": "2018-04-09",
-                "backDutyDateTo": "2018-05-09",
-                "vehicleMake": "Ford",
-                "vehicleRegistrationMark": "AA11 ABC"
+                "prosecutorCompensation": "99.99"
               },
               "statementOfFacts": "1Test Prosecution statements of facts",
               "statementOfFactsWelsh": "1Welsh -Test Prosecution statements of facts"

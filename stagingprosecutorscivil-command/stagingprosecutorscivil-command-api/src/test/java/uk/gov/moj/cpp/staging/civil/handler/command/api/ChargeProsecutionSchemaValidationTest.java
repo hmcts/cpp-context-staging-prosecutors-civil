@@ -20,4 +20,10 @@ class ChargeProsecutionSchemaValidationTest extends AbstractProsecutionSchemaVal
     void testValidRequest() {
         assertDoesNotThrow(() -> schema.validate(loadJson(VALID_CHARGE_PROSECUTION_REQUEST)));
     }
+
+    @Test
+    @DisplayName("summonsCode absent — charge-prosecution schema does not require summonsCode")
+    void testSummonsCodeNotRequiredForCharge() {
+        assertDoesNotThrow(() -> schema.validate(loadJson(VALID_CHARGE_PROSECUTION_REQUEST)));
+    }
 }

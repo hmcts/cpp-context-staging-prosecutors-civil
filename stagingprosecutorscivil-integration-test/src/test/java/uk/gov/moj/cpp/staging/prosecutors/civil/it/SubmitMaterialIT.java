@@ -105,6 +105,8 @@ public class SubmitMaterialIT {
         final Problem problem = new Problem("INVALID_DOCUMENT_TYPE", List.of(new Problem.ProblemValue("documentType", "PLEA")));
 
         publishPublicMaterialSubmissionRejected(CASE_ID, submissionId, problem);
+
+        pollForSubmission(submissionId, SubmissionStatus.FAILED);
     }
 
     private File getFileFrom(final String filePath) {

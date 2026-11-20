@@ -20,10 +20,6 @@
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
       "description": ""
     },
-    "offenceDateCode": {
-      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/offence-date-code.json"
-
-    },
     "laidDate": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
       "description": ""
@@ -51,26 +47,6 @@
     "prosecutorCompensation": {
       "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/money",
       "description": "Compensation claimed by the prosecutor"
-    },
-    "backDuty": {
-      "$ref": "http://cpp.moj.gov.uk/staging/prosecutors/json/schemas/definitions.json#/definitions/money",
-      "description": "Back duty"
-    },
-    "backDutyDateFrom": {
-      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
-      "description": "Start date of the period of unpaid back duty"
-    },
-    "backDutyDateTo": {
-      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date",
-      "description": "End date of the period of unpaid back duty"
-    },
-    "vehicleMake": {
-      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/vehicleMake",
-      "description": "Ford, Toyota etc."
-    },
-    "vehicleRegistrationMark": {
-      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/vehicleRegistrationMark",
-      "description": "vehicle registration mark like AB11 ABC"
     }
   },
   "required": [

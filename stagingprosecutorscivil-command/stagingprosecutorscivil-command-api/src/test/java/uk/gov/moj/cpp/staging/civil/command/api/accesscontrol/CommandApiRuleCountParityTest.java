@@ -21,7 +21,7 @@ import org.kie.api.definition.rule.Rule;
 class CommandApiRuleCountParityTest {
 
     @Test
-    void scM01_commandApiKbaseShouldLoadAllThreeAccessControlRules() {
+    void scM01_commandApiKbaseShouldLoadAllFourAccessControlRules() {
         final KieBase kieBase = KieServices.Factory.get().getKieClasspathContainer().getKieBase("COMMAND_API");
 
         final List<String> ruleNames = kieBase.getKiePackages().stream()
@@ -32,6 +32,7 @@ class CommandApiRuleCountParityTest {
         assertThat(ruleNames, containsInAnyOrder(
                 "Command - Rule for Others Prosecution",
                 "Command - Rule for Summons Prosecution",
-                "Command - Rule for Submit Material"));
+                "Command - Rule for Submit Material",
+                "Command - Rule for Bulk Upload"));
     }
 }
