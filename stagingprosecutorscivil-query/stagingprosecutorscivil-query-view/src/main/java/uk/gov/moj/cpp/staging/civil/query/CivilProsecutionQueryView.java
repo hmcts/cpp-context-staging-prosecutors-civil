@@ -136,7 +136,8 @@ public class CivilProsecutionQueryView {
         final UUID submissionId = fromString(requestPayload.getString(SUBMISSION_ID));
 
         final String csv = submissionOptional
-                .map(submission -> SubmissionErrorDetailsCsvBuilder.build(submission.getGroupCaseErrors(), submission.getDefendantErrors()))
+                .map(submission -> SubmissionErrorDetailsCsvBuilder.build(submission.getGroupCaseErrors(), submission.getDefendantErrors(),
+                        nonNull(submission.getFileName())))
                 .orElseGet(() -> SubmissionErrorDetailsCsvBuilder.build(null, null));
 
         final JsonObjectBuilder payloadBuilder = createObjectBuilder()

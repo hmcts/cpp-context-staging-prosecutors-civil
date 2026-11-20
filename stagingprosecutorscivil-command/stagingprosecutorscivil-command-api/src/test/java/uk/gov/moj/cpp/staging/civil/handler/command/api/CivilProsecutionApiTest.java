@@ -298,18 +298,22 @@ public class CivilProsecutionApiTest {
     }
 
     @Test
-    public void shouldSendRejectComplaintsFileCommandGroupingErrorsByCaseReferenceAndReturnStatusUrl() {
+    public void shouldSendRejectComplaintsFileCommandSplittingCaseAndDefendantErrorsAndReturnStatusUrl() {
         final Metadata metadata = metadataBuilder()
                 .withName("stagingcivil.summons")
                 .withId(randomUUID())
                 .withUserId(randomUUID().toString())
                 .build();
         final List<ComplaintsFileValidationError> errors = List.of(
-                new ComplaintsFileValidationError(1L, "SCIV00001", "REQUIRED_FIELD_MISSING",
+                new ComplaintsFileValidationError(1L, "SCIV00001", "DEF00001", "REQUIRED_FIELD_MISSING",
                         "defendant.individual.nameDetails.surname", "", "Row 1: required column ... is blank"),
-                new ComplaintsFileValidationError(1L, "SCIV00001", "INVALID_DATE_FORMAT",
-                        "defendant.individual.dateOfBirth", "31/02/1990", "Row 1: ... invalid date"),
-                new ComplaintsFileValidationError(4L, "Row 4", "INVALID_ROW", null, "", "Row 4 has 2 columns ..."));
+                new ComplaintsFileValidationError(1L, "SCIV00001", "DEF00001", "INVALID_DATE_FORMAT",
+                        "offence.offenceDetails.laidDate", "31/02/2022", "Row 1: ... invalid date"),
+                new ComplaintsFileValidationError(1L, "SCIV00001", null, "INVALID_DATE_FORMAT",
+                        "hearingDetails.dateOfHearing", "04/02/2022", "Row 1: ... invalid date"),
+                new ComplaintsFileValidationError(2L, "SCIV00002", "DEF00002", "INVALID_VALUE",
+                        "case.summonsCode", "AB", "Row 2: ... invalid value"),
+                new ComplaintsFileValidationError(4L, null, null, "INVALID_ROW", null, "", "Row 4 has 2 columns ..."));
 
         final Envelope<UrlResponse> result = api.rejectComplaintsFile(metadata, "GAAAA01", "complaints.csv",
                 "Richard Chapman", "TVL", errors);
@@ -327,22 +331,67 @@ public class CivilProsecutionApiTest {
         assertThat(payload.getString("prosecutorShortName"), is("TVL"));
 
         final JsonArray caseErrors = payload.getJsonArray("caseErrors");
-        assertThat(caseErrors.size(), is(2));
-        final JsonObject firstCase = caseErrors.getJsonObject(0);
-        assertThat(firstCase.getString("prosecutorCaseReference"), is("SCIV00001"));
-        assertThat(firstCase.getJsonArray("problems").size(), is(2));
-        final JsonObject missingSurname = firstCase.getJsonArray("problems").getJsonObject(0);
+        assertThat(caseErrors.size(), is(3));
+        assertThat(caseErrors.getJsonObject(0).getString("prosecutorCaseReference"), is("SCIV00001"));
+        assertThat(caseErrors.getJsonObject(0).getJsonArray("problems").getJsonObject(0)
+                .getJsonArray("values").getJsonObject(0).getString("key"), is("hearingDetails.dateOfHearing"));
+        assertThat(caseErrors.getJsonObject(1).getString("prosecutorCaseReference"), is("SCIV00002"));
+        final JsonObject invalidRow = caseErrors.getJsonObject(2);
+        assertThat(invalidRow.containsKey("prosecutorCaseReference"), is(false));
+        assertThat(invalidRow.getJsonArray("problems").getJsonObject(0).getJsonArray("values").getJsonObject(0).getString("key"), is("row"));
+
+        final JsonArray defendantErrors = payload.getJsonArray("defendantErrors");
+        assertThat(defendantErrors.size(), is(1));
+        final JsonObject defendant = defendantErrors.getJsonObject(0);
+        assertThat(defendant.getString("prosecutorDefendantReference"), is("DEF00001"));
+        assertThat(defendant.getJsonArray("problems").size(), is(2));
+        final JsonObject missingSurname = defendant.getJsonArray("problems").getJsonObject(0);
         assertThat(missingSurname.getString("code"), is("REQUIRED_FIELD_MISSING"));
         assertThat(missingSurname.getJsonArray("values").getJsonObject(0).getString("key"), is("defendant.individual.nameDetails.surname"));
         assertThat(missingSurname.getJsonArray("values").getJsonObject(0).getString("value"), is(""));
-        final JsonObject badDate = firstCase.getJsonArray("problems").getJsonObject(1);
-        assertThat(badDate.getJsonArray("values").getJsonObject(0).getString("value"), is("31/02/1990"));
-        final JsonObject invalidRow = caseErrors.getJsonObject(1);
-        assertThat(invalidRow.getString("prosecutorCaseReference"), is("Row 4"));
-        assertThat(invalidRow.getJsonArray("problems").getJsonObject(0).getJsonArray("values").getJsonObject(0).getString("key"), is("row"));
+        final JsonObject badLaidDate = defendant.getJsonArray("problems").getJsonObject(1);
+        assertThat(badLaidDate.getJsonArray("values").getJsonObject(0).getString("key"), is("offence.offenceDetails.laidDate"));
 
         assertThat(result.payload().getSubmissionId(), is(submissionId));
         assertThat(result.payload().getStatusURL(), is("test-base-url/" + submissionId));
+    }
+
+    @Test
+    public void shouldKeepRowsApartWhenTheyShareADefendantReferenceOrHaveNoReference() {
+        final Metadata metadata = metadataBuilder().withName("stagingcivil.summons").withId(randomUUID()).build();
+
+        api.rejectComplaintsFile(metadata, "GAAAA01", "complaints.csv", null, null, List.of(
+                new ComplaintsFileValidationError(1L, "SCIV00001", "D1", "INVALID_VALUE", "defendant.asn", "X", "msg"),
+                new ComplaintsFileValidationError(2L, "SCIV00002", "D1", "INVALID_VALUE", "defendant.asn", "Y", "msg"),
+                new ComplaintsFileValidationError(3L, null, null, "REQUIRED_FIELD_MISSING", "case.urn", "", "msg"),
+                new ComplaintsFileValidationError(7L, null, null, "REQUIRED_FIELD_MISSING", "case.urn", "", "msg"),
+                new ComplaintsFileValidationError(8L, "SCIV00008", "D8", "INVALID_VALUE", "offence", "", "msg")));
+
+        verify(sender).send(jsonEnvelopeCaptor.capture());
+        final JsonObject payload = jsonEnvelopeCaptor.getValue().payloadAsJsonObject();
+        final JsonArray defendantErrors = payload.getJsonArray("defendantErrors");
+        assertThat(defendantErrors.size(), is(3));
+        assertThat(defendantErrors.getJsonObject(0).getString("prosecutorDefendantReference"), is("D1"));
+        assertThat(defendantErrors.getJsonObject(1).getString("prosecutorDefendantReference"), is("D1"));
+        assertThat(defendantErrors.getJsonObject(2).getString("prosecutorDefendantReference"), is("D8"));
+        final JsonArray caseErrors = payload.getJsonArray("caseErrors");
+        assertThat(caseErrors.size(), is(2));
+        assertThat(caseErrors.getJsonObject(0).containsKey("prosecutorCaseReference"), is(false));
+        assertThat(caseErrors.getJsonObject(1).containsKey("prosecutorCaseReference"), is(false));
+    }
+
+    @Test
+    public void shouldOmitCaseErrorsAndDefendantReferenceWhenAbsent() {
+        final Metadata metadata = metadataBuilder().withName("stagingcivil.summons").withId(randomUUID()).build();
+
+        api.rejectComplaintsFile(metadata, "GAAAA01", "complaints.csv", null, null, List.of(
+                new ComplaintsFileValidationError(1L, "SCIV00001", null, "REQUIRED_FIELD_MISSING",
+                        "defendant.prosecutorDefendantId", "", "msg")));
+
+        verify(sender).send(jsonEnvelopeCaptor.capture());
+        final JsonObject payload = jsonEnvelopeCaptor.getValue().payloadAsJsonObject();
+        assertThat(payload.containsKey("caseErrors"), is(false));
+        assertThat(payload.getJsonArray("defendantErrors").getJsonObject(0).containsKey("prosecutorDefendantReference"), is(false));
     }
 
     @Test
@@ -350,7 +399,7 @@ public class CivilProsecutionApiTest {
         final Metadata metadata = metadataBuilder().withName("stagingcivil.summons").withId(randomUUID()).build();
 
         api.rejectComplaintsFile(metadata, "GAAAA01", null, null, null, List.of(
-                new ComplaintsFileValidationError(1L, "SCIV00001", "INVALID_VALUE", "case.summonsCode", "AB", "msg")));
+                new ComplaintsFileValidationError(1L, "SCIV00001", null, "INVALID_VALUE", "case.summonsCode", "AB", "msg")));
 
         verify(sender).send(jsonEnvelopeCaptor.capture());
         final JsonObject payload = jsonEnvelopeCaptor.getValue().payloadAsJsonObject();

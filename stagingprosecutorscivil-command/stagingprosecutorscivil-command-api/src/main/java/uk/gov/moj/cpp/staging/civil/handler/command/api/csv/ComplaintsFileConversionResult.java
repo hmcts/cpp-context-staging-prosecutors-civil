@@ -61,15 +61,18 @@ public final class ComplaintsFileConversionResult {
     }
 
     /**
-     * The CSV row number and case reference behind one entry of {@code summons.prosecutionCases}.
+     * The CSV row number, case reference and defendant reference behind one entry of
+     * {@code summons.prosecutionCases}. Either reference is {@code null} when the row has none.
      */
     public static final class ConvertedRow {
         private final long rowNumber;
         private final String caseReference;
+        private final String defendantReference;
 
-        public ConvertedRow(final long rowNumber, final String caseReference) {
+        public ConvertedRow(final long rowNumber, final String caseReference, final String defendantReference) {
             this.rowNumber = rowNumber;
             this.caseReference = caseReference;
+            this.defendantReference = defendantReference;
         }
 
         public long getRowNumber() {
@@ -78,6 +81,10 @@ public final class ComplaintsFileConversionResult {
 
         public String getCaseReference() {
             return caseReference;
+        }
+
+        public String getDefendantReference() {
+            return defendantReference;
         }
     }
 }

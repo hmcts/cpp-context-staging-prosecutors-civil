@@ -20,15 +20,18 @@ public final class ComplaintsFileValidationError {
 
     private final long rowNumber;
     private final String caseReference;
+    private final String defendantReference;
     private final String code;
     private final String field;
     private final String value;
     private final String message;
 
-    public ComplaintsFileValidationError(final long rowNumber, final String caseReference, final String code,
+    public ComplaintsFileValidationError(final long rowNumber, final String caseReference,
+                                         final String defendantReference, final String code,
                                          final String field, final String value, final String message) {
         this.rowNumber = rowNumber;
         this.caseReference = caseReference;
+        this.defendantReference = defendantReference;
         this.code = code;
         this.field = field;
         this.value = value == null ? "" : value;
@@ -40,11 +43,28 @@ public final class ComplaintsFileValidationError {
     }
 
     /**
-     * The row's {@code case.urn} - the prosecutor's own reference for the case - or, when the row has
-     * no usable URN, a {@code "Row <n>"} label so the error can still be located in the file.
+     * The row's {@code case.urn} - the prosecutor's own reference for the case - or {@code null} when
+     * the row has no usable URN.
      */
     public String getCaseReference() {
         return caseReference;
+    }
+
+    /**
+     * The row's {@code defendant.prosecutorDefendantId} - the prosecutor's own reference for the
+     * defendant - or {@code null} when the row has none.
+     */
+    public String getDefendantReference() {
+        return defendantReference;
+    }
+
+    /**
+     * Whether the problem is in a defendant- or offence-level column, so it is reported as a defendant
+     * error (like Prosecution Case File's defendant problems) rather than a case error.
+     */
+    public boolean isDefendantError() {
+        return field != null && (field.equals("defendant") || field.startsWith("defendant.")
+                || field.equals("offence") || field.startsWith("offence."));
     }
 
     public String getCode() {
@@ -82,6 +102,7 @@ public final class ComplaintsFileValidationError {
         final ComplaintsFileValidationError that = (ComplaintsFileValidationError) o;
         return rowNumber == that.rowNumber
                 && Objects.equals(caseReference, that.caseReference)
+                && Objects.equals(defendantReference, that.defendantReference)
                 && Objects.equals(code, that.code)
                 && Objects.equals(field, that.field)
                 && Objects.equals(value, that.value)
@@ -90,12 +111,12 @@ public final class ComplaintsFileValidationError {
 
     @Override
     public int hashCode() {
-        return Objects.hash(rowNumber, caseReference, code, field, value, message);
+        return Objects.hash(rowNumber, caseReference, defendantReference, code, field, value, message);
     }
 
     @Override
     public String toString() {
         return "ComplaintsFileValidationError{rowNumber=" + rowNumber + ", caseReference='" + caseReference
-                + "', code='" + code + "', field='" + field + "', value='" + value + "', message='" + message + "'}";
+                + "', defendantReference='" + defendantReference + "', code='" + code + "', field='" + field + "', value='" + value + "', message='" + message + "'}";
     }
 }

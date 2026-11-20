@@ -51,7 +51,7 @@ public final class SummonsSchemaViolationMapper {
                                                           final String summonsJson) {
         final ValidationException validationException = findValidationException(schemaFailure);
         if (validationException == null) {
-            return singletonList(new ComplaintsFileValidationError(FIRST_DATA_ROW, firstRowReference(convertedRows),
+            return singletonList(new ComplaintsFileValidationError(FIRST_DATA_ROW, firstRowReference(convertedRows), null,
                     ComplaintsFileValidationError.INVALID_VALUE, null, "",
                     "Complaints file failed schema validation: " + schemaFailure.getMessage()));
         }
@@ -107,26 +107,29 @@ public final class SummonsSchemaViolationMapper {
 
         final long rowNumber;
         final String caseReference;
+        final String defendantReference;
         final String column;
         if (path.size() >= 2 && PROSECUTION_CASES.equals(path.get(0)) && isCaseIndex(path.get(1), convertedRows)) {
             final ConvertedRow row = convertedRows.get(Integer.parseInt(path.get(1)));
             rowNumber = row.getRowNumber();
             caseReference = row.getCaseReference();
+            defendantReference = row.getDefendantReference();
             column = caseColumn(path.subList(2, path.size()));
         } else {
             // submission-level fields (hearingDetails.*, prosecutingAuthority) are read from the first data row
             rowNumber = FIRST_DATA_ROW;
             caseReference = firstRowReference(convertedRows);
+            defendantReference = null;
             column = path.isEmpty() ? null : String.join(".", withoutIndexes(path));
         }
 
         final String location = "Row " + rowNumber + ": ";
         if (isRequired) {
-            return new ComplaintsFileValidationError(rowNumber, caseReference,
+            return new ComplaintsFileValidationError(rowNumber, caseReference, defendantReference,
                     ComplaintsFileValidationError.REQUIRED_FIELD_MISSING, column, "",
                     location + "required column '" + column + "' is blank");
         }
-        return new ComplaintsFileValidationError(rowNumber, caseReference,
+        return new ComplaintsFileValidationError(rowNumber, caseReference, defendantReference,
                 ComplaintsFileValidationError.INVALID_VALUE, column,
                 offendingValue(validatedJson, violation.getPointerToViolation()),
                 location + (column == null ? "" : "'" + column + "' ") + errorMessage);
@@ -206,6 +209,6 @@ public final class SummonsSchemaViolationMapper {
     private static String firstRowReference(final List<ConvertedRow> convertedRows) {
         return !convertedRows.isEmpty() && convertedRows.get(0).getRowNumber() == FIRST_DATA_ROW
                 ? convertedRows.get(0).getCaseReference()
-                : "Row " + FIRST_DATA_ROW;
+                : null;
     }
 }

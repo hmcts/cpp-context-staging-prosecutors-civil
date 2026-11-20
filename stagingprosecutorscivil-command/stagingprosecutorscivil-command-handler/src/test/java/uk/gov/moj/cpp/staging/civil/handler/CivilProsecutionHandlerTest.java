@@ -29,6 +29,7 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.staging.civil.aggregate.ProsecutionSubmissionAggregate;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.ProblemValue;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
@@ -215,6 +216,16 @@ public class CivilProsecutionHandlerTest {
                         .withProblems(Arrays.asList(Problem.problem()
                                 .withCode("INVALID_DATE_FORMAT")
                                 .withValues(Arrays.asList(ProblemValue.problemValue()
+                                        .withKey("hearingDetails.dateOfHearing")
+                                        .withValue("04/02/2022")
+                                        .build()))
+                                .build()))
+                        .build()))
+                .withDefendantErrors(Arrays.asList(DefendantProblem.defendantProblem()
+                        .withProsecutorDefendantReference("DEF001")
+                        .withProblems(Arrays.asList(Problem.problem()
+                                .withCode("INVALID_DATE_FORMAT")
+                                .withValues(Arrays.asList(ProblemValue.problemValue()
                                         .withKey("defendant.individual.dateOfBirth")
                                         .withValue("31/02/1990")
                                         .build()))
@@ -245,8 +256,11 @@ public class CivilProsecutionHandlerTest {
                                 withJsonPath("$.prosecutorShortName", is("TVL")),
                                 withJsonPath("$.caseErrors[0].prosecutorCaseReference", is("SCIV00001")),
                                 withJsonPath("$.caseErrors[0].problems[0].code", is("INVALID_DATE_FORMAT")),
-                                withJsonPath("$.caseErrors[0].problems[0].values[0].key", is("defendant.individual.dateOfBirth")),
-                                withJsonPath("$.caseErrors[0].problems[0].values[0].value", is("31/02/1990"))))
+                                withJsonPath("$.caseErrors[0].problems[0].values[0].key", is("hearingDetails.dateOfHearing")),
+                                withJsonPath("$.caseErrors[0].problems[0].values[0].value", is("04/02/2022")),
+                                withJsonPath("$.defendantErrors[0].prosecutorDefendantReference", is("DEF001")),
+                                withJsonPath("$.defendantErrors[0].problems[0].values[0].key", is("defendant.individual.dateOfBirth")),
+                                withJsonPath("$.defendantErrors[0].problems[0].values[0].value", is("31/02/1990"))))
                 ))
         );
     }

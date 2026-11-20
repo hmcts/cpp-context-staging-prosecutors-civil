@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
@@ -147,9 +148,10 @@ public class CivilProsecutionApi {
      * Records a complaints CSV upload that could not be turned into a valid summons submission
      * because of schema-level problems (blank required columns, malformed values, JSON-schema
      * violations). The upload is still accepted - the caller gets a {@code submissionId} like any
-     * other upload - and the submission is created directly in {@code FAILED} status with the
-     * problems stored as case errors, so they appear in the submission's error report alongside
-     * the business-validation errors raised later by Prosecution Case File.
+     * other upload - and the submission is created directly in {@code FAILED} status. Problems in
+     * {@code defendant.*} / {@code offence.*} columns are stored as defendant errors and the rest as
+     * case errors, matching how Prosecution Case File reports business-validation errors, so they
+     * appear in the submission's error report in the same way.
      */
     public Envelope<UrlResponse> rejectComplaintsFile(final Metadata metadata,
                                                      final String prosecutingAuthority,
@@ -161,8 +163,15 @@ public class CivilProsecutionApi {
 
         final JsonObjectBuilder payload = createObjectBuilder()
                 .add("submissionId", submissionId.toString())
-                .add("prosecutingAuthority", prosecutingAuthority)
-                .add("caseErrors", toCaseProblems(errors));
+                .add("prosecutingAuthority", prosecutingAuthority);
+        final List<ComplaintsFileValidationError> caseLevel = errors.stream().filter(e -> !e.isDefendantError()).collect(toList());
+        final List<ComplaintsFileValidationError> defendantLevel = errors.stream().filter(ComplaintsFileValidationError::isDefendantError).collect(toList());
+        if (!caseLevel.isEmpty()) {
+            payload.add("caseErrors", toProblems(caseLevel, ComplaintsFileValidationError::getCaseReference, "prosecutorCaseReference"));
+        }
+        if (!defendantLevel.isEmpty()) {
+            payload.add("defendantErrors", toProblems(defendantLevel, ComplaintsFileValidationError::getDefendantReference, "prosecutorDefendantReference"));
+        }
         addIfPresent(payload, "fileName", fileName);
         addIfPresent(payload, "submittedByUserName", submittedByUserName);
         addIfPresent(payload, "prosecutorShortName", prosecutorShortName);
@@ -179,27 +188,35 @@ public class CivilProsecutionApi {
     }
 
     /**
-     * Groups the errors into Prosecution Case File {@code case-problem} entries - one per case
-     * reference, in file order - the same shape PCF uses for business-validation case errors.
+     * Groups the errors into Prosecution Case File {@code case-problem} / {@code defendant-problem}
+     * entries - one per CSV row, in file order - the same shape PCF uses for business-validation
+     * errors. Grouping by row (each row is one case and one defendant) keeps rows apart even when
+     * they share a defendant reference or have none; a row with no reference gets an entry without
+     * one rather than a made-up label.
      */
-    private static JsonArray toCaseProblems(final List<ComplaintsFileValidationError> errors) {
-        final Map<String, JsonArrayBuilder> problemsByReference = new LinkedHashMap<>();
-        errors.forEach(error -> problemsByReference
-                .computeIfAbsent(error.getCaseReference(), reference -> createArrayBuilder())
-                .add(createObjectBuilder()
-                        .add("code", error.getCode())
-                        .add("values", createArrayBuilder()
-                                .add(createObjectBuilder()
-                                        .add("key", error.getField() != null ? error.getField() : "row")
-                                        .add("value", error.getValue())))));
-
-        final JsonArrayBuilder caseProblems = createArrayBuilder();
-        problemsByReference.forEach((reference, problems) -> {
-            final JsonObjectBuilder caseProblem = createObjectBuilder().add("problems", problems);
-            addIfPresent(caseProblem, "prosecutorCaseReference", reference);
-            caseProblems.add(caseProblem);
+    private static JsonArray toProblems(final List<ComplaintsFileValidationError> errors,
+                                        final Function<ComplaintsFileValidationError, String> reference,
+                                        final String referenceName) {
+        final Map<Long, String> referenceByRow = new LinkedHashMap<>();
+        final Map<Long, JsonArrayBuilder> problemsByRow = new LinkedHashMap<>();
+        errors.forEach(error -> {
+            referenceByRow.putIfAbsent(error.getRowNumber(), reference.apply(error));
+            problemsByRow.computeIfAbsent(error.getRowNumber(), row -> createArrayBuilder())
+                    .add(createObjectBuilder()
+                            .add("code", error.getCode())
+                            .add("values", createArrayBuilder()
+                                    .add(createObjectBuilder()
+                                            .add("key", error.getField() != null ? error.getField() : "row")
+                                            .add("value", error.getValue()))));
         });
-        return caseProblems.build();
+
+        final JsonArrayBuilder entries = createArrayBuilder();
+        problemsByRow.forEach((row, problems) -> {
+            final JsonObjectBuilder entry = createObjectBuilder().add("problems", problems);
+            addIfPresent(entry, referenceName, referenceByRow.get(row));
+            entries.add(entry);
+        });
+        return entries.build();
     }
 
     private static void addIfPresent(final JsonObjectBuilder builder, final String name, final String value) {

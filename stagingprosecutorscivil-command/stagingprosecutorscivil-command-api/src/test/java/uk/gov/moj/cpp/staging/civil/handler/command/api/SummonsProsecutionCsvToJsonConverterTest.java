@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.DUPLICATE_CASE_URN;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INVALID_DATE_FORMAT;
@@ -36,7 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileConversionResult;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError;
-import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns;
+import uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns;
 import uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvToJsonConverter;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Defendant;
@@ -518,13 +519,38 @@ class SummonsProsecutionCsvToJsonConverterTest {
     }
 
     @Test
-    void convertLabelsProblemsWithTheRowNumberWhenTheCaseUrnIsBlank() throws IOException {
+    void convertLeavesTheCaseReferenceNullWhenTheCaseUrnIsBlank() throws IOException {
         final String csv = buildCsv(Map.of(SummonsProsecutionCsvColumns.CASE_URN, ""));
 
         final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
 
         assertThat(result.getErrors(), contains(
-                error(1, "Row 1", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.CASE_URN, "")));
+                error(1, null, REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.CASE_URN, "")));
+    }
+
+    @Test
+    void convertRecordsTheRowsProsecutorDefendantIdAsTheDefendantReference() throws IOException {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "DEF00001",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, ""));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors().size(), is(1));
+        assertThat(result.getErrors().get(0).getCaseReference(), is("SCIV00001"));
+        assertThat(result.getErrors().get(0).getDefendantReference(), is("DEF00001"));
+        assertTrue(result.getErrors().get(0).isDefendantError());
+    }
+
+    @Test
+    void convertLeavesTheDefendantReferenceNullWhenTheProsecutorDefendantIdIsBlank() throws IOException {
+        final String csv = buildCsv(Map.of(
+                SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID, "",
+                SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME, ""));
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertThat(result.getErrors().get(0).getDefendantReference(), is(nullValue()));
     }
 
     @Test
@@ -618,7 +644,7 @@ class SummonsProsecutionCsvToJsonConverterTest {
         assertThat(result.getErrors().size(), is(1));
         assertThat(result.getErrors().get(0).getCode(), is(INVALID_ROW));
         assertThat(result.getErrors().get(0).getRowNumber(), is(2L));
-        assertThat(result.getErrors().get(0).getCaseReference(), is("Row 2"));
+        assertThat(result.getErrors().get(0).getCaseReference(), is(nullValue()));
         assertThat(result.getConvertedRows().size(), is(1));
     }
 

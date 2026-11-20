@@ -53,8 +53,8 @@ class SummonsSchemaViolationMapperTest {
             "prosecutionCases", arrayOf(PROSECUTION_CASE_SCHEMA));
 
     private static final List<ConvertedRow> CONVERTED_ROWS = List.of(
-            new ConvertedRow(1L, "SCIV00001"),
-            new ConvertedRow(3L, "SCIV00003"));
+            new ConvertedRow(1L, "SCIV00001", "DEF00001"),
+            new ConvertedRow(3L, "SCIV00003", "DEF00003"));
 
     @Test
     void mapsEachViolationToItsCsvRowCaseReferenceColumnAndRawValue() {
@@ -85,6 +85,23 @@ class SummonsSchemaViolationMapperTest {
     }
 
     @Test
+    void carriesTheRowsDefendantReferenceForCaseViolationsButNotForSubmissionLevelOnes() {
+        final JSONObject summons = object(
+                "hearingDetails", object("timeOfHearing", "9am"),
+                "prosecutionCases", array(
+                        object("summonsCode", "A"),
+                        object("summonsCode", "A", "defendants", array(object(
+                                "defendantDetails", object("asn", "TOOLONGASN"))))));
+
+        final List<ComplaintsFileValidationError> errors =
+                SummonsSchemaViolationMapper.map(schemaFailureFor(summons), CONVERTED_ROWS, summons.toString());
+
+        assertThat(errors, containsInAnyOrder(
+                allOf(hasProperty("field", is("hearingDetails.timeOfHearing")), hasProperty("defendantReference", nullValue())),
+                allOf(hasProperty("field", is("defendant.asn")), hasProperty("defendantReference", is("DEF00003")))));
+    }
+
+    @Test
     void keepsAReadableMessageForLoggingAndStrictConversion() {
         final JSONObject summons = object("prosecutionCases", array(object("summonsCode", "AB")));
 
@@ -100,12 +117,12 @@ class SummonsSchemaViolationMapperTest {
         final JSONObject summons = object(
                 "hearingDetails", object("timeOfHearing", "9am"),
                 "prosecutionCases", array());
-        final List<ConvertedRow> rowOneFailedConversion = List.of(new ConvertedRow(2L, "SCIV00002"));
+        final List<ConvertedRow> rowOneFailedConversion = List.of(new ConvertedRow(2L, "SCIV00002", "DEF00002"));
 
         final List<ComplaintsFileValidationError> errors =
                 SummonsSchemaViolationMapper.map(schemaFailureFor(summons), rowOneFailedConversion, summons.toString());
 
-        assertThat(errors, contains(error(1L, "Row 1", INVALID_VALUE, "hearingDetails.timeOfHearing", "9am")));
+        assertThat(errors, contains(error(1L, null, INVALID_VALUE, "hearingDetails.timeOfHearing", "9am")));
     }
 
     @Test

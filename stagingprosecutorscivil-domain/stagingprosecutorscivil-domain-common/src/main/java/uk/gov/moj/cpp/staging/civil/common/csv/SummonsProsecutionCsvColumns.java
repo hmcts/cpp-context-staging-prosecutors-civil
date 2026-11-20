@@ -1,11 +1,16 @@
-package uk.gov.moj.cpp.staging.civil.handler.command.api.csv;
+package uk.gov.moj.cpp.staging.civil.common.csv;
 
 /**
  * Column names for the flattened summons-prosecution CSV (comma-delimited).
  * One row represents one (prosecutionCase, defendant, offence) combination; case- and
  * defendant-level columns repeat across rows that share the same {@link #CASE_URN} /
  * {@link #DEFENDANT_PROSECUTOR_DEFENDANT_ID}. Order here matches
- * {@code src/main/resources/csv/summons-prosecution-template.csv}.
+ * the complaints CSV template ({@code summons-prosecution-template.csv}, served by
+ * stagingprosecutorscivil-command-api and stagingprosecutorscivil-query-api).
+ * <p>
+ * This is the single source of the template column names: the CSV-to-JSON conversion, the
+ * schema-violation mapping and the error report (via {@link ProsecutionCaseFileFieldToCsvColumn})
+ * all use these constants, so they cannot drift apart.
  */
 public final class SummonsProsecutionCsvColumns {
 

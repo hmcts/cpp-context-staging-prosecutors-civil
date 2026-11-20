@@ -27,17 +27,29 @@
       "type": "string"
     },
     "caseErrors": {
+      "description": "Problems in submission- or case-level columns (and rows that could not be read), keyed by case.urn. Present when there is at least one; caseErrors and defendantErrors are never both absent.",
       "type": "array",
       "minItems": 1,
       "items": {
         "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/case-problem.json"
+      }
+    },
+    "defendantErrors": {
+      "description": "Problems in defendant.* and offence.* columns, keyed by defendant.prosecutorDefendantId. Present when there is at least one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/json/schemas/defendant-problem.json"
       }
     }
   },
   "required": [
     "submissionId",
     "submissionStatus",
-    "prosecutingAuthority",
-    "caseErrors"
+    "prosecutingAuthority"
+  ],
+  "anyOf": [
+    { "required": ["caseErrors"] },
+    { "required": ["defendantErrors"] }
   ]
 }

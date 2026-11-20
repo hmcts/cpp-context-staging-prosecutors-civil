@@ -106,15 +106,16 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
 
     /**
      * A complaints CSV upload that failed schema validation is never sent to Prosecution Case File:
-     * the submission goes straight to {@code FAILED}, carrying the schema problems as case errors so
-     * they appear in its error report.
+     * the submission goes straight to {@code FAILED}, carrying the schema problems as case and
+     * defendant errors so they appear in its error report.
      */
     public Stream<Object> rejectComplaintsFile(final UUID submissionId,
                                                final String prosecutingAuthority,
                                                final String fileName,
                                                final String submittedByUserName,
                                                final String prosecutorShortName,
-                                               final List<CaseProblem> caseErrors) {
+                                               final List<CaseProblem> caseErrors,
+                                               final List<DefendantProblem> defendantErrors) {
         LOGGER.info("Raising private event stagingprosecutorscivil.event.complaints-file-validation-failed for submission id {}", submissionId);
         return apply(
                 Stream.of(
@@ -126,6 +127,7 @@ public class ProsecutionSubmissionAggregate implements Aggregate {
                                 .withSubmittedByUserName(submittedByUserName)
                                 .withProsecutorShortName(prosecutorShortName)
                                 .withCaseErrors(caseErrors)
+                                .withDefendantErrors(defendantErrors)
                                 .build()
                 )
         );

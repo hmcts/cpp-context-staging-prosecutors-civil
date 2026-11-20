@@ -58,6 +58,8 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV_INVALID_SUMMONS_CODE = "payload/complaints/complaints-summons-prosecution-invalid-summons-code.csv";
     private static final String COMPLAINTS_CSV_DUPLICATE_URN = "payload/complaints/complaints-summons-prosecution-duplicate-urn.csv";
     private static final String COMPLAINTS_CSV_HEADER_ONLY = "payload/complaints/complaints-summons-prosecution-header-only.csv";
+    private static final String COMPLAINTS_CSV_INVALID_DATE_OF_BIRTH = "payload/complaints/complaints-summons-prosecution-invalid-date-of-birth.csv";
+    private static final String FIXTURE_PROSECUTOR_DEFENDANT_ID = "123e4567-e89b-12d3-a456-426614174000";
     private static final String ERROR_REPORT_HEADER = "Reference,Error Type,Error Code,Field,Value\n";
     private static final String CSV_OUCODE = "GAAAA01";
     private static final String PROSECUTOR_SHORT_NAME = "DVLA";
@@ -351,6 +353,59 @@ public class ComplaintsFilesUploadIT {
 
         assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
                 + "SCIV11111,Case,INVALID_VALUE,case.summonsCode,X"));
+    }
+
+    @Test
+    public void shouldReportDefendantColumnSchemaErrorAsDefendantErrorAgainstProsecutorDefendantId() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_INVALID_DATE_OF_BIRTH), randomUUID().toString());
+
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
+                + FIXTURE_PROSECUTOR_DEFENDANT_ID + ",Defendant,INVALID_DATE_FORMAT,defendant.individual.dateOfBirth,31/02/1990"));
+    }
+
+    @Test
+    public void shouldReportProsecutionCaseFileBusinessErrorKeyAsTemplateColumnForComplaintsFileUpload() throws IOException {
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV), randomUUID().toString());
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmission(submissionId, SubmissionStatus.PENDING);
+
+        final JsonObject rejectedEvent = createObjectBuilder()
+                .add("caseId", randomUUID().toString())
+                .add("externalId", submissionId.toString())
+                .add("channel", "CIVIL")
+                .add("caseErrors", createArrayBuilder().build())
+                .add("defendantErrors", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("prosecutorDefendantReference", FIXTURE_PROSECUTOR_DEFENDANT_ID)
+                                .add("problems", createArrayBuilder()
+                                        .add(createObjectBuilder()
+                                                .add("code", "OFFENCE_CODE_NOT_SUPPORTED")
+                                                .add("values", createArrayBuilder()
+                                                        .add(createObjectBuilder()
+                                                                .add("key", "offence_offenceCode")
+                                                                .add("value", "CA03010")))))))
+                .build();
+        messageProducerClientPublic.sendMessage(
+                PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED,
+                envelopeFrom(buildMetadata(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_REJECTED, randomUUID().toString()), rejectedEvent));
+
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        // prosecutioncasefile's key offence_offenceCode is reported as the template column the user uploaded
+        assertThat(errorReportFor(submissionId), is(ERROR_REPORT_HEADER
+                + FIXTURE_PROSECUTOR_DEFENDANT_ID + ",Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence.offenceDetails.cjsOffenceCode,CA03010"));
     }
 
     @Test

@@ -1,91 +1,91 @@
 package uk.gov.moj.cpp.staging.civil.handler.command.api.csv;
 
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.CASE_CASE_MARKER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.CASE_INFORMANT;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.CASE_PAYMENT_REFERENCE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.CASE_RELATED_REFERENCE_NUMBER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.CASE_SUMMONS_CODE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.CASE_URN;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_1;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_2;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_3;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_4;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_5;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_POSTCODE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_ASN;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_CRO_NUMBER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_DOCUMENTATION_LANGUAGE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_HEARING_LANGUAGE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_PNC_IDENTIFIER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_COSTS;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_TYPE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_TYPE_INDIVIDUAL;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DEFENDANT_TYPE_ORGANISATION;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.DELIMITER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_ADDITIONAL_NATIONALITY;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_HOME_PHONE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_MOBILE_PHONE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_PRIMARY_EMAIL;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_SECONDARY_EMAIL;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_WORK_PHONE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CUSTODY_STATUS;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_DRIVER_NUMBER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_ETHNICITY;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_LANGUAGE_REQUIREMENT;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_FORENAME;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_FORENAME_2;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_FORENAME_3;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_TITLE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NATIONALITY;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NATIONAL_INSURANCE_NUMBER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_OBSERVED_ETHNICITY;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_OCCUPATION;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_SPECIFIC_REQUIREMENTS;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_ARREST_DATE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_CJS_OFFENCE_CODE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_COMMITTED_DATE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_COMMITTED_END_DATE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_LOCATION;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_PROSECUTOR_COMPENSATION;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_SEQUENCE_NO;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_STATEMENT_OF_FACTS;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_STATEMENT_OF_FACTS_WELSH;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_WORDING;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.OFFENCE_WORDING_WELSH;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.ORGANISATION_COMPANY_TELEPHONE_NUMBER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.ORGANISATION_NAME;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_1;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_2;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_3;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_4;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_5;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_POSTCODE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_HOME_PHONE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_MOBILE_PHONE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_PRIMARY_EMAIL;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_SECONDARY_EMAIL;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_WORK_PHONE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_DATE_OF_BIRTH;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_GENDER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_2;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_3;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_SURNAME;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_TITLE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_OBSERVED_ETHNICITY;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_SELF_DEFINED_ETHNICITY;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ORGANISATION_COMPANY_TELEPHONE_NUMBER;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ORGANISATION_NAME;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_TYPE;
-import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.SummonsProsecutionCsvColumns.PROSECUTING_AUTHORITY;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.CASE_CASE_MARKER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.CASE_INFORMANT;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.CASE_PAYMENT_REFERENCE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.CASE_RELATED_REFERENCE_NUMBER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.CASE_SUMMONS_CODE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.CASE_URN;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_1;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_2;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_3;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_4;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_5;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_ADDRESS_POSTCODE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_ASN;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_CRO_NUMBER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_DOCUMENTATION_LANGUAGE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_HEARING_LANGUAGE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_PNC_IDENTIFIER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_COSTS;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_PROSECUTOR_DEFENDANT_ID;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_TYPE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_TYPE_INDIVIDUAL;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DEFENDANT_TYPE_ORGANISATION;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.DELIMITER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_ADDITIONAL_NATIONALITY;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_HOME_PHONE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_MOBILE_PHONE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_PRIMARY_EMAIL;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_SECONDARY_EMAIL;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CONTACT_WORK_PHONE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_CUSTODY_STATUS;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_DATE_OF_BIRTH;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_DRIVER_NUMBER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_ETHNICITY;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_GENDER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_LANGUAGE_REQUIREMENT;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_FORENAME;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_FORENAME_2;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_FORENAME_3;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_SURNAME;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NAME_TITLE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NATIONALITY;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_NATIONAL_INSURANCE_NUMBER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_OBSERVED_ETHNICITY;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_OCCUPATION;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.INDIVIDUAL_SPECIFIC_REQUIREMENTS;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_ARREST_DATE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_CJS_OFFENCE_CODE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_COMMITTED_DATE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_COMMITTED_END_DATE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_LOCATION;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_PROSECUTOR_COMPENSATION;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_SEQUENCE_NO;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_STATEMENT_OF_FACTS;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_STATEMENT_OF_FACTS_WELSH;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_WORDING;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.OFFENCE_WORDING_WELSH;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.ORGANISATION_COMPANY_TELEPHONE_NUMBER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.ORGANISATION_NAME;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_1;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_2;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_3;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_4;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_5;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ADDRESS_POSTCODE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_HOME_PHONE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_MOBILE_PHONE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_PRIMARY_EMAIL;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_SECONDARY_EMAIL;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_CONTACT_WORK_PHONE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_DATE_OF_BIRTH;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_GENDER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_2;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_3;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_SURNAME;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_NAME_TITLE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_OBSERVED_ETHNICITY;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_INDIVIDUAL_SELF_DEFINED_ETHNICITY;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ORGANISATION_COMPANY_TELEPHONE_NUMBER;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_ORGANISATION_NAME;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PARENT_GUARDIAN_TYPE;
+import static uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns.PROSECUTING_AUTHORITY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -107,6 +107,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import uk.gov.justice.services.common.configuration.Value;
+import uk.gov.moj.cpp.staging.civil.common.csv.SummonsProsecutionCsvColumns;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Address;
@@ -268,7 +269,7 @@ public class SummonsProsecutionCsvToJsonConverter {
                 } else {
                     prosecutionCases.add(prosecutionCase);
                     convertedRows.add(new ComplaintsFileConversionResult.ConvertedRow(
-                            record.getRecordNumber(), record.caseReference));
+                            record.getRecordNumber(), record.caseReference, record.defendantReference));
                 }
             }
 
@@ -601,12 +602,17 @@ public class SummonsProsecutionCsvToJsonConverter {
     private static final class Row {
         private final CSVRecord csvRecord;
         private final String caseReference;
+        private final String defendantReference;
         private final List<ComplaintsFileValidationError> errors = new ArrayList<>();
 
         private Row(final CSVRecord csvRecord) {
             this.csvRecord = csvRecord;
-            final String caseUrn = csvRecord.isSet(CASE_URN) ? nullIfBlank(csvRecord.get(CASE_URN)) : null;
-            this.caseReference = caseUrn != null ? caseUrn : "Row " + csvRecord.getRecordNumber();
+            this.caseReference = valueOrNull(csvRecord, CASE_URN);
+            this.defendantReference = valueOrNull(csvRecord, DEFENDANT_PROSECUTOR_DEFENDANT_ID);
+        }
+
+        private static String valueOrNull(final CSVRecord csvRecord, final String column) {
+            return csvRecord.isSet(column) ? nullIfBlank(csvRecord.get(column)) : null;
         }
 
         private String get(final String column) {
@@ -623,7 +629,8 @@ public class SummonsProsecutionCsvToJsonConverter {
 
         private void error(final String code, final String column, final String message) {
             final String rawValue = column != null && csvRecord.isSet(column) ? csvRecord.get(column) : "";
-            errors.add(new ComplaintsFileValidationError(getRecordNumber(), caseReference, code, column, rawValue, message));
+            errors.add(new ComplaintsFileValidationError(getRecordNumber(), caseReference, defendantReference,
+                    code, column, rawValue, message));
         }
 
         private boolean hasErrors() {

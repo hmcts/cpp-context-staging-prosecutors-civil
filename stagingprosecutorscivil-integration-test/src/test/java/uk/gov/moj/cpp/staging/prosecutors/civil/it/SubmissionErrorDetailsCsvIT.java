@@ -101,6 +101,8 @@ public class SubmissionErrorDetailsCsvIT {
         assertThat(response.getHeaderString("Content-Disposition"), containsString(submissionId.toString()));
 
         final String csv = response.readEntity(String.class);
+        // A direct JSON API submission has no uploaded file, so prosecutioncasefile's keys are kept as sent
+        // (complaints-file uploads report them as template columns - see ComplaintsFilesUploadIT).
         final String expectedCsv = "Reference,Error Type,Error Code,Field,Value\n"
                 + "123,Case,PROSECUTOR_OUCODE_NOT_RECOGNISED,prosecutingAuthority,A010000\n"
                 + "cad5a01,Defendant,OFFENCE_CODE_NOT_SUPPORTED,offence_offenceCode,AX03547";

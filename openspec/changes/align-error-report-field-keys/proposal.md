@@ -33,65 +33,69 @@ prosecutioncasefile. The inconsistency is between reports for different uploads.
 | Parent/guardian DOB | `individual_parentGuardianInformation_dateOfBirth` | `defendant.individual.parentGuardian.individual.dateOfBirth` |
 | Name / ID / PNC | `title`, `forename`, `prosecutorDefendantId`, `pncIdentifier` | `defendant.individual.nameDetails.title`, `...forename`, `defendant.prosecutorDefendantId`, `defendant.pncIdentifier` |
 
-## Decisions needed (blocking - agree with BA before starting)
+## Decisions (agreed 2026-11-20)
 
-1. **Unify the keys at all?** The schema-error keys (CSV column names) were accepted as-is on
-   2026-11-19; this change is only about prosecutioncasefile's business-error keys.
-2. **Which style wins?** Recommended: translate prosecutioncasefile keys **to CSV column names**,
-   because those are what the user sees in their file. The reverse is not workable - many CSV
-   columns have no prosecutioncasefile `FieldName` equivalent.
-3. **Where to translate?** Options:
-   - **A. At report time** in `SubmissionErrorDetailsCsvBuilder` (query-view) - stored data stays as
-     prosecutioncasefile sent it, so it also fixes existing FAILED submissions; JSON
-     `submission-details` responses keep the raw keys. *(Recommended)*
-   - **B. On receipt** in the event processor/listener when storing rejection errors - the JSON
-     `submission-details` response also shows CSV names, but existing rows are not fixed without a
-     catch-up/replay, and the stored data no longer matches what prosecutioncasefile sent.
-   - **C. In prosecutioncasefile** - not recommended: its keys are shared with other channels (SPI,
-     CPS), not just civil bulk uploads.
-4. **Unmapped keys:** when a prosecutioncasefile key has no CSV column (e.g. `groupProsecutions.size`,
-   `ouCode`, `courtReceivedToCode`), keep the raw key, leave `Field` blank, or use a friendly label?
-5. **Scope of the report:** only complaints-file (CSV) submissions have CSV column names to map to.
-   Decide whether direct JSON API submissions (`POST /cases`, no `fileName`) keep raw keys - the
-   builder can tell them apart because only CSV uploads carry `fileName`.
+1. **Unify the keys:** yes - prosecutioncasefile business-error keys are shown as CSV template
+   column names. Schema-error keys (already column names) are unchanged.
+2. **Which style wins:** CSV column names (`SummonsProsecutionCsvColumns`).
+3. **Where to translate:** **A - at report time** in `SubmissionErrorDetailsCsvBuilder`. Stored data,
+   events and the JSON `submission-details` response keep prosecutioncasefile's raw keys; existing
+   FAILED submissions are fixed too.
+4. **Unmapped keys:** keep the raw key (e.g. `groupProsecutions.size`, `ouCode`, `chargeDate`).
+5. **Scope:** only complaints-file (CSV) submissions are translated (`Submission.fileName` present).
+   Direct JSON API submissions (`POST /cases`) keep raw keys.
+6. **Schema errors as `defendantErrors`:** yes - schema errors in `defendant.*` / `offence.*`
+   columns are stored as `defendantErrors` (`Error Type` = `Defendant`, reference =
+   `prosecutorDefendantReference` = the row's `defendant.prosecutorDefendantId`). Submission-level
+   (`prosecutingAuthority`, `hearingDetails.*`), `case.*` and unreadable-row errors stay case errors
+   (reference = `case.urn`). prosecutioncasefile's own defendant errors keep their defendant reference.
+7. **Missing references:** when the row has no `case.urn` / `defendant.prosecutorDefendantId`, the
+   `prosecutorCaseReference` / `prosecutorDefendantReference` is left out (null) - no made-up
+   `Row <n>` label. The report's `Reference` column is blank for such rows.
+8. **One shared mapping:** the CSV template column names and the prosecutioncasefile-key ->
+   column mapping live together in `stagingprosecutorscivil-domain-common`
+   (`uk.gov.moj.cpp.staging.civil.common.csv`), used by both the CSV -> JSON conversion
+   (command-api) and the error report (query-view), so the two directions cannot drift apart.
 
-### Related open question (decide at the same time)
+## What Changes
 
-- **Schema errors as `defendantErrors`?** All stagingcivil schema errors are currently stored as case
-  errors (`Error Type` = `Case`, reference = `case.urn`), even for `defendant.*` / `offence.*`
-  columns, whereas prosecutioncasefile reports defendant/offence problems as `defendantErrors`
-  (`Error Type` = `Defendant`, reference = `prosecutorDefendantReference`). Current view: keep them
-  as case errors, because CAD-1528 AC1 says the reference column shows the prosecutor *case*
-  reference and every CSV row is exactly one case + one defendant. If the BA wants consistency, the
-  better fix may be the opposite direction - show the case URN for prosecutioncasefile's defendant
-  errors too.
-
-## What Changes (assuming option A + CSV column names)
-
-- Add a prosecutioncasefile-key -> CSV-column mapping (e.g. `ProsecutionCaseFileFieldToCsvColumn`) in
-  `stagingprosecutorscivil-query-view`, covering every `FieldName` value that civil summons
-  submissions can produce.
-- `SubmissionErrorDetailsCsvBuilder` maps the `key` through it before writing the `Field` column,
-  only for submissions that came from a complaints CSV (`fileName` present), applying the
-  unmapped-key rule from decision 4.
-- Leave stored data, events and the JSON `submission-details` response unchanged.
+- Move `SummonsProsecutionCsvColumns` from command-api to `stagingprosecutorscivil-domain-common`
+  and add `ProsecutionCaseFileFieldToCsvColumn` beside it, mapping every prosecutioncasefile key
+  that has a template column to a `SummonsProsecutionCsvColumns` constant.
+- `SubmissionErrorDetailsCsvBuilder` maps each `key` through it before writing the `Field` column,
+  only for complaints-file submissions; unmapped keys are written unchanged.
+- Complaints-file schema errors: `ComplaintsFileValidationError` carries the row's defendant
+  reference; `CivilProsecutionApi.rejectComplaintsFile` splits errors into `caseErrors` and
+  `defendantErrors`. `stagingcivil.command.reject-complaints-file` and
+  `stagingprosecutorscivil.event.complaints-file-validation-failed` gain an optional
+  `defendantErrors` (`defendant-problem`); `caseErrors` becomes optional (at least one of the two is
+  always present). The listener stores `defendantErrors` in the existing `defendant_errors` column.
+- Case/defendant references are null rather than `Row <n>` when the row has none.
 
 ## Capabilities
 
 ### Modified Capabilities
 
-- Submission error report CSV (`stagingcivil.submission-error-details`): the `Field` column shows
-  the user's CSV column name for business errors as well as schema errors.
+- Submission error report CSV (`stagingcivil.submission-error-details`): for complaints-file uploads
+  the `Field` column shows the user's CSV column name for business errors as well as schema errors,
+  and defendant/offence schema errors are reported as `Defendant` rows.
 
 ## Impact
 
-- `stagingprosecutorscivil-query-view`: `SubmissionErrorDetailsCsvBuilder`, new mapping class, tests.
-- `stagingprosecutorscivil-query-api` / `CivilProsecutionQueryView`: pass whether the submission came
-  from a CSV upload (`fileName`) into the builder.
-- `stagingprosecutorscivil-integration-test`: `SubmissionErrorDetailsCsvIT` expected CSV changes
-  (`offence_offenceCode` -> `offence.offenceDetails.cjsOffenceCode`, if the submission has a
-  `fileName`).
-- The mapping must be kept in step with prosecutioncasefile's `FieldName` enum and the CSV template
-  (`SummonsProsecutionCsvColumns`) - add a test that fails when a template column or known key is
-  unmapped.
-- No change to prosecutioncasefile, events, schemas or the viewstore.
+- `stagingprosecutorscivil-domain-common`: `SummonsProsecutionCsvColumns` (moved),
+  `ProsecutionCaseFileFieldToCsvColumn` (new) + mapping test.
+- `stagingprosecutorscivil-command-api`: depends on domain-common; converter/schema-violation mapper
+  record the defendant reference and leave missing references null; `CivilProsecutionApi` splits
+  case/defendant errors.
+- `stagingprosecutorscivil-command-handler`, `-domain-message`, `-domain-aggregate`,
+  `-event-listener`: `defendantErrors` added to the reject-complaints-file command and
+  complaints-file-validation-failed event (additive; `caseErrors` no longer required).
+- `stagingprosecutorscivil-query-view`: depends on domain-common; `SubmissionErrorDetailsCsvBuilder`
+  translates keys for CSV submissions; `CivilProsecutionQueryView` passes `fileName != null`.
+- `stagingprosecutorscivil-integration-test`: new complaints-upload ITs for a defendant-column
+  schema error and for a translated business-error key. `SubmissionErrorDetailsCsvIT` (JSON API
+  submission) keeps raw keys and is unchanged.
+- The mapping must be kept in step with prosecutioncasefile's `FieldName` enum and the CSV
+  template - `ProsecutionCaseFileFieldToCsvColumnTest` fails when a known key is neither mapped nor
+  listed as unmapped, or a mapped column is not in the template.
+- No change to prosecutioncasefile or the viewstore schema.

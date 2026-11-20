@@ -28,6 +28,7 @@ import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.persistence.entity.SubmissionType;
 import uk.gov.moj.cpp.persistence.repository.SubmissionRepository;
 import uk.gov.moj.cpp.prosecution.casefile.json.schemas.CaseProblem;
+import uk.gov.moj.cpp.prosecution.casefile.json.schemas.DefendantProblem;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.ComplaintsFileValidationFailed;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.OtherCaseReceived;
 import uk.gov.moj.cpp.staging.prosecutors.civil.event.MaterialSubmissionRejected;
@@ -640,6 +641,37 @@ public class SubmissionEventListenerTest {
         assertThat(submission.getGroupCaseErrors(), is(Json.createArrayBuilder().add(caseErrorJson).build()));
         assertThat(submission.getDefendantErrors(), is(nullValue()));
         assertThat(submission.getCaseDetail().isEmpty(), is(true));
+    }
+
+    @Test
+    public void shouldStoreDefendantAndOffenceSchemaErrorsAsDefendantErrorsWhenComplaintsFileValidationFailed() {
+        final DefendantProblem defendantError = DefendantProblem.defendantProblem().withProsecutorDefendantReference("DEF001").build();
+        final javax.json.JsonObject defendantErrorJson = Json.createObjectBuilder()
+                .add("prosecutorDefendantReference", "DEF001")
+                .add("problems", Json.createArrayBuilder().add(Json.createObjectBuilder()
+                        .add("code", "INVALID_DATE_FORMAT")
+                        .add("values", Json.createArrayBuilder().add(Json.createObjectBuilder()
+                                .add("key", "offence.offenceDetails.laidDate")
+                                .add("value", "10/01/2022")))))
+                .build();
+        when(objectToJsonObjectConverter.convert(defendantError)).thenReturn(defendantErrorJson);
+
+        final ComplaintsFileValidationFailed validationFailed = ComplaintsFileValidationFailed.complaintsFileValidationFailed()
+                .withSubmissionId(randomUUID())
+                .withSubmissionStatus(FAILED)
+                .withProsecutingAuthority("GAAAA01")
+                .withFileName("complaints.csv")
+                .withDefendantErrors(Collections.singletonList(defendantError))
+                .build();
+
+        submissionEventListener.complaintsFileValidationFailed(
+                newEnvelope("stagingprosecutorscivil.event.complaints-file-validation-failed", validationFailed));
+
+        verify(submissionRepository).save(argumentCaptor.capture());
+        final Submission submission = argumentCaptor.getValue();
+        assertThat(submission.getSubmissionStatus(), is(FAILED.name()));
+        assertThat(submission.getDefendantErrors(), is(Json.createArrayBuilder().add(defendantErrorJson).build()));
+        assertThat(submission.getGroupCaseErrors(), is(nullValue()));
     }
 
     private <T> Envelope<T> newEnvelope(final String name, T payload) {

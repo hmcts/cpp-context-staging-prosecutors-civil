@@ -78,7 +78,7 @@ public class CivilProsecutionHandler {
         final Stream<Object> events = aggregate.rejectComplaintsFile(rejectComplaintsFile.getSubmissionId(),
                 rejectComplaintsFile.getProsecutingAuthority(), rejectComplaintsFile.getFileName(),
                 rejectComplaintsFile.getSubmittedByUserName(), rejectComplaintsFile.getProsecutorShortName(),
-                rejectComplaintsFile.getCaseErrors());
+                rejectComplaintsFile.getCaseErrors(), rejectComplaintsFile.getDefendantErrors());
 
         appendEventsToStream(envelope, eventStream, events);
     }

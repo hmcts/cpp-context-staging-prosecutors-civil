@@ -117,8 +117,8 @@ public class SubmissionEventListener {
     /**
      * A complaints CSV upload that failed schema validation never reaches Prosecution Case File, so
      * it is created here already in its terminal {@code FAILED} status, with the schema problems
-     * stored in the same {@code caseErrors} column that PCF's business-validation case errors use -
-     * the error report CSV is built from that column.
+     * stored in the same {@code caseErrors} / {@code defendantErrors} columns that PCF's
+     * business-validation errors use - the error report CSV is built from those columns.
      */
     @Handles("stagingprosecutorscivil.event.complaints-file-validation-failed")
     public void complaintsFileValidationFailed(final Envelope<ComplaintsFileValidationFailed> event) {
@@ -142,6 +142,7 @@ public class SubmissionEventListener {
                 .withProsecutorShortName(validationFailed.getProsecutorShortName())
                 .build();
         submission.setGroupCaseErrors(transformCaseProblemsToJsonArray(validationFailed.getCaseErrors()));
+        submission.setDefendantErrors(transformDefendantProblemsToJsonArray(validationFailed.getDefendantErrors()));
 
         submissionRepository.save(submission);
     }
