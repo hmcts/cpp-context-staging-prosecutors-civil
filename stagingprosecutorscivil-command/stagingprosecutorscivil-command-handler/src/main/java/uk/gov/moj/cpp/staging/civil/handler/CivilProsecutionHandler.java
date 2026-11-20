@@ -13,8 +13,9 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.OtherCase;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.Summons;
 import uk.gov.moj.cpp.staging.prosecutors.civil.command.handler.UpdateCivilCase;
 
-import javax.inject.Inject;
 import java.util.stream.Stream;
+
+import jakarta.inject.Inject;
 
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;

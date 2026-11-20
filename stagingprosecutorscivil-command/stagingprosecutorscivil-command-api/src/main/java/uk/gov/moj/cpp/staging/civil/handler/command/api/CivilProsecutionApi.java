@@ -20,8 +20,8 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.command.api.*;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.HearingDateRangeDetails;
 import uk.gov.moj.cpp.staging.prosecutors.json.schemas.Offence;
 
-import javax.inject.Inject;
-import javax.json.JsonObject;
+import jakarta.inject.Inject;
+import jakarta.json.JsonObject;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
