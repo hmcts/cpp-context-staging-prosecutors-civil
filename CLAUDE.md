@@ -4,6 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build and Test Commands
 
+## Project Overview
+
+This is the **civil prosecution staging service** — the inbound gateway that receives civil criminal case submissions from external prosecution authorities via Azure APIM and mediates them into `cpp-context-prosecution-casefile` (PCF). It handles two pathways:
+
+- **Charge**: existing case with a URN + hearing date
+- **Summons**: warrant-style submission without prior charge
+
+Each submission is tracked through states: `PENDING` → `SUCCESS` / `SUCCESS_WITH_WARNINGS` / `REJECTED`. Callers receive a `submissionId` synchronously and poll a query endpoint for status.
+
+## Build Commands
+
 ```bash
 # Full build
 mvn clean install
@@ -19,7 +30,68 @@ mvn test -pl stagingprosecutorscivil-command/stagingprosecutorscivil-command-han
 
 # Run integration tests (requires Docker and CPP_DOCKER_DIR env var pointing to cpp-developers-docker repo)
 ./runIntegrationTests.sh
+
+# Viewstore Liquibase migrations (local dev, no Docker)
+./runLiquibase.sh
+
+# JMX system commands against local WildFly
+./runSystemCommand.sh --list
+./runSystemCommand.sh CATCHUP
 ```
+
+## Module Layout
+
+```
+stagingprosecutorscivil-command/
+  stagingprosecutorscivil-command-api         COMMAND_API — REST entry, assigns submissionId, returns statusURL
+  stagingprosecutorscivil-command-handler     COMMAND_HANDLER — loads aggregate, emits domain events
+
+stagingprosecutorscivil-domain/
+  stagingprosecutorscivil-domain-aggregate    ProsecutionSubmissionAggregate
+  stagingprosecutorscivil-datatypes-common    Shared data types
+  stagingprosecutorscivil-domain-common       Shared utilities
+  stagingprosecutorscivil-domain-message      Message payload definitions
+
+stagingprosecutorscivil-event/
+  stagingprosecutorscivil-event-listener      EVENT_LISTENER — persists submission state to viewstore
+  stagingprosecutorscivil-event-processor     EVENT_PROCESSOR — sends PCF commands + updates status (3 processors)
+
+stagingprosecutorscivil-event-sources         YAML topic/queue declarations
+stagingprosecutorscivil-query/
+  stagingprosecutorscivil-query-api           QUERY_API — GET /submissions/{submissionId}
+  stagingprosecutorscivil-query-view          QUERY_VIEW — queries SubmissionRepository
+
+stagingprosecutorscivil-viewstore/
+  stagingprosecutorscivil-viewstore-liquibase    DB schema migrations
+  stagingprosecutorscivil-viewstore-persistance  JPA entities (Submission + CaseDetail), SubmissionRepository
+
+stagingprosecutorscivil-apim-policy           Azure APIM OpenAPI v3 spec + XML policies per operation
+stagingprosecutorscivil-healthchecks          Health endpoints
+stagingprosecutorscivil-integration-test      Full-stack ITs
+stagingprosecutorscivil-service               WAR assembly
+```
+
+## Data Flow
+
+```
+External Authority
+  → POST /chargeprosecutions or /summonsprosecutions (via APIM)
+  → CivilProsecutionApi (COMMAND_API)
+      Synchronously returns UrlResponse { statusURL, submissionId }
+  → CivilProsecutionHandler (COMMAND_HANDLER)
+      ProsecutionSubmissionAggregate emits:
+        stagingprosecutorscivil.event.charge-prosecution-received
+        OR stagingprosecutorscivil.event.summons-prosecution-received
+
+  ┌─ EVENT_LISTENER: SubmissionEventListener
+  │   Persists Submission(PENDING) + CaseDetail rows to viewstore
+  │
+  └─ EVENT_PROCESSOR: ProsecutionChargedEventProcessor
+      Looks up CPP case IDs via SystemIdMapperService (external URN → UUID)
+      If 1 case:  sendAsAdmin → prosecutioncasefile.command.initiate-cc-prosecution
+      If N cases: sendAsAdmin → prosecutioncasefile.command.initiate-group-prosecution
+                               (first element marked isGroupMaster=true)
+      Sends stagingprosecutorscivil.command.update-civil-case (status=PENDING)
 
 `runIntegrationTests.sh` builds WARs, runs all Liquibase changesets (event log, aggregate snapshot, event buffer, viewstore, system, event tracking, file service), deploys WireMock stubs plus the WARs into the shared WildFly container, runs healthchecks, then executes `stagingprosecutorscivil-integration-test`.
 

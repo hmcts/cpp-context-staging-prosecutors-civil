@@ -4,6 +4,7 @@
     {
       "informant": "John Doe",
       "urn": "SCIV12345",
+      "summonsCode": "A",
       "defendants": [
         {
           "individual": {
@@ -32,6 +33,7 @@
     {
       "informant": "Jane Smith",
       "urn": "SCIV67890",
+      "summonsCode": "A",
       "defendants": [
         {
           "individual": {
