@@ -61,6 +61,8 @@ public class ComplaintsFilesUploadIT {
     private static final String COMPLAINTS_CSV_DUPLICATE_URN = "payload/complaints/complaints-summons-prosecution-duplicate-urn.csv";
     private static final String COMPLAINTS_CSV_HEADER_ONLY = "payload/complaints/complaints-summons-prosecution-header-only.csv";
     private static final String COMPLAINTS_CSV_INVALID_DATE_OF_BIRTH = "payload/complaints/complaints-summons-prosecution-invalid-date-of-birth.csv";
+    private static final String COMPLAINTS_CSV_HEARING_DETAILS_BLANK_IN_EVERY_ROW = "payload/complaints/complaints-summons-prosecution-hearing-details-blank-in-every-row.csv";
+    private static final String COMPLAINTS_CSV_INCONSISTENT_SUBMISSION_LEVEL_COLUMNS = "payload/complaints/complaints-summons-prosecution-inconsistent-submission-level-columns.csv";
     private static final String CSV_OUCODE = "GAAAA01";
     private static final String PROSECUTOR_SHORT_NAME = "DVLA";
     private static final String LEGAL_ADVISERS_GROUP_NAME = "Legal Advisers";
@@ -410,6 +412,36 @@ public class ComplaintsFilesUploadIT {
         pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
 
         assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-duplicate-urn.csv")));
+    }
+
+    @Test
+    public void shouldReportBlankHearingDetailsAgainstEveryRowInErrorReport() throws IOException {
+        // hearingDetails.* are read from row 1 for the whole file, but every row must still fill them in
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_HEARING_DETAILS_BLANK_IN_EVERY_ROW), randomUUID().toString());
+
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-hearing-details-blank-in-every-row.csv")));
+    }
+
+    @Test
+    public void shouldReportSubmissionLevelValuesThatDifferFromRowOneInErrorReport() throws IOException {
+        // prosecutingAuthority and hearingDetails.* must hold row 1's value in every row
+        wiremockUtils.stubUserGroupsWithProsecutingAuthority(PROSECUTOR_SHORT_NAME);
+        wiremockUtils.stubReferenceDataProsecutorByOuCode(PROSECUTOR_SHORT_NAME);
+
+        final HttpResponse response = sendComplaintsFileUploadRequest(getFileFrom(COMPLAINTS_CSV_INCONSISTENT_SUBMISSION_LEVEL_COLUMNS), randomUUID().toString());
+
+        assertThat(response.getStatusLine().getStatusCode(), is(ACCEPTED.getStatusCode()));
+        final UUID submissionId = extractSubmissionId(response);
+        pollForSubmissionWithAdditionalInfo(submissionId, SubmissionStatus.FAILED);
+
+        assertThat(errorReportFor(submissionId), is(readExpectedCsv("payload/error-reports/complaints-inconsistent-submission-level-columns.csv")));
     }
 
     @Test

@@ -1,0 +1,5 @@
+Reference,Error Type,Error Code,Field,Value
+SCIV22222,Case,INCONSISTENT_VALUE,hearingDetails.timeOfHearing,11:00:00
+SCIV33333,Case,INCONSISTENT_VALUE,prosecutingAuthority,GBBBB02
+SCIV33333,Case,INCONSISTENT_VALUE,hearingDetails.courtHearingLocation,C01LY01
+SCIV33333,Case,INCONSISTENT_VALUE,hearingDetails.dateOfHearing,2022-03-11

@@ -10,6 +10,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.DUPLICATE_CASE_URN;
+import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INCONSISTENT_VALUE;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INVALID_DATE_FORMAT;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INVALID_ROW;
 import static uk.gov.moj.cpp.staging.civil.handler.command.api.csv.ComplaintsFileValidationError.INVALID_VALUE;
@@ -574,6 +575,7 @@ class SummonsProsecutionCsvToJsonConverterTest {
 
         final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
 
+        // row 2's valid date is not compared with row 1's malformed one - fixing row 1 is what's needed
         assertThat(result.getErrors(), contains(
                 error(1, "SCIV00001", INVALID_DATE_FORMAT, SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "04/02/2022")));
         // both cases are still converted so they can be schema-validated in the same upload
@@ -605,6 +607,86 @@ class SummonsProsecutionCsvToJsonConverterTest {
                 error(2, "SCIV00002", INVALID_DATE_FORMAT, SummonsProsecutionCsvColumns.OFFENCE_LAID_DATE, "10/01/2022")));
         assertTrue(result.getSummons().isEmpty());
     }
+
+    @Test
+    void convertReportsBlankHearingColumnsAgainstEveryRowWithoutExcludingTheCases() throws IOException {
+        final ComplaintsFileConversionResult result = convert("complaints-files/submission-level-columns-blank-in-every-row.csv");
+
+        assertThat(result.getErrors(), contains(
+                error(1, "SCIV00001", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, ""),
+                error(1, "SCIV00001", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, ""),
+                error(2, "SCIV00002", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, ""),
+                error(2, "SCIV00002", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, ""),
+                error(3, "SCIV00003", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, ""),
+                error(3, "SCIV00003", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, "")));
+        assertThat(result.getConvertedRows().stream().map(ComplaintsFileConversionResult.ConvertedRow::getRowNumber).collect(toList()),
+                contains(1L, 2L, 3L));
+    }
+
+    @Test
+    void convertReportsSubmissionLevelValuesThatDifferFromRowOneAgainstTheirOwnRow() throws IOException {
+        final ComplaintsFileConversionResult result = convert("complaints-files/submission-level-columns-inconsistent.csv");
+
+        assertThat(result.getErrors(), contains(
+                error(2, "SCIV00002", INCONSISTENT_VALUE, SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, "10:00:00"),
+                error(3, "SCIV00003", INCONSISTENT_VALUE, SummonsProsecutionCsvColumns.PROSECUTING_AUTHORITY, "GBBBB02"),
+                error(3, "SCIV00003", INCONSISTENT_VALUE, SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, "C01LY01"),
+                error(3, "SCIV00003", INCONSISTENT_VALUE, SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "2022-02-05")));
+        assertEquals("Row 2: column '" + SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING
+                        + "' is '10:00:00' but row 1 has '09:05:00' - it must be the same in every row",
+                result.getErrors().get(0).getMessage());
+        // only row 1's values are sent forward
+        final Summons summons = result.getSummons().get();
+        assertThat(summons.getProsecutionCases().size(), is(3));
+        assertEquals("GAAAA01", summons.getProsecutingAuthority());
+        assertEquals("B01LY01", summons.getHearingDetails().getCourtHearingLocation());
+        assertEquals(LocalDate.parse("2022-02-04"), summons.getHearingDetails().getDateOfHearing());
+        assertEquals("09:05:00", summons.getHearingDetails().getTimeOfHearing());
+    }
+
+    @Test
+    void convertReportsMalformedHearingValuesInALaterRowOnceEach() throws IOException {
+        final ComplaintsFileConversionResult result = convert("complaints-files/submission-level-columns-invalid-in-later-row.csv");
+
+        // malformed, so not also reported as inconsistent with row 1
+        assertThat(result.getErrors(), contains(
+                error(3, "SCIV00003", INVALID_VALUE, SummonsProsecutionCsvColumns.HEARING_COURT_HEARING_LOCATION, "B01LY01X"),
+                error(3, "SCIV00003", INVALID_DATE_FORMAT, SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "04/02/2022"),
+                error(3, "SCIV00003", INVALID_VALUE, SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, "9am")));
+        assertThat(result.getConvertedRows().size(), is(3));
+    }
+
+    @Test
+    void convertReportsABlankProsecutingAuthorityOrHearingDateInALaterRow() throws IOException {
+        final ComplaintsFileConversionResult result = convert("complaints-files/submission-level-columns-blank-in-later-row.csv");
+
+        assertThat(result.getErrors(), contains(
+                error(2, "SCIV00002", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.PROSECUTING_AUTHORITY, ""),
+                error(2, "SCIV00002", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_DATE_OF_HEARING, "")));
+        assertEquals("GAAAA01", result.getProsecutingAuthority());
+    }
+
+    @Test
+    void convertComparesHearingTimesByValueNotByLeadingZeros() throws IOException {
+        final String csv = String.join(",", SummonsProsecutionCsvColumns.HEADERS) + "\n"
+                + buildCsvRow(Map.of(SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, "9:05:00")) + "\n"
+                + buildCsvRow(Map.of(SummonsProsecutionCsvColumns.CASE_URN, "SCIV00002")) + "\n";
+
+        final ComplaintsFileConversionResult result = converter.convert(new StringReader(csv));
+
+        assertTrue(result.getErrors().isEmpty());
+        assertEquals("9:05:00", result.getSummons().get().getHearingDetails().getTimeOfHearing());
+    }
+
+    @Test
+    void convertDoesNotCompareLaterRowsWithABlankRowOneValue() throws IOException {
+        final ComplaintsFileConversionResult result = convert("complaints-files/submission-level-columns-blank-in-first-row-only.csv");
+
+        assertThat(result.getErrors(), contains(
+                error(1, "SCIV00001", REQUIRED_FIELD_MISSING, SummonsProsecutionCsvColumns.HEARING_TIME_OF_HEARING, "")));
+        assertNull(result.getSummons().get().getHearingDetails().getTimeOfHearing());
+    }
+
 
     @Test
     void convertReportsInvalidNumbersAndEnumsWithoutThrowing() throws IOException {
@@ -699,6 +781,12 @@ class SummonsProsecutionCsvToJsonConverterTest {
                 hasProperty("code", is(code)),
                 hasProperty("field", is(field)),
                 hasProperty("value", is(value)));
+    }
+
+    private ComplaintsFileConversionResult convert(final String resourcePath) throws IOException {
+        try (Reader reader = resourceReader(resourcePath)) {
+            return converter.convert(reader);
+        }
     }
 
     private Defendant firstDefendantFrom(final String csv) throws IOException {
