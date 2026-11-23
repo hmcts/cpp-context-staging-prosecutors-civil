@@ -1,10 +1,36 @@
 package uk.gov.moj.cpp.staging.civil.processor;
 
+import static java.util.Collections.singletonList;
+import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
+import static uk.gov.justice.services.test.utils.core.matchers.HandlerMatcher.isHandler;
+import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
+import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAST_UTC_DATE_TIME;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
+import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.*;
+
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.Response;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -23,29 +49,6 @@ import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateGroupProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.command.api.InitiateProsecution;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicCivilProsecutionRejected;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.PublicGroupProsecutionRejected;
-
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import static java.util.Collections.singletonList;
-import static java.util.UUID.randomUUID;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
-import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
-import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
-import static uk.gov.justice.services.test.utils.core.matchers.HandlerMatcher.isHandler;
-import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
-import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.createObjectBuilder;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.PAST_UTC_DATE_TIME;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-import static uk.gov.moj.cpp.staging.civil.processor.utils.Prosecutors.*;
 
 @ExtendWith(MockitoExtension.class)
 public class ProsecutionEventProcessorTest {

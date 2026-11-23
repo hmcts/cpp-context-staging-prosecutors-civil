@@ -26,10 +26,9 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.util.UUID;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,7 +81,7 @@ public class SubmitSummonsIT {
         messageProducerClientPublic.sendMessage(PUBLIC_EVENT_PCF_CIVIL_PROSECUTION_SUBMISSION_SUCCEEDED, publicEventEnvelope);
 
         final Submission submission2 = StagingProsecutorsCivilUtils.pollForSubmission(submissionId, SubmissionStatus.SUCCESS);
-        Assert.assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
+        assertThat(submission2.getSubmissionId().toString(), Matchers.is(submissionId.toString()));
         assertThat(submission2.getCompletedAt(), Matchers.notNullValue());
     }
 
