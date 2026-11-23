@@ -158,6 +158,7 @@ public class SummonsProsecutionCsvToJsonConverter {
      * such as {@code +12022-01-01}, so the shape is checked first.
      */
     private static final Pattern ISO_DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
+    private static final String COLUMN_PREFIX = ": column '";
 
     /**
      * Copies of the {@code timeOfHearing} pattern and {@code courtHearingLocation} max length in
@@ -246,60 +247,38 @@ public class SummonsProsecutionCsvToJsonConverter {
                             + maxRowsAllowed + ")");
                 }
 
-                final Row record = new Row(csvRecord);
+                final Row row = new Row(csvRecord);
 
                 if (rowCount == 1) {
-                    if (record.isMissingColumns()) {
-                        throw new IllegalArgumentException("Row " + record.getRecordNumber() + " has "
-                                + csvRecord.size() + " columns but the complaints file template has "
-                                + SummonsProsecutionCsvColumns.HEADERS.length);
-                    }
-                    prosecutingAuthority = nullIfBlank(record.get(PROSECUTING_AUTHORITY));
-                    if (prosecutingAuthority == null) {
-                        throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": required column '"
-                                + PROSECUTING_AUTHORITY + "' is blank");
-                    }
-                    firstRow = record;
-                    // only row 1's values are sent forward; an unreadable hearing date is left blank
-                    hearingDetails = HearingDetails.hearingDetails()
-                            .withCourtHearingLocation(nullIfBlank(record.get(HEARING_COURT_HEARING_LOCATION)))
-                            .withDateOfHearing(isoDateOrNull(nullIfBlank(record.get(HEARING_DATE_OF_HEARING))))
-                            .withTimeOfHearing(nullIfBlank(record.get(HEARING_TIME_OF_HEARING)))
-                            .build();
+                    prosecutingAuthority = requireProsecutingAuthority(row);
+                    firstRow = row;
+                    hearingDetails = submissionHearingDetails(row);
                 }
 
-                if (record.isMissingColumns()) {
-                    record.error(ComplaintsFileValidationError.INVALID_ROW, null, "Row " + record.getRecordNumber()
-                            + " has " + csvRecord.size() + " columns but the complaints file template has "
-                            + SummonsProsecutionCsvColumns.HEADERS.length);
-                    errors.addAll(record.errors);
+                if (row.isMissingColumns()) {
+                    row.error(ComplaintsFileValidationError.INVALID_ROW, null, missingColumnsMessage(row));
+                    errors.addAll(row.errors);
                     continue;
                 }
 
                 // these columns belong to the whole file, not to the row's case - report their
                 // problems against the row, but don't let them exclude its case from conversion
-                final Set<String> invalidColumns = validateSubmissionLevelColumns(record, firstRow, firstRowInvalidColumns);
-                if (record == firstRow) {
+                final Set<String> invalidColumns = validateSubmissionLevelColumns(row, firstRow, firstRowInvalidColumns);
+                if (row == firstRow) {
                     firstRowInvalidColumns = invalidColumns;
                 }
-                errors.addAll(record.errors);
-                record.errors.clear();
+                errors.addAll(row.errors);
+                row.errors.clear();
 
-                final SummonsProsecutionCase prosecutionCase = buildProsecutionCase(record);
+                final SummonsProsecutionCase prosecutionCase = buildProsecutionCase(row);
+                checkUniqueCaseUrn(row, seenCaseUrns);
 
-                final String caseUrn = nullIfBlank(record.get(CASE_URN));
-                if (caseUrn != null && !seenCaseUrns.add(caseUrn)) {
-                    record.error(ComplaintsFileValidationError.DUPLICATE_CASE_URN, CASE_URN,
-                            "Row " + record.getRecordNumber() + ": duplicate case URN '" + caseUrn
-                                    + "' - each row must have a unique " + CASE_URN);
-                }
-
-                if (record.hasErrors()) {
-                    errors.addAll(record.errors);
+                if (row.hasErrors()) {
+                    errors.addAll(row.errors);
                 } else {
                     prosecutionCases.add(prosecutionCase);
                     convertedRows.add(new ComplaintsFileConversionResult.ConvertedRow(
-                            record.getRecordNumber(), record.caseReference, record.defendantReference));
+                            row.getRecordNumber(), row.caseReference, row.defendantReference));
                 }
             }
 
@@ -320,12 +299,53 @@ public class SummonsProsecutionCsvToJsonConverter {
     }
 
     /**
+     * Checks the first data row can be processed at all - it matches the template's columns and has
+     * a {@code prosecutingAuthority} - and returns its prosecuting authority.
+     */
+    private static String requireProsecutingAuthority(final Row firstRow) {
+        if (firstRow.isMissingColumns()) {
+            throw new IllegalArgumentException(missingColumnsMessage(firstRow));
+        }
+        final String prosecutingAuthority = nullIfBlank(firstRow.get(PROSECUTING_AUTHORITY));
+        if (prosecutingAuthority == null) {
+            throw new IllegalArgumentException("Row " + firstRow.getRecordNumber() + ": required column '"
+                    + PROSECUTING_AUTHORITY + "' is blank");
+        }
+        return prosecutingAuthority;
+    }
+
+    /**
+     * Only row 1's hearing details are sent forward; an unreadable hearing date is left blank.
+     */
+    private static HearingDetails submissionHearingDetails(final Row firstRow) {
+        return HearingDetails.hearingDetails()
+                .withCourtHearingLocation(nullIfBlank(firstRow.get(HEARING_COURT_HEARING_LOCATION)))
+                .withDateOfHearing(isoDateOrNull(nullIfBlank(firstRow.get(HEARING_DATE_OF_HEARING))))
+                .withTimeOfHearing(nullIfBlank(firstRow.get(HEARING_TIME_OF_HEARING)))
+                .build();
+    }
+
+    private static String missingColumnsMessage(final Row row) {
+        return "Row " + row.getRecordNumber() + " has " + row.size()
+                + " columns but the complaints file template has " + SummonsProsecutionCsvColumns.HEADERS.length;
+    }
+
+    private static void checkUniqueCaseUrn(final Row row, final Set<String> seenCaseUrns) {
+        final String caseUrn = nullIfBlank(row.get(CASE_URN));
+        if (caseUrn != null && !seenCaseUrns.add(caseUrn)) {
+            row.error(ComplaintsFileValidationError.DUPLICATE_CASE_URN, CASE_URN,
+                    "Row " + row.getRecordNumber() + ": duplicate case URN '" + caseUrn
+                            + "' - each row must have a unique " + CASE_URN);
+        }
+    }
+
+    /**
      * Each row is exactly one case with one defendant and one offence.
      */
-    private static SummonsProsecutionCase buildProsecutionCase(final Row record) {
-        final SummonsProsecutionCase.Builder caseBuilder = newCaseBuilder(record);
-        final DefendantAccumulator defendantAccumulator = newDefendantAccumulator(record);
-        defendantAccumulator.offences.add(buildOffence(record));
+    private static SummonsProsecutionCase buildProsecutionCase(final Row row) {
+        final SummonsProsecutionCase.Builder caseBuilder = newCaseBuilder(row);
+        final DefendantAccumulator defendantAccumulator = newDefendantAccumulator(row);
+        defendantAccumulator.offences.add(buildOffence(row));
 
         final Defendant defendant = Defendant.defendant()
                 .withDefendantDetails(defendantAccumulator.defendantDetails)
@@ -339,102 +359,102 @@ public class SummonsProsecutionCsvToJsonConverter {
         return caseBuilder.withDefendants(defendants).build();
     }
 
-    private static SummonsProsecutionCase.Builder newCaseBuilder(final Row record) {
+    private static SummonsProsecutionCase.Builder newCaseBuilder(final Row row) {
         return SummonsProsecutionCase.summonsProsecutionCase()
-                .withUrn(requireNonBlank(record, CASE_URN))
-                .withInformant(nullIfBlank(record.get(CASE_INFORMANT)))
-                .withSummonsCode(requireNonBlank(record, CASE_SUMMONS_CODE))
-                .withCaseMarker(nullIfBlank(record.get(CASE_CASE_MARKER)))
-                .withRelatedReferenceNumber(nullIfBlank(record.get(CASE_RELATED_REFERENCE_NUMBER)))
-                .withPaymentReference(nullIfBlank(record.get(CASE_PAYMENT_REFERENCE)));
+                .withUrn(requireNonBlank(row, CASE_URN))
+                .withInformant(nullIfBlank(row.get(CASE_INFORMANT)))
+                .withSummonsCode(requireNonBlank(row, CASE_SUMMONS_CODE))
+                .withCaseMarker(nullIfBlank(row.get(CASE_CASE_MARKER)))
+                .withRelatedReferenceNumber(nullIfBlank(row.get(CASE_RELATED_REFERENCE_NUMBER)))
+                .withPaymentReference(nullIfBlank(row.get(CASE_PAYMENT_REFERENCE)));
     }
 
-    private static DefendantAccumulator newDefendantAccumulator(final Row record) {
+    private static DefendantAccumulator newDefendantAccumulator(final Row row) {
         final DefendantAccumulator accumulator = new DefendantAccumulator();
-        accumulator.defendantDetails = buildDefendantDetails(record);
+        accumulator.defendantDetails = buildDefendantDetails(row);
 
-        final String defendantType = requireNonBlank(record, DEFENDANT_TYPE);
+        final String defendantType = requireNonBlank(row, DEFENDANT_TYPE);
         if (defendantType == null) {
             return accumulator;
         }
         switch (defendantType) {
             case DEFENDANT_TYPE_INDIVIDUAL:
-                accumulator.individual = buildIndividual(record);
+                accumulator.individual = buildIndividual(row);
                 break;
             case DEFENDANT_TYPE_ORGANISATION:
-                accumulator.organisation = buildOrganisation(record);
+                accumulator.organisation = buildOrganisation(row);
                 break;
             default:
-                record.error(ComplaintsFileValidationError.INVALID_VALUE, DEFENDANT_TYPE,
-                        "Row " + record.getRecordNumber() + ": column '" + DEFENDANT_TYPE + "' must be '"
+                row.error(ComplaintsFileValidationError.INVALID_VALUE, DEFENDANT_TYPE,
+                        "Row " + row.getRecordNumber() + COLUMN_PREFIX + DEFENDANT_TYPE + "' must be '"
                                 + DEFENDANT_TYPE_INDIVIDUAL + "' or '" + DEFENDANT_TYPE_ORGANISATION
                                 + "' but was '" + defendantType + "'");
         }
         return accumulator;
     }
 
-    private static DefendantDetails buildDefendantDetails(final Row record) {
+    private static DefendantDetails buildDefendantDetails(final Row row) {
         return DefendantDetails.defendantDetails()
-                .withProsecutorDefendantId(requireNonBlank(record, DEFENDANT_PROSECUTOR_DEFENDANT_ID))
-                .withAsn(nullIfBlank(record.get(DEFENDANT_ASN)))
-                .withPncIdentifier(nullIfBlank(record.get(DEFENDANT_PNC_IDENTIFIER)))
-                .withCroNumber(nullIfBlank(record.get(DEFENDANT_CRO_NUMBER)))
-                .withDocumentationLanguage(requireLanguage(record, DEFENDANT_DOCUMENTATION_LANGUAGE))
-                .withHearingLanguage(requireLanguage(record, DEFENDANT_HEARING_LANGUAGE))
-                .withProsecutorCosts(nullIfBlank(record.get(DEFENDANT_PROSECUTOR_COSTS)))
-                .withAddress(buildAddress(record, DEFENDANT_ADDRESS_1, DEFENDANT_ADDRESS_2, DEFENDANT_ADDRESS_3,
+                .withProsecutorDefendantId(requireNonBlank(row, DEFENDANT_PROSECUTOR_DEFENDANT_ID))
+                .withAsn(nullIfBlank(row.get(DEFENDANT_ASN)))
+                .withPncIdentifier(nullIfBlank(row.get(DEFENDANT_PNC_IDENTIFIER)))
+                .withCroNumber(nullIfBlank(row.get(DEFENDANT_CRO_NUMBER)))
+                .withDocumentationLanguage(requireLanguage(row, DEFENDANT_DOCUMENTATION_LANGUAGE))
+                .withHearingLanguage(requireLanguage(row, DEFENDANT_HEARING_LANGUAGE))
+                .withProsecutorCosts(nullIfBlank(row.get(DEFENDANT_PROSECUTOR_COSTS)))
+                .withAddress(buildAddress(row, DEFENDANT_ADDRESS_1, DEFENDANT_ADDRESS_2, DEFENDANT_ADDRESS_3,
                         DEFENDANT_ADDRESS_4, DEFENDANT_ADDRESS_5, DEFENDANT_ADDRESS_POSTCODE))
                 .build();
     }
 
-    private static Address buildAddress(final Row record, final String address1Column, final String address2Column,
+    private static Address buildAddress(final Row row, final String address1Column, final String address2Column,
                                          final String address3Column, final String address4Column,
                                          final String address5Column, final String postcodeColumn) {
         return Address.address()
-                .withAddress1(requireNonBlank(record, address1Column))
-                .withAddress2(nullIfBlank(record.get(address2Column)))
-                .withAddress3(nullIfBlank(record.get(address3Column)))
-                .withAddress4(nullIfBlank(record.get(address4Column)))
-                .withAddress5(nullIfBlank(record.get(address5Column)))
-                .withPostcode(nullIfBlank(record.get(postcodeColumn)))
+                .withAddress1(requireNonBlank(row, address1Column))
+                .withAddress2(nullIfBlank(row.get(address2Column)))
+                .withAddress3(nullIfBlank(row.get(address3Column)))
+                .withAddress4(nullIfBlank(row.get(address4Column)))
+                .withAddress5(nullIfBlank(row.get(address5Column)))
+                .withPostcode(nullIfBlank(row.get(postcodeColumn)))
                 .build();
     }
 
-    private static Individual buildIndividual(final Row record) {
+    private static Individual buildIndividual(final Row row) {
         return Individual.individual()
                 .withNameDetails(NameDetails.nameDetails()
-                        .withTitle(nullIfBlank(record.get(INDIVIDUAL_NAME_TITLE)))
-                        .withForename(requireNonBlank(record, INDIVIDUAL_NAME_FORENAME))
-                        .withForename2(nullIfBlank(record.get(INDIVIDUAL_NAME_FORENAME_2)))
-                        .withForename3(nullIfBlank(record.get(INDIVIDUAL_NAME_FORENAME_3)))
-                        .withSurname(requireNonBlank(record, INDIVIDUAL_NAME_SURNAME))
+                        .withTitle(nullIfBlank(row.get(INDIVIDUAL_NAME_TITLE)))
+                        .withForename(requireNonBlank(row, INDIVIDUAL_NAME_FORENAME))
+                        .withForename2(nullIfBlank(row.get(INDIVIDUAL_NAME_FORENAME_2)))
+                        .withForename3(nullIfBlank(row.get(INDIVIDUAL_NAME_FORENAME_3)))
+                        .withSurname(requireNonBlank(row, INDIVIDUAL_NAME_SURNAME))
                         .build())
-                .withContactDetails(buildContactDetails(record, INDIVIDUAL_CONTACT_WORK_PHONE, INDIVIDUAL_CONTACT_HOME_PHONE,
+                .withContactDetails(buildContactDetails(row, INDIVIDUAL_CONTACT_WORK_PHONE, INDIVIDUAL_CONTACT_HOME_PHONE,
                         INDIVIDUAL_CONTACT_MOBILE_PHONE, INDIVIDUAL_CONTACT_PRIMARY_EMAIL, INDIVIDUAL_CONTACT_SECONDARY_EMAIL))
-                .withNationality(nullIfBlank(record.get(INDIVIDUAL_NATIONALITY)))
-                .withAdditionalNationality(nullIfBlank(record.get(INDIVIDUAL_ADDITIONAL_NATIONALITY)))
-                .withDateOfBirth(parseDate(record, INDIVIDUAL_DATE_OF_BIRTH))
-                .withGender(requireGender(record, INDIVIDUAL_GENDER))
-                .withOccupation(nullIfBlank(record.get(INDIVIDUAL_OCCUPATION)))
-                .withObservedEthnicity(parseBigDecimal(record, INDIVIDUAL_OBSERVED_ETHNICITY))
-                .withEthnicity(nullIfBlank(record.get(INDIVIDUAL_ETHNICITY)))
-                .withDriverNumber(nullIfBlank(record.get(INDIVIDUAL_DRIVER_NUMBER)))
-                .withLanguageRequirement(nullIfBlank(record.get(INDIVIDUAL_LANGUAGE_REQUIREMENT)))
-                .withSpecificRequirements(nullIfBlank(record.get(INDIVIDUAL_SPECIFIC_REQUIREMENTS)))
-                .withNationalInsuranceNumber(nullIfBlank(record.get(INDIVIDUAL_NATIONAL_INSURANCE_NUMBER)))
-                .withCustodyStatus(nullIfBlank(record.get(INDIVIDUAL_CUSTODY_STATUS)))
-                .withParentGuardian(buildParentGuardian(record))
+                .withNationality(nullIfBlank(row.get(INDIVIDUAL_NATIONALITY)))
+                .withAdditionalNationality(nullIfBlank(row.get(INDIVIDUAL_ADDITIONAL_NATIONALITY)))
+                .withDateOfBirth(parseDate(row, INDIVIDUAL_DATE_OF_BIRTH))
+                .withGender(requireGender(row, INDIVIDUAL_GENDER))
+                .withOccupation(nullIfBlank(row.get(INDIVIDUAL_OCCUPATION)))
+                .withObservedEthnicity(parseBigDecimal(row, INDIVIDUAL_OBSERVED_ETHNICITY))
+                .withEthnicity(nullIfBlank(row.get(INDIVIDUAL_ETHNICITY)))
+                .withDriverNumber(nullIfBlank(row.get(INDIVIDUAL_DRIVER_NUMBER)))
+                .withLanguageRequirement(nullIfBlank(row.get(INDIVIDUAL_LANGUAGE_REQUIREMENT)))
+                .withSpecificRequirements(nullIfBlank(row.get(INDIVIDUAL_SPECIFIC_REQUIREMENTS)))
+                .withNationalInsuranceNumber(nullIfBlank(row.get(INDIVIDUAL_NATIONAL_INSURANCE_NUMBER)))
+                .withCustodyStatus(nullIfBlank(row.get(INDIVIDUAL_CUSTODY_STATUS)))
+                .withParentGuardian(buildParentGuardian(row))
                 .build();
     }
 
-    private static ParentGuardian buildParentGuardian(final Row record) {
-        final String parentGuardianType = nullIfBlank(record.get(PARENT_GUARDIAN_TYPE));
+    private static ParentGuardian buildParentGuardian(final Row row) {
+        final String parentGuardianType = nullIfBlank(row.get(PARENT_GUARDIAN_TYPE));
         if (parentGuardianType == null) {
             return null;
         }
 
         final ParentGuardian.Builder builder = ParentGuardian.parentGuardian()
-                .withAddress(buildAddress(record, PARENT_GUARDIAN_ADDRESS_1, PARENT_GUARDIAN_ADDRESS_2,
+                .withAddress(buildAddress(row, PARENT_GUARDIAN_ADDRESS_1, PARENT_GUARDIAN_ADDRESS_2,
                         PARENT_GUARDIAN_ADDRESS_3, PARENT_GUARDIAN_ADDRESS_4, PARENT_GUARDIAN_ADDRESS_5,
                         PARENT_GUARDIAN_ADDRESS_POSTCODE));
 
@@ -442,44 +462,44 @@ public class SummonsProsecutionCsvToJsonConverter {
             case DEFENDANT_TYPE_INDIVIDUAL:
                 builder.withIndividual(ParentGuardianIndividual.parentGuardianIndividual()
                         .withNameDetails(ParentGuardianNameDetails.parentGuardianNameDetails()
-                                .withTitle(nullIfBlank(record.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_TITLE)))
-                                .withForename(nullIfBlank(record.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME)))
-                                .withForename2(nullIfBlank(record.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_2)))
-                                .withForename3(nullIfBlank(record.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_3)))
-                                .withSurname(requireNonBlank(record, PARENT_GUARDIAN_INDIVIDUAL_NAME_SURNAME))
+                                .withTitle(nullIfBlank(row.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_TITLE)))
+                                .withForename(nullIfBlank(row.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME)))
+                                .withForename2(nullIfBlank(row.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_2)))
+                                .withForename3(nullIfBlank(row.get(PARENT_GUARDIAN_INDIVIDUAL_NAME_FORENAME_3)))
+                                .withSurname(requireNonBlank(row, PARENT_GUARDIAN_INDIVIDUAL_NAME_SURNAME))
                                 .build())
-                        .withContactDetails(buildContactDetails(record, PARENT_GUARDIAN_INDIVIDUAL_CONTACT_WORK_PHONE,
+                        .withContactDetails(buildContactDetails(row, PARENT_GUARDIAN_INDIVIDUAL_CONTACT_WORK_PHONE,
                                 PARENT_GUARDIAN_INDIVIDUAL_CONTACT_HOME_PHONE, PARENT_GUARDIAN_INDIVIDUAL_CONTACT_MOBILE_PHONE,
                                 PARENT_GUARDIAN_INDIVIDUAL_CONTACT_PRIMARY_EMAIL, PARENT_GUARDIAN_INDIVIDUAL_CONTACT_SECONDARY_EMAIL))
-                        .withDateOfBirth(parseDate(record, PARENT_GUARDIAN_INDIVIDUAL_DATE_OF_BIRTH))
-                        .withGender(requireGender(record, PARENT_GUARDIAN_INDIVIDUAL_GENDER))
-                        .withObservedEthnicity(parseBigDecimal(record, PARENT_GUARDIAN_INDIVIDUAL_OBSERVED_ETHNICITY))
-                        .withSelfDefinedEthnicity(nullIfBlank(record.get(PARENT_GUARDIAN_INDIVIDUAL_SELF_DEFINED_ETHNICITY)))
+                        .withDateOfBirth(parseDate(row, PARENT_GUARDIAN_INDIVIDUAL_DATE_OF_BIRTH))
+                        .withGender(requireGender(row, PARENT_GUARDIAN_INDIVIDUAL_GENDER))
+                        .withObservedEthnicity(parseBigDecimal(row, PARENT_GUARDIAN_INDIVIDUAL_OBSERVED_ETHNICITY))
+                        .withSelfDefinedEthnicity(nullIfBlank(row.get(PARENT_GUARDIAN_INDIVIDUAL_SELF_DEFINED_ETHNICITY)))
                         .build());
                 break;
             case DEFENDANT_TYPE_ORGANISATION:
                 builder.withOrganisation(ParentGuardianOrganisation.parentGuardianOrganisation()
-                        .withOrganisationName(requireNonBlank(record, PARENT_GUARDIAN_ORGANISATION_NAME))
-                        .withCompanyTelephoneNumber(nullIfBlank(record.get(PARENT_GUARDIAN_ORGANISATION_COMPANY_TELEPHONE_NUMBER)))
+                        .withOrganisationName(requireNonBlank(row, PARENT_GUARDIAN_ORGANISATION_NAME))
+                        .withCompanyTelephoneNumber(nullIfBlank(row.get(PARENT_GUARDIAN_ORGANISATION_COMPANY_TELEPHONE_NUMBER)))
                         .build());
                 break;
             default:
-                record.error(ComplaintsFileValidationError.INVALID_VALUE, PARENT_GUARDIAN_TYPE,
-                        "Row " + record.getRecordNumber() + ": column '" + PARENT_GUARDIAN_TYPE + "' must be '"
+                row.error(ComplaintsFileValidationError.INVALID_VALUE, PARENT_GUARDIAN_TYPE,
+                        "Row " + row.getRecordNumber() + COLUMN_PREFIX + PARENT_GUARDIAN_TYPE + "' must be '"
                                 + DEFENDANT_TYPE_INDIVIDUAL + "' or '" + DEFENDANT_TYPE_ORGANISATION
                                 + "' but was '" + parentGuardianType + "'");
         }
         return builder.build();
     }
 
-    private static ContactDetails buildContactDetails(final Row record, final String workPhoneColumn,
+    private static ContactDetails buildContactDetails(final Row row, final String workPhoneColumn,
                                                         final String homePhoneColumn, final String mobilePhoneColumn,
                                                         final String primaryEmailColumn, final String secondaryEmailColumn) {
-        final String workPhone = nullIfBlank(record.get(workPhoneColumn));
-        final String homePhone = nullIfBlank(record.get(homePhoneColumn));
-        final String mobilePhone = nullIfBlank(record.get(mobilePhoneColumn));
-        final String primaryEmail = nullIfBlank(record.get(primaryEmailColumn));
-        final String secondaryEmail = nullIfBlank(record.get(secondaryEmailColumn));
+        final String workPhone = nullIfBlank(row.get(workPhoneColumn));
+        final String homePhone = nullIfBlank(row.get(homePhoneColumn));
+        final String mobilePhone = nullIfBlank(row.get(mobilePhoneColumn));
+        final String primaryEmail = nullIfBlank(row.get(primaryEmailColumn));
+        final String secondaryEmail = nullIfBlank(row.get(secondaryEmailColumn));
 
         final boolean isPhoneValuesNull = workPhone == null && homePhone == null && mobilePhone == null;
         final boolean isEmailValuesNull = primaryEmail == null && secondaryEmail == null;
@@ -497,29 +517,29 @@ public class SummonsProsecutionCsvToJsonConverter {
                 .build();
     }
 
-    private static Organisation buildOrganisation(final Row record) {
+    private static Organisation buildOrganisation(final Row row) {
         return Organisation.organisation()
-                .withOrganisationName(requireNonBlank(record, ORGANISATION_NAME))
-                .withCompanyTelephoneNumber(nullIfBlank(record.get(ORGANISATION_COMPANY_TELEPHONE_NUMBER)))
+                .withOrganisationName(requireNonBlank(row, ORGANISATION_NAME))
+                .withCompanyTelephoneNumber(nullIfBlank(row.get(ORGANISATION_COMPANY_TELEPHONE_NUMBER)))
                 .build();
     }
 
-    private static Offence buildOffence(final Row record) {
+    private static Offence buildOffence(final Row row) {
         return Offence.offence()
                 .withOffenceDetails(OffenceDetails.offenceDetails()
-                        .withCjsOffenceCode(requireNonBlank(record, OFFENCE_CJS_OFFENCE_CODE))
-                        .withOffenceSequenceNo(requireInteger(record, OFFENCE_SEQUENCE_NO))
-                        .withOffenceCommittedDate(parseDate(record, OFFENCE_COMMITTED_DATE))
-                        .withLaidDate(requireDate(record, OFFENCE_LAID_DATE))
-                        .withOffenceCommittedEndDate(parseDate(record, OFFENCE_COMMITTED_END_DATE))
-                        .withOffenceLocation(nullIfBlank(record.get(OFFENCE_LOCATION)))
-                        .withOffenceWording(requireNonBlank(record, OFFENCE_WORDING))
-                        .withOffenceWordingWelsh(nullIfBlank(record.get(OFFENCE_WORDING_WELSH)))
-                        .withProsecutorCompensation(nullIfBlank(record.get(OFFENCE_PROSECUTOR_COMPENSATION)))
+                        .withCjsOffenceCode(requireNonBlank(row, OFFENCE_CJS_OFFENCE_CODE))
+                        .withOffenceSequenceNo(requireInteger(row, OFFENCE_SEQUENCE_NO))
+                        .withOffenceCommittedDate(parseDate(row, OFFENCE_COMMITTED_DATE))
+                        .withLaidDate(requireDate(row, OFFENCE_LAID_DATE))
+                        .withOffenceCommittedEndDate(parseDate(row, OFFENCE_COMMITTED_END_DATE))
+                        .withOffenceLocation(nullIfBlank(row.get(OFFENCE_LOCATION)))
+                        .withOffenceWording(requireNonBlank(row, OFFENCE_WORDING))
+                        .withOffenceWordingWelsh(nullIfBlank(row.get(OFFENCE_WORDING_WELSH)))
+                        .withProsecutorCompensation(nullIfBlank(row.get(OFFENCE_PROSECUTOR_COMPENSATION)))
                         .build())
-                .withArrestDate(parseDate(record, OFFENCE_ARREST_DATE))
-                .withStatementOfFacts(nullIfBlank(record.get(OFFENCE_STATEMENT_OF_FACTS)))
-                .withStatementOfFactsWelsh(nullIfBlank(record.get(OFFENCE_STATEMENT_OF_FACTS_WELSH)))
+                .withArrestDate(parseDate(row, OFFENCE_ARREST_DATE))
+                .withStatementOfFacts(nullIfBlank(row.get(OFFENCE_STATEMENT_OF_FACTS)))
+                .withStatementOfFactsWelsh(nullIfBlank(row.get(OFFENCE_STATEMENT_OF_FACTS_WELSH)))
                 .build();
     }
 
@@ -530,30 +550,30 @@ public class SummonsProsecutionCsvToJsonConverter {
     // The helpers below never throw for a bad value: they record the problem against the row and
     // return null, so every problem in a row is collected in a single pass.
 
-    private static String requireNonBlank(final Row record, final String column) {
-        final String value = nullIfBlank(record.get(column));
+    private static String requireNonBlank(final Row row, final String column) {
+        final String value = nullIfBlank(row.get(column));
         if (value == null) {
-            record.error(ComplaintsFileValidationError.REQUIRED_FIELD_MISSING, column,
-                    "Row " + record.getRecordNumber() + ": required column '" + column + "' is blank");
+            row.error(ComplaintsFileValidationError.REQUIRED_FIELD_MISSING, column,
+                    "Row " + row.getRecordNumber() + ": required column '" + column + "' is blank");
         }
         return value;
     }
 
-    private static LocalDate parseDate(final Row record, final String column) {
-        final String value = nullIfBlank(record.get(column));
-        return value == null ? null : toIsoDate(record, column, value);
+    private static LocalDate parseDate(final Row row, final String column) {
+        final String value = nullIfBlank(row.get(column));
+        return value == null ? null : toIsoDate(row, column, value);
     }
 
-    private static LocalDate requireDate(final Row record, final String column) {
-        final String value = requireNonBlank(record, column);
-        return value == null ? null : toIsoDate(record, column, value);
+    private static LocalDate requireDate(final Row row, final String column) {
+        final String value = requireNonBlank(row, column);
+        return value == null ? null : toIsoDate(row, column, value);
     }
 
-    private static LocalDate toIsoDate(final Row record, final String column, final String value) {
+    private static LocalDate toIsoDate(final Row row, final String column, final String value) {
         final LocalDate date = isoDateOrNull(value);
         if (date == null) {
-            record.error(ComplaintsFileValidationError.INVALID_DATE_FORMAT, column,
-                    "Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
+            row.error(ComplaintsFileValidationError.INVALID_DATE_FORMAT, column,
+                    "Row " + row.getRecordNumber() + ": '" + column + "' has invalid date '"
                             + value + "' - expected ISO date format YYYY-MM-DD");
         }
         return date;
@@ -585,36 +605,36 @@ public class SummonsProsecutionCsvToJsonConverter {
      *
      * @return the columns of this row whose value is blank or malformed
      */
-    private static Set<String> validateSubmissionLevelColumns(final Row record, final Row firstRow,
+    private static Set<String> validateSubmissionLevelColumns(final Row row, final Row firstRow,
                                                               final Set<String> firstRowInvalidColumns) {
-        final boolean isFirstRow = record == firstRow;
+        final boolean isFirstRow = row == firstRow;
         final Set<String> invalidColumns = new HashSet<>();
 
-        if (!isFirstRow && requireNonBlank(record, PROSECUTING_AUTHORITY) == null) {
+        if (!isFirstRow && requireNonBlank(row, PROSECUTING_AUTHORITY) == null) {
             invalidColumns.add(PROSECUTING_AUTHORITY);
         }
 
-        final String courtHearingLocation = requireNonBlank(record, HEARING_COURT_HEARING_LOCATION);
+        final String courtHearingLocation = requireNonBlank(row, HEARING_COURT_HEARING_LOCATION);
         if (courtHearingLocation == null) {
             invalidColumns.add(HEARING_COURT_HEARING_LOCATION);
         } else if (courtHearingLocation.length() > COURT_HEARING_LOCATION_MAX_LENGTH) {
-            record.error(ComplaintsFileValidationError.INVALID_VALUE, HEARING_COURT_HEARING_LOCATION,
-                    "Row " + record.getRecordNumber() + ": column '" + HEARING_COURT_HEARING_LOCATION
+            row.error(ComplaintsFileValidationError.INVALID_VALUE, HEARING_COURT_HEARING_LOCATION,
+                    "Row " + row.getRecordNumber() + COLUMN_PREFIX + HEARING_COURT_HEARING_LOCATION
                             + "' must be at most " + COURT_HEARING_LOCATION_MAX_LENGTH + " characters but was '"
                             + courtHearingLocation + "'");
             invalidColumns.add(HEARING_COURT_HEARING_LOCATION);
         }
 
-        if (requireDate(record, HEARING_DATE_OF_HEARING) == null) {
+        if (requireDate(row, HEARING_DATE_OF_HEARING) == null) {
             invalidColumns.add(HEARING_DATE_OF_HEARING);
         }
 
-        final String timeOfHearing = requireNonBlank(record, HEARING_TIME_OF_HEARING);
+        final String timeOfHearing = requireNonBlank(row, HEARING_TIME_OF_HEARING);
         if (timeOfHearing == null) {
             invalidColumns.add(HEARING_TIME_OF_HEARING);
         } else if (!TIME_OF_HEARING_PATTERN.matcher(timeOfHearing).matches()) {
-            record.error(ComplaintsFileValidationError.INVALID_VALUE, HEARING_TIME_OF_HEARING,
-                    "Row " + record.getRecordNumber() + ": column '" + HEARING_TIME_OF_HEARING
+            row.error(ComplaintsFileValidationError.INVALID_VALUE, HEARING_TIME_OF_HEARING,
+                    "Row " + row.getRecordNumber() + COLUMN_PREFIX + HEARING_TIME_OF_HEARING
                             + "' has invalid time '" + timeOfHearing + "' - expected HH:MM:SS");
             invalidColumns.add(HEARING_TIME_OF_HEARING);
         }
@@ -627,10 +647,10 @@ public class SummonsProsecutionCsvToJsonConverter {
                 continue;
             }
             final String firstRowValue = firstRow.get(column);
-            final String value = record.get(column);
+            final String value = row.get(column);
             if (!sameValue(column, firstRowValue, value)) {
-                record.error(ComplaintsFileValidationError.INCONSISTENT_VALUE, column,
-                        "Row " + record.getRecordNumber() + ": column '" + column + "' is '" + value
+                row.error(ComplaintsFileValidationError.INCONSISTENT_VALUE, column,
+                        "Row " + row.getRecordNumber() + COLUMN_PREFIX + column + "' is '" + value
                                 + "' but row " + firstRow.getRecordNumber() + " has '" + firstRowValue
                                 + "' - it must be the same in every row");
             }
@@ -659,38 +679,38 @@ public class SummonsProsecutionCsvToJsonConverter {
                 Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
     }
 
-    private static Integer requireInteger(final Row record, final String column) {
-        final String value = requireNonBlank(record, column);
+    private static Integer requireInteger(final Row row, final String column) {
+        final String value = requireNonBlank(row, column);
         if (value == null) {
             return null;
         }
         try {
             return Integer.valueOf(value);
         } catch (NumberFormatException e) {
-            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
-                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid whole number value '"
+            row.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + row.getRecordNumber() + COLUMN_PREFIX + column + "' has invalid whole number value '"
                             + value + "'");
             return null;
         }
     }
 
-    private static BigDecimal parseBigDecimal(final Row record, final String column) {
-        final String value = nullIfBlank(record.get(column));
+    private static BigDecimal parseBigDecimal(final Row row, final String column) {
+        final String value = nullIfBlank(row.get(column));
         if (value == null) {
             return null;
         }
         try {
             return new BigDecimal(value);
         } catch (NumberFormatException e) {
-            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
-                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid numeric value '"
+            row.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + row.getRecordNumber() + COLUMN_PREFIX + column + "' has invalid numeric value '"
                             + value + "'");
             return null;
         }
     }
 
-    private static Gender requireGender(final Row record, final String column) {
-        final String value = requireNonBlank(record, column);
+    private static Gender requireGender(final Row row, final String column) {
+        final String value = requireNonBlank(row, column);
         if (value == null) {
             return null;
         }
@@ -701,22 +721,22 @@ public class SummonsProsecutionCsvToJsonConverter {
             gender = Optional.empty();
         }
         if (gender.isEmpty()) {
-            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
-                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid gender value '"
+            row.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + row.getRecordNumber() + COLUMN_PREFIX + column + "' has invalid gender value '"
                             + value + "'");
         }
         return gender.orElse(null);
     }
 
-    private static Language requireLanguage(final Row record, final String column) {
-        final String value = requireNonBlank(record, column);
+    private static Language requireLanguage(final Row row, final String column) {
+        final String value = requireNonBlank(row, column);
         if (value == null) {
             return null;
         }
         final Optional<Language> language = Language.valueFor(value);
         if (language.isEmpty()) {
-            record.error(ComplaintsFileValidationError.INVALID_VALUE, column,
-                    "Row " + record.getRecordNumber() + ": column '" + column + "' has invalid language value '"
+            row.error(ComplaintsFileValidationError.INVALID_VALUE, column,
+                    "Row " + row.getRecordNumber() + COLUMN_PREFIX + column + "' has invalid language value '"
                             + value + "'");
         }
         return language.orElse(null);
@@ -749,8 +769,12 @@ public class SummonsProsecutionCsvToJsonConverter {
             return csvRecord.getRecordNumber();
         }
 
+        private int size() {
+            return csvRecord.size();
+        }
+
         private boolean isMissingColumns() {
-            return csvRecord.size() < SummonsProsecutionCsvColumns.HEADERS.length;
+            return size() < SummonsProsecutionCsvColumns.HEADERS.length;
         }
 
         private void error(final String code, final String column, final String message) {
