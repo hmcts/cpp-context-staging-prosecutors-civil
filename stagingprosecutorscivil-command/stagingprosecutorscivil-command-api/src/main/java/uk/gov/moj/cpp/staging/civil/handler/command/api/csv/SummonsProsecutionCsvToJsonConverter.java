@@ -99,6 +99,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
@@ -133,7 +134,9 @@ import uk.gov.moj.cpp.staging.prosecutors.json.schemas.SummonsProsecutionCase;
  * CSV produced by {@code summons-prosecution-template.csv}.
  * <p>
  * The whole CSV file is treated as a single submission: {@code prosecutingAuthority} and
- * {@code hearingDetails.*} are read once, from the first data row. Each row represents exactly
+ * {@code hearingDetails.*} are read once, from the first data row. They must still be present,
+ * well-formed and hold row 1's value in every row; a row that breaks this is reported, but only row
+ * 1's values are sent forward. Each row represents exactly
  * one {@link SummonsProsecutionCase} for a single {@link Defendant} with a single {@link Offence}
  * - there is no multi-defendant-per-case flow, so {@code case.urn} must be unique across the rows
  * of a file; a repeated URN is rejected.
@@ -155,6 +158,22 @@ public class SummonsProsecutionCsvToJsonConverter {
      * such as {@code +12022-01-01}, so the shape is checked first.
      */
     private static final Pattern ISO_DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
+
+    /**
+     * Copies of the {@code timeOfHearing} pattern and {@code courtHearingLocation} max length in
+     * {@code hearing-details.json}: the schema only sees row 1's hearing values, so every row is
+     * checked against them here. {@code SubmissionLevelColumnRulesTest} fails if they drift apart.
+     */
+    static final String TIME_OF_HEARING_REGEX = "^(2[0-3]|[01]?[0-9]):([0-5]?[0-9]):([0-5]?[0-9])$";
+    static final int COURT_HEARING_LOCATION_MAX_LENGTH = 7;
+    private static final Pattern TIME_OF_HEARING_PATTERN = Pattern.compile(TIME_OF_HEARING_REGEX);
+
+    /**
+     * Columns that describe the whole file rather than the row's case: they are read from row 1 and
+     * must hold the same value in every row.
+     */
+    private static final List<String> SUBMISSION_LEVEL_COLUMNS = List.of(PROSECUTING_AUTHORITY,
+            HEARING_COURT_HEARING_LOCATION, HEARING_DATE_OF_HEARING, HEARING_TIME_OF_HEARING);
 
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.builder()
             .setDelimiter(DELIMITER)
@@ -195,10 +214,12 @@ public class SummonsProsecutionCsvToJsonConverter {
      * <p>
      * Rows with a problem are left out of the returned {@link Summons}; their problems are returned
      * in {@link ComplaintsFileConversionResult#getErrors()} keyed by the row's {@code case.urn}.
-     * {@code hearingDetails.*} are only read from the first data row, so a problem with them is
-     * reported against that row. It does not stop the first row's case from being converted, and
-     * the {@link Summons} is still returned (with the unreadable hearing values left blank) so the
-     * converted cases can be schema-validated and every problem reported together.
+     * {@code prosecutingAuthority} and {@code hearingDetails.*} are only read from the first data
+     * row, but are checked in every row: a blank or malformed value, or one that differs from row 1's
+     * ({@link ComplaintsFileValidationError#INCONSISTENT_VALUE}), is reported against that row. Such
+     * a problem does not stop the row's case from being converted, and the {@link Summons} is still
+     * returned (with row 1's unreadable hearing date left blank) so the converted cases can be
+     * schema-validated and every problem reported together.
      *
      * @throws IllegalArgumentException for problems that mean the file cannot be processed or
      *                                  attributed to a prosecutor at all: no data rows, more rows than
@@ -214,6 +235,8 @@ public class SummonsProsecutionCsvToJsonConverter {
             final List<ComplaintsFileConversionResult.ConvertedRow> convertedRows = new ArrayList<>();
             HearingDetails hearingDetails = null;
             String prosecutingAuthority = null;
+            Row firstRow = null;
+            Set<String> firstRowInvalidColumns = Set.of();
             int rowCount = 0;
 
             for (final CSVRecord csvRecord : parser) {
@@ -236,15 +259,13 @@ public class SummonsProsecutionCsvToJsonConverter {
                         throw new IllegalArgumentException("Row " + record.getRecordNumber() + ": required column '"
                                 + PROSECUTING_AUTHORITY + "' is blank");
                     }
+                    firstRow = record;
+                    // only row 1's values are sent forward; an unreadable hearing date is left blank
                     hearingDetails = HearingDetails.hearingDetails()
-                            .withCourtHearingLocation(requireNonBlank(record, HEARING_COURT_HEARING_LOCATION))
-                            .withDateOfHearing(requireDate(record, HEARING_DATE_OF_HEARING))
-                            .withTimeOfHearing(requireNonBlank(record, HEARING_TIME_OF_HEARING))
+                            .withCourtHearingLocation(nullIfBlank(record.get(HEARING_COURT_HEARING_LOCATION)))
+                            .withDateOfHearing(isoDateOrNull(nullIfBlank(record.get(HEARING_DATE_OF_HEARING))))
+                            .withTimeOfHearing(nullIfBlank(record.get(HEARING_TIME_OF_HEARING)))
                             .build();
-                    // hearing details belong to the whole file, not to the first row's case - report
-                    // them, but don't let them exclude that case from conversion
-                    errors.addAll(record.errors);
-                    record.errors.clear();
                 }
 
                 if (record.isMissingColumns()) {
@@ -254,6 +275,15 @@ public class SummonsProsecutionCsvToJsonConverter {
                     errors.addAll(record.errors);
                     continue;
                 }
+
+                // these columns belong to the whole file, not to the row's case - report their
+                // problems against the row, but don't let them exclude its case from conversion
+                final Set<String> invalidColumns = validateSubmissionLevelColumns(record, firstRow, firstRowInvalidColumns);
+                if (record == firstRow) {
+                    firstRowInvalidColumns = invalidColumns;
+                }
+                errors.addAll(record.errors);
+                record.errors.clear();
 
                 final SummonsProsecutionCase prosecutionCase = buildProsecutionCase(record);
 
@@ -520,17 +550,113 @@ public class SummonsProsecutionCsvToJsonConverter {
     }
 
     private static LocalDate toIsoDate(final Row record, final String column, final String value) {
-        if (ISO_DATE_PATTERN.matcher(value).matches()) {
-            try {
-                return LocalDate.parse(value);
-            } catch (DateTimeParseException e) {
-                // well-formed but not a real calendar date, e.g. 2022-02-30 - reported below
+        final LocalDate date = isoDateOrNull(value);
+        if (date == null) {
+            record.error(ComplaintsFileValidationError.INVALID_DATE_FORMAT, column,
+                    "Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
+                            + value + "' - expected ISO date format YYYY-MM-DD");
+        }
+        return date;
+    }
+
+    /**
+     * @return the date, or {@code null} for a blank value, a value not shaped {@code YYYY-MM-DD}, or
+     * a well-formed value that is not a real calendar date such as {@code 2022-02-30}
+     */
+    private static LocalDate isoDateOrNull(final String value) {
+        if (value == null || !ISO_DATE_PATTERN.matcher(value).matches()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Checks the submission-level columns of one row: each must be present and well-formed, and -
+     * after row 1 - hold the same value as row 1. {@code prosecutingAuthority} is not checked on row
+     * 1 here: a blank value there rejects the whole file, and its format is schema-validated.
+     * <p>
+     * A cell gets at most one error: a blank or malformed value is not also reported as inconsistent,
+     * and nothing is compared with a blank or malformed row 1 value (row 1 has its own error for it,
+     * and fixing row 1 is what the prosecutor needs to do).
+     *
+     * @return the columns of this row whose value is blank or malformed
+     */
+    private static Set<String> validateSubmissionLevelColumns(final Row record, final Row firstRow,
+                                                              final Set<String> firstRowInvalidColumns) {
+        final boolean isFirstRow = record == firstRow;
+        final Set<String> invalidColumns = new HashSet<>();
+
+        if (!isFirstRow && requireNonBlank(record, PROSECUTING_AUTHORITY) == null) {
+            invalidColumns.add(PROSECUTING_AUTHORITY);
+        }
+
+        final String courtHearingLocation = requireNonBlank(record, HEARING_COURT_HEARING_LOCATION);
+        if (courtHearingLocation == null) {
+            invalidColumns.add(HEARING_COURT_HEARING_LOCATION);
+        } else if (courtHearingLocation.length() > COURT_HEARING_LOCATION_MAX_LENGTH) {
+            record.error(ComplaintsFileValidationError.INVALID_VALUE, HEARING_COURT_HEARING_LOCATION,
+                    "Row " + record.getRecordNumber() + ": column '" + HEARING_COURT_HEARING_LOCATION
+                            + "' must be at most " + COURT_HEARING_LOCATION_MAX_LENGTH + " characters but was '"
+                            + courtHearingLocation + "'");
+            invalidColumns.add(HEARING_COURT_HEARING_LOCATION);
+        }
+
+        if (requireDate(record, HEARING_DATE_OF_HEARING) == null) {
+            invalidColumns.add(HEARING_DATE_OF_HEARING);
+        }
+
+        final String timeOfHearing = requireNonBlank(record, HEARING_TIME_OF_HEARING);
+        if (timeOfHearing == null) {
+            invalidColumns.add(HEARING_TIME_OF_HEARING);
+        } else if (!TIME_OF_HEARING_PATTERN.matcher(timeOfHearing).matches()) {
+            record.error(ComplaintsFileValidationError.INVALID_VALUE, HEARING_TIME_OF_HEARING,
+                    "Row " + record.getRecordNumber() + ": column '" + HEARING_TIME_OF_HEARING
+                            + "' has invalid time '" + timeOfHearing + "' - expected HH:MM:SS");
+            invalidColumns.add(HEARING_TIME_OF_HEARING);
+        }
+
+        if (isFirstRow) {
+            return invalidColumns;
+        }
+        for (final String column : SUBMISSION_LEVEL_COLUMNS) {
+            if (invalidColumns.contains(column) || firstRowInvalidColumns.contains(column)) {
+                continue;
+            }
+            final String firstRowValue = firstRow.get(column);
+            final String value = record.get(column);
+            if (!sameValue(column, firstRowValue, value)) {
+                record.error(ComplaintsFileValidationError.INCONSISTENT_VALUE, column,
+                        "Row " + record.getRecordNumber() + ": column '" + column + "' is '" + value
+                                + "' but row " + firstRow.getRecordNumber() + " has '" + firstRowValue
+                                + "' - it must be the same in every row");
             }
         }
-        record.error(ComplaintsFileValidationError.INVALID_DATE_FORMAT, column,
-                "Row " + record.getRecordNumber() + ": '" + column + "' has invalid date '"
-                        + value + "' - expected ISO date format YYYY-MM-DD");
-        return null;
+        return invalidColumns;
+    }
+
+    /**
+     * Both values are present and well-formed. Times are compared by value, since the schema's
+     * pattern allows optional leading zeros ({@code 9:05:00} is {@code 09:05:00}); everything else
+     * must match exactly.
+     */
+    private static boolean sameValue(final String column, final String first, final String other) {
+        if (HEARING_TIME_OF_HEARING.equals(column)) {
+            return normalisedTime(first).equals(normalisedTime(other));
+        }
+        return first.equals(other);
+    }
+
+    private static String normalisedTime(final String time) {
+        final Matcher matcher = TIME_OF_HEARING_PATTERN.matcher(time);
+        if (!matcher.matches()) {
+            return time;
+        }
+        return String.format("%02d:%02d:%02d", Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
     }
 
     private static Integer requireInteger(final Row record, final String column) {

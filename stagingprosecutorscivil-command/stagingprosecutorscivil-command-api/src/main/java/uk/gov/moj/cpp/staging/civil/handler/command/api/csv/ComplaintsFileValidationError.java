@@ -17,6 +17,11 @@ public final class ComplaintsFileValidationError {
     public static final String INVALID_VALUE = "INVALID_VALUE";
     public static final String DUPLICATE_CASE_URN = "DUPLICATE_CASE_URN";
     public static final String INVALID_ROW = "INVALID_ROW";
+    /**
+     * A submission-level column ({@code prosecutingAuthority}, {@code hearingDetails.*}) whose value
+     * differs from row 1's - these columns must hold the same value in every row of a file.
+     */
+    public static final String INCONSISTENT_VALUE = "INCONSISTENT_VALUE";
 
     private final long rowNumber;
     private final String caseReference;

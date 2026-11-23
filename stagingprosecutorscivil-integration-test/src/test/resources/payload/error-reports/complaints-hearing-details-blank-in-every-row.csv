@@ -1,0 +1,7 @@
+Reference,Error Type,Error Code,Field,Value
+SCIV11111,Case,REQUIRED_FIELD_MISSING,hearingDetails.courtHearingLocation,
+SCIV11111,Case,REQUIRED_FIELD_MISSING,hearingDetails.timeOfHearing,
+SCIV22222,Case,REQUIRED_FIELD_MISSING,hearingDetails.courtHearingLocation,
+SCIV22222,Case,REQUIRED_FIELD_MISSING,hearingDetails.timeOfHearing,
+SCIV33333,Case,REQUIRED_FIELD_MISSING,hearingDetails.courtHearingLocation,
+SCIV33333,Case,REQUIRED_FIELD_MISSING,hearingDetails.timeOfHearing,

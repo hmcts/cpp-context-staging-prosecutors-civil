@@ -278,7 +278,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
 
     @Test
     void shouldAcceptUploadAndRecordFailedSubmissionWhenCsvContainsNonIsoDates() throws Exception {
-        // every 2022-03-10 becomes 10/03/2022: the hearing date (read from row 1) and row 3's laid date
+        // every 2022-03-10 becomes 10/03/2022: every row's hearing date and row 3's laid date
         final String csv = fixtureCsv().replace("2022-03-10", "10/03/2022");
         when(filePart.getBody(eq(InputStream.class), isNull()))
                 .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
@@ -293,6 +293,8 @@ class DefaultCommandApiComplaintsFilesResourceTest {
                 eq("Richard Chapman"), eq("TVL"), errorsCaptor.capture());
         assertThat(errorsCaptor.getValue(), contains(
                 validationError(1L, "SCIV11111", "INVALID_DATE_FORMAT", "hearingDetails.dateOfHearing", "10/03/2022"),
+                validationError(2L, "SCIV22222", "INVALID_DATE_FORMAT", "hearingDetails.dateOfHearing", "10/03/2022"),
+                validationError(3L, "SCIV33333", "INVALID_DATE_FORMAT", "hearingDetails.dateOfHearing", "10/03/2022"),
                 validationError(3L, "SCIV33333", "INVALID_DATE_FORMAT", "offence.offenceDetails.laidDate", "10/03/2022")));
         verify(civilProsecutionApi, never()).summonsProsecution(any(), any(), any(), any());
         // rows 1 and 2 still convert, so they are schema-validated in the same upload
@@ -334,7 +336,7 @@ class DefaultCommandApiComplaintsFilesResourceTest {
 
     @Test
     void shouldReportHearingDetailsErrorsTogetherWithSchemaErrorsFromOtherRowsWithoutDuplicates() throws Exception {
-        // only row 1's hearing date is read for the file - the other rows' hearing columns are ignored
+        // only row 1's hearing date is broken - rows 2 and 3's valid dates are not compared with it
         final String csv = fixtureCsv().replaceFirst("2022-03-10", "10/03/2022");
         when(filePart.getBody(eq(InputStream.class), isNull()))
                 .thenReturn(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
