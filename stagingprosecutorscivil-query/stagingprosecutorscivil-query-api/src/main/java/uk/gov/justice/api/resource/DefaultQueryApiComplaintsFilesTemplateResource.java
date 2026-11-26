@@ -4,8 +4,8 @@ import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.moj.cpp.staging.civil.query.api.ComplaintsFilesTemplateQueryApi;
 
-import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
+import javax.inject.Inject;
+import javax.ws.rs.core.Response;
 
 @Adapter(Component.QUERY_API)
 public class DefaultQueryApiComplaintsFilesTemplateResource implements QueryApiComplaintsFilesTemplateResource {

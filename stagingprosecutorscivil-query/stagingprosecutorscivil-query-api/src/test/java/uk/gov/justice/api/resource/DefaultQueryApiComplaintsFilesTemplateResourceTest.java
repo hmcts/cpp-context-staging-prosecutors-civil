@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 
 import uk.gov.moj.cpp.staging.civil.query.api.ComplaintsFilesTemplateQueryApi;
 
-import jakarta.ws.rs.core.Response;
+import javax.ws.rs.core.Response;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

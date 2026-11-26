@@ -15,10 +15,10 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.persistence.entity.Submission;
 import uk.gov.moj.cpp.staging.civil.query.CivilProsecutionQueryView;
 
-import jakarta.inject.Inject;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.inject.Inject;
 
 @ServiceComponent(Component.QUERY_API)
 public class CivilProsecutionQueryApi {

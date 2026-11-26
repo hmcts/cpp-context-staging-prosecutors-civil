@@ -17,12 +17,12 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.event.SubmissionStatus;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.CivilProsecutionSubmissionSucceeded;
 import uk.gov.moj.cps.prosecutioncasefile.domain.event.ProsecutionSubmissionSucceededWithWarnings;
 
-import jakarta.inject.Inject;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonArrayBuilder;
-import jakarta.json.JsonObjectBuilder;
 import java.util.Collection;
 
+import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

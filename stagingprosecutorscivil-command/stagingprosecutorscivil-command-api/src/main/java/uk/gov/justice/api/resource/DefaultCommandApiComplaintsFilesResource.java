@@ -37,13 +37,13 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jakarta.inject.Inject;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
+import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

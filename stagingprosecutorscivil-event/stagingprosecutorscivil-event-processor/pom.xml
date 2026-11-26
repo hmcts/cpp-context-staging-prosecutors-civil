@@ -3,7 +3,7 @@
     <parent>
         <artifactId>stagingprosecutorscivil-event</artifactId>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-        <version>25.104.22-SNAPSHOT</version>
+        <version>17.104.18-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,8 +18,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>jakarta.platform</groupId>
-            <artifactId>jakarta.jakartaee-api</artifactId>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -44,6 +44,12 @@
             <groupId>net.minidev</groupId>
             <artifactId>json-smart</artifactId>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
+            <artifactId>stagingprosecutorscivil-viewstore-persistance</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
         <!-- test dependencies -->
         <dependency>
             <groupId>org.hamcrest</groupId>
@@ -66,9 +72,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.everit-org.json-schema</groupId>
+            <groupId>org.everit.json</groupId>
             <artifactId>org.everit.json.schema</artifactId>
-            <version>1.12.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -81,18 +86,17 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>uk.gov.justice.framework-generators</groupId>
                 <artifactId>messaging-client-generator-plugin</artifactId>
                 <dependencies>
                     <dependency>
-                        <groupId>jakarta.platform</groupId>
-                        <artifactId>jakarta.jakartaee-api</artifactId>
+                        <groupId>javax</groupId>
+                        <artifactId>javaee-api</artifactId>
                         <version>${javaee-api.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>jakarta.xml.bind</groupId>
-                        <artifactId>jakarta.xml.bind-api</artifactId>
-                        <version>${jakarta.xml.bind-api.raml.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
@@ -113,14 +117,9 @@
                 <artifactId>rest-client-generator-plugin</artifactId>
                 <dependencies>
                     <dependency>
-                        <groupId>jakarta.platform</groupId>
-                        <artifactId>jakarta.jakartaee-api</artifactId>
+                        <groupId>javax</groupId>
+                        <artifactId>javaee-api</artifactId>
                         <version>${javaee-api.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>jakarta.xml.bind</groupId>
-                        <artifactId>jakarta.xml.bind-api</artifactId>
-                        <version>${jakarta.xml.bind-api.raml.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>uk.gov.moj.cpp.prosecution.casefile</groupId>
