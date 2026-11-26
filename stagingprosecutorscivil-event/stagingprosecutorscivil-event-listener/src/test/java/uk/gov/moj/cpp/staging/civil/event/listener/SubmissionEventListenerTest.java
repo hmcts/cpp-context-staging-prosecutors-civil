@@ -42,8 +42,9 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.UUID;
 
-import jakarta.json.Json;
+import javax.json.Json;
 
+import liquibase.repackaged.net.sf.jsqlparser.expression.NullValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -322,10 +323,10 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(FAILED.name())
                 .build();
 
-        final jakarta.json.JsonObject caseErrorJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
+        final javax.json.JsonObject caseErrorJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
         // no prosecutorCaseReference key: group-level problems aren't tied to one case, and the real
         // converter (NON_ABSENT inclusion) omits the field entirely rather than emitting null
-        final jakarta.json.JsonObject groupCaseErrorJson = Json.createObjectBuilder().add("problems", Json.createArrayBuilder()).build();
+        final javax.json.JsonObject groupCaseErrorJson = Json.createObjectBuilder().add("problems", Json.createArrayBuilder()).build();
         when(objectToJsonObjectConverter.convert(caseError)).thenReturn(caseErrorJson);
         when(objectToJsonObjectConverter.convert(groupCaseError)).thenReturn(groupCaseErrorJson);
         when(utcClock.now()).thenReturn(ZonedDateTime.now(UTC));
@@ -362,7 +363,7 @@ public class SubmissionEventListenerTest {
                 .withSubmissionStatus(FAILED.name())
                 .build();
 
-        final jakarta.json.JsonObject caseErrorJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
+        final javax.json.JsonObject caseErrorJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
         when(objectToJsonObjectConverter.convert(caseError)).thenReturn(caseErrorJson);
 
         final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", updateCivilCaseReceived);
@@ -423,7 +424,7 @@ public class SubmissionEventListenerTest {
                 .build();
 
         // caseWarnings is CaseProblem-shaped, exactly like caseErrors/groupCaseErrors
-        final jakarta.json.JsonObject caseWarningJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
+        final javax.json.JsonObject caseWarningJson = Json.createObjectBuilder().add("prosecutorCaseReference", "URN01").build();
         when(objectToJsonObjectConverter.convert(caseWarning)).thenReturn(caseWarningJson);
 
         final Envelope<UpdateCivilCaseReceived> envelope = newEnvelope("stagingprosecutorscivil.event.update-civil-case-received", summonsProsecutionReceived);

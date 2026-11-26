@@ -5,7 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 
-import jakarta.json.JsonArray;
+import javax.json.JsonArray;
 
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +52,7 @@ public class SubmissionErrorDetailsCsvBuilderTest {
                 + "D1,Defendant,DEF_CODE,f,v"));
     }
 
-    private static jakarta.json.JsonObjectBuilder caseError(final String reference, final String code) {
+    private static javax.json.JsonObjectBuilder caseError(final String reference, final String code) {
         return createObjectBuilder()
                 .add("prosecutorCaseReference", reference)
                 .add("problems", createArrayBuilder()
@@ -60,7 +60,7 @@ public class SubmissionErrorDetailsCsvBuilderTest {
                                 .add("values", createArrayBuilder().add(createObjectBuilder().add("key", "f").add("value", "v")))));
     }
 
-    private static jakarta.json.JsonObjectBuilder defendantError(final String reference, final String code) {
+    private static javax.json.JsonObjectBuilder defendantError(final String reference, final String code) {
         return createObjectBuilder()
                 .add("prosecutorDefendantReference", reference)
                 .add("problems", createArrayBuilder()

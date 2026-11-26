@@ -1,18 +1,18 @@
 package uk.gov.moj.cpp.staging.civil.query.api;
 
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static jakarta.ws.rs.core.Response.Status.OK;
-import static jakarta.ws.rs.core.Response.status;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.Response.status;
 
 import uk.gov.justice.services.adapter.rest.processor.response.ResponseStrategy;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.Optional;
 
-import jakarta.inject.Named;
-import jakarta.json.JsonObject;
-import jakarta.ws.rs.core.Response;
+import javax.inject.Named;
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
 /**
  * The framework's built-in response strategies always serialise the envelope payload as JSON, so

@@ -3,7 +3,7 @@
     <parent>
         <artifactId>stagingprosecutorscivil-domain</artifactId>
         <groupId>uk.gov.moj.cpp.staging.prosecutors.civil</groupId>
-        <version>25.104.22-SNAPSHOT</version>
+        <version>17.104.18-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,8 +18,8 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.platform</groupId>
-            <artifactId>jakarta.jakartaee-api</artifactId>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -58,8 +58,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.parsson</groupId>
-            <artifactId>parsson</artifactId>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -71,6 +71,7 @@
         <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
+            <version>3.2.2</version>
             <scope>compile</scope>
         </dependency>
 

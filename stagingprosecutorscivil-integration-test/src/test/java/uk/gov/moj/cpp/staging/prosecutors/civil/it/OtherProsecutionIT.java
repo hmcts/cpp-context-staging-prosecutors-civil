@@ -1,12 +1,12 @@
 package uk.gov.moj.cpp.staging.prosecutors.civil.it;
 
 import static java.util.UUID.randomUUID;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.staging.prosecutors.civil.stub.PCFStub.stubPCFCommand;
@@ -30,9 +30,9 @@ import uk.gov.moj.cpp.staging.prosecutors.civil.util.WiremockUtils;
 
 import java.util.UUID;
 
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
-import jakarta.ws.rs.core.Response;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;

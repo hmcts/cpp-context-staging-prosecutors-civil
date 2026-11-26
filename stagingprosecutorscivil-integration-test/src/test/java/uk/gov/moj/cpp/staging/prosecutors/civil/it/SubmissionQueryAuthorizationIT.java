@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import jakarta.ws.rs.core.Response;
+import javax.ws.rs.core.Response;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;

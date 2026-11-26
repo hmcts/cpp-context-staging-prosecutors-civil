@@ -1,14 +1,14 @@
 package uk.gov.moj.cpp.staging.civil.query.api;
 
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
-import static jakarta.ws.rs.core.Response.Status.OK;
-import static jakarta.ws.rs.core.Response.status;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.Response.status;
 
 import java.io.InputStream;
 
-import jakarta.ws.rs.core.Response;
+import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 
-import jakarta.json.JsonArray;
+import javax.json.JsonArray;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;

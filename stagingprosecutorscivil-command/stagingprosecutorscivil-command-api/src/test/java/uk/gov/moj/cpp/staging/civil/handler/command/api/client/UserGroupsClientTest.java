@@ -16,8 +16,8 @@ import uk.gov.justice.services.core.requester.Requester;
 import java.util.List;
 import java.util.Optional;
 
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
+import javax.json.Json;
+import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

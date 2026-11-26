@@ -21,7 +21,7 @@ import uk.gov.moj.cpp.staging.civil.query.CivilProsecutionQueryView;
 import java.util.Optional;
 import java.util.UUID;
 
-import jakarta.json.JsonObject;
+import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -42,10 +42,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 
 import cpp.moj.gov.uk.staging.prosecutors.json.schemas.UrlResponse;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;

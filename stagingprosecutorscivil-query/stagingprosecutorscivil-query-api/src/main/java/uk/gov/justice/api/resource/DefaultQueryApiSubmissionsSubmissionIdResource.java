@@ -11,11 +11,11 @@ import uk.gov.justice.services.core.interceptor.InterceptorChainProcessor;
 import uk.gov.justice.services.messaging.logging.HttpTraceLoggerHelper;
 import uk.gov.justice.services.messaging.logging.TraceLogger;
 
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

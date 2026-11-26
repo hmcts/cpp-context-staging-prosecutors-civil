@@ -3,8 +3,8 @@ package uk.gov.moj.cpp.staging.prosecutors.civil.it;
 import static com.google.common.io.Resources.getResource;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
-import static jakarta.ws.rs.core.Response.Status.ACCEPTED;
-import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.ACCEPTED;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -35,8 +35,8 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
-import jakarta.json.JsonObject;
-import jakarta.ws.rs.core.Response;
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
