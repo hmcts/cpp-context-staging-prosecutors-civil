@@ -36,8 +36,7 @@ import org.junit.jupiter.api.Test;
  *
  * SC-I01 (SC-P04): a new submission is stored with errors and warnings null, and the submission-details query adds
  * both to the response unconditionally; on J17 JsonArrayConverter turns the null columns into empty arrays. Pin the
- * whole PENDING response, in the current main contract (materialWarnings/materialErrors, case/defendant warnings,
- * type, receivedAt - see CivilProsecutionQueryView); receivedAt is masked as it is set at submission time.
+ * whole PENDING response.
  * SC-I02 (BC-16): the framework metrics endpoints under /internal/metrics.
  * SC-I03 moved to SubmissionRepositoryParityTest#scP07: case_detail rows are not exposed by any API, and the CI
  * validation viewstore cannot be reached with the local IT database credentials.
@@ -73,14 +72,8 @@ public class JavaUpgradeParityIT {
                 .until(status().is(OK), payload().isJson(withJsonPath("$.status", is("PENDING"))))
                 .getPayload();
 
-        final String normalised = response
-                .replace(submissionId.toString(), "SUBMISSION_ID")
-                .replaceAll("\"receivedAt\":\"[^\"]+\"", "\"receivedAt\":\"RECEIVED_AT\"");
-
-        assertThat(normalised, is(
-                "{\"id\":\"SUBMISSION_ID\",\"status\":\"PENDING\",\"materialWarnings\":[],\"materialErrors\":[],"
-                        + "\"caseErrors\":[],\"defendantErrors\":[],\"caseWarnings\":[],\"defendantWarnings\":[],"
-                        + "\"type\":\"PROSECUTION\",\"receivedAt\":\"RECEIVED_AT\"}"));
+        assertThat(response.replace(submissionId.toString(), "SUBMISSION_ID"), is(
+                "{\"id\":\"SUBMISSION_ID\",\"status\":\"PENDING\",\"warnings\":[],\"errors\":[],\"caseErrors\":[],\"defendantErrors\":[]}"));
     }
 
     @Test
